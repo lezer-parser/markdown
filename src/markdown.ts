@@ -472,6 +472,7 @@ type Config = {
   fragments?: readonly TreeFragment[]
 }
 
+/// An instance of this class represents an in-progress parse.
 export class MarkdownParser implements IncrementalParser {
   /// @internal
   context: BlockContext = BlockContext.create(Type.Document, 0, 0, 0, 0)

@@ -17,3 +17,39 @@ do—specifically, it doesn't validate link references, so it'll parse
 declared.
 
 The code is licensed under an MIT license.
+
+## Interface
+
+This module exports a `MarkdownParser` class, which represents an
+in-progress parse. It extends
+[`IncrementalParser`](https://lezer.codemirror.net/docs/ref/#lezer.IncrementalParser).
+
+ * **`constructor`**`(input: Input, options?: Object)`
+
+   Create a Markdown parser. The following optional options are
+   recognized:
+
+   * **`startPos`**`: number`\
+     The position at which to start parsing. Defaults to 0.
+
+   * **`fragments`**`: TreeFragment[]`\
+     A set of tree fragments (aligned with the input) to use for
+     incremental parsing.
+
+ * **`advance`**`(): Tree | null`\
+   Move the parser forward. Will either use a chunk of content from
+   the given fragments, or parse one leaf block. Returns the finished
+   tree when the entire document has been parsed.
+
+ * **`forceFinish`**`(): Tree`\
+   Retrieve the tree for an unfinished parse.
+
+ * **`pos`**`: number`\
+   The current parse position.
+
+ * `static `**`nodeSet`**`: NodeSet`\
+   The set of node types used in the output.
+
+ * `static `**`Type`**`: enum`\
+   The enum holding the node types (their numeric values correspond
+   to the node type ids).
