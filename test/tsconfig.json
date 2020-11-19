@@ -6,8 +6,7 @@
     "strict": true,
     "target": "es6",
     "newLine": "lf",
-    "stripInternal": true,
     "moduleResolution": "node"
   },
-  "include": ["src/*.ts"]
+  "include": ["*.ts"]
 }
