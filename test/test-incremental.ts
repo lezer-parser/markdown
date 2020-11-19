@@ -200,6 +200,6 @@ Another paragraph that is long enough to create a fragment
   it("can reuse list items", () => {
     let start = State.start(" - List item\n".repeat(100))
     let state = start.update([{from: 18, to: 19}])
-    ist(overlap(start.tree, state.tree), 50, ">")
+    ist(overlap(start.tree, state.tree), 80, ">")
   })
 })
