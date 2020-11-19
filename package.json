@@ -1,0 +1,32 @@
+{
+  "name": "lezer-markdown",
+  "version": "0.13.0",
+  "description": "Incremental Markdown parser that consumes and emits Lezer trees",
+  "main": "dist/index.cjs",
+  "type": "module",
+  "exports": {
+    "import": "./dist/index.es.js",
+    "require": "./dist/index.cjs"
+  },
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "author": "Marijn Haverbeke <marijnh@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^8.1.3",
+    "lezer": "^0.13.0",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "lezer-tree": "^0.13.0"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/lezer-parser/markdown.git"
+  },
+  "scripts": {
+    "watch": "rollup -w -c rollup.config.js",
+    "prepare": "rollup -c rollup.config.js",
+    "test": "mocha test/test-*.js"
+  }
+}
