@@ -81,7 +81,7 @@ function test(name: string, spec: string) {
 // to check whether the produced output corresponds to the intent of
 // the test.
 
-describe("Markdown parser", () => {
+describe("CommonMark spec", () => {
   test("Tabs (example 1)", `
 	{CB:foo	baz		bim}
 `)
@@ -98,22 +98,22 @@ describe("Markdown parser", () => {
   test("Tabs (example 4)", `
 {BL:{LI:  {l:-} {P:foo}
 
-	{P:bar}
-}}`)
+	{P:bar}}}
+`)
 
   test("Tabs (example 5)", `
 {BL:{LI:{l:-} {P:foo}
 
-		{CB:bar}
-}}`)
+		{CB:bar}}}
+`)
 
   test("Tabs (example 6)", `
 {Q:{q:>}		{CB:foo}}
 `)
 
   test("Tabs (example 7)", `
-{BL:{LI:{l:-}		{CB:foo}
-}}`)
+{BL:{LI:{l:-}		{CB:foo}}}
+`)
 
   test("Tabs (example 8)", `
     {CB:foo
@@ -123,8 +123,8 @@ describe("Markdown parser", () => {
   test("Tabs (example 9)", `
 {BL:{LI: {l:-} {P:foo}
    {BL:{LI:{l:-} {P:bar}
-	 {BL:{LI:{l:-} {P:baz}
-}}}}}}`)
+	 {BL:{LI:{l:-} {P:baz}}}}}}}
+`)
 
   test("Tabs (example 10)", `
 {P:#	Foo}
@@ -136,8 +136,8 @@ describe("Markdown parser", () => {
 
   test("Precedence (example 12)", `
 {BL:{LI:{l:-} {P:\`one}}
-{LI:{l:-} {P:two\`}
-}}`)
+{LI:{l:-} {P:two\`}}}
+`)
 
   test("Thematic breaks (example 13)", `
 {HR:***}
@@ -209,8 +209,8 @@ __}
   test("Thematic breaks (example 27)", `
 {BL:{LI:{l:-} {P:foo}}}
 {HR:***}
-{BL:{LI:{l:-} {P:bar}
-}}`)
+{BL:{LI:{l:-} {P:bar}}}
+`)
 
   test("Thematic breaks (example 28)", `
 {P:Foo}
@@ -227,13 +227,13 @@ __}
   test("Thematic breaks (example 30)", `
 {BL:{LI:{l:*} {P:Foo}}}
 {HR:* * *}
-{BL:{LI:{l:*} {P:Bar}
-}}`)
+{BL:{LI:{l:*} {P:Bar}}}
+`)
 
   test("Thematic breaks (example 31)", `
 {BL:{LI:{l:-} {P:Foo}}
-{LI:{l:-} {HR:* * *}
-}}`)
+{LI:{l:-} {HR:* * *}}}
+`)
 
   test("ATX headings (example 32)", `
 {AH:{h:#} foo}
@@ -512,14 +512,14 @@ baz}
   test("Indented code blocks (example 78)", `
 {BL:{LI:  {l:-} {P:foo}
 
-    {P:bar}
-}}`)
+    {P:bar}}}
+`)
 
   test("Indented code blocks (example 79)", `
 {OL:{LI:{l:1.}  {P:foo}
 
-    {BL:{LI:{l:-} {P:bar}
-}}}}`)
+    {BL:{LI:{l:-} {P:bar}}}}}
+`)
 
   test("Indented code blocks (example 80)", `
     {CB:<a/>
@@ -948,8 +948,8 @@ foo
 
   test("HTML blocks (example 144)", `
 {BL:{LI:{l:-} {HB:<div>}}
-{LI:{l:-} {P:foo}
-}}`)
+{LI:{l:-} {P:foo}}}
+`)
 
   test("HTML blocks (example 145)", `
 {HB:<style>p[color:red;]</style>}
@@ -1362,8 +1362,8 @@ baz
 
   test("Block quotes (example 205)", `
 {Q:{q:>} {BL:{LI:{l:-} {P:foo}}}}
-{BL:{LI:{l:-} {P:bar}
-}}`)
+{BL:{LI:{l:-} {P:bar}}}
+`)
 
   test("Block quotes (example 206)", `
 {Q:{q:>}     {CB:foo}}
@@ -1474,32 +1474,32 @@ with two lines.}
 
         {CB:indented code}
 
-    {Q:{q:>} {P:A block quote.}}
-}}`)
+    {Q:{q:>} {P:A block quote.}}}}
+`)
 
   test("List items (example 225)", `
-{BL:{LI:{l:-} {P:one}
-}}
+{BL:{LI:{l:-} {P:one}}}
+
  {P:two}
 `)
 
   test("List items (example 226)", `
 {BL:{LI:{l:-} {P:one}
 
-  {P:two}
-}}`)
+  {P:two}}}
+`)
 
   test("List items (example 227)", `
-{BL:{LI: {l:-}    {P:one}
-}}
+{BL:{LI: {l:-}    {P:one}}}
+
     {CB: two}
 `)
 
   test("List items (example 228)", `
 {BL:{LI: {l:-}    {P:one}
 
-      {P:two}
-}}`)
+      {P:two}}}
+`)
 
   test("List items (example 229)", `
    {Q:{q:>} {Q:{q:>} {OL:{LI:{l:1.}  {P:one}
@@ -1523,8 +1523,8 @@ with two lines.}
 {BL:{LI:{l:-} {P:foo}
 
 
-  {P:bar}
-}}`)
+  {P:bar}}}
+`)
 
   test("List items (example 233)", `
 {OL:{LI:{l:1.}  {P:foo}
@@ -1535,8 +1535,8 @@ with two lines.}
 
     {P:baz}
 
-    {Q:{q:>} {P:bam}}
-}}`)
+    {Q:{q:>} {P:bam}}}}
+`)
 
   test("List items (example 234)", `
 {BL:{LI:{l:-} {P:Foo}
@@ -1544,24 +1544,24 @@ with two lines.}
       {CB:bar
 
 
-      baz}
-}}`)
+      baz}}}
+`)
 
   test("List items (example 235)", `
-{OL:{LI:{l:123456789.} {P:ok}
-}}`)
+{OL:{LI:{l:123456789.} {P:ok}}}
+`)
 
   test("List items (example 236)", `
 {P:1234567890. not ok}
 `)
 
   test("List items (example 237)", `
-{OL:{LI:{l:0.} {P:ok}
-}}`)
+{OL:{LI:{l:0.} {P:ok}}}
+`)
 
   test("List items (example 238)", `
-{OL:{LI:{l:003.} {P:ok}
-}}`)
+{OL:{LI:{l:003.} {P:ok}}}
+`)
 
   test("List items (example 239)", `
 {P:-1. not ok}
@@ -1570,14 +1570,14 @@ with two lines.}
   test("List items (example 240)", `
 {BL:{LI:{l:-} {P:foo}
 
-      {CB:bar}
-}}`)
+      {CB:bar}}}
+`)
 
   test("List items (example 241)", `
 {OL:{LI:  {l:10.}  {P:foo}
 
-           {CB:bar}
-}}`)
+           {CB:bar}}}
+`)
 
   test("List items (example 242)", `
     {CB:indented code}
@@ -1592,16 +1592,16 @@ with two lines.}
 
    {P:paragraph}
 
-       {CB:more code}
-}}`)
+       {CB:more code}}}
+`)
 
   test("List items (example 244)", `
 {OL:{LI:{l:1.}     {CB: indented code}
 
    {P:paragraph}
 
-       {CB:more code}
-}}`)
+       {CB:more code}}}
+`)
 
   test("List items (example 245)", `
    {P:foo}
@@ -1610,16 +1610,16 @@ with two lines.}
 `)
 
   test("List items (example 246)", `
-{BL:{LI:{l:-}    {P:foo}
-}}
+{BL:{LI:{l:-}    {P:foo}}}
+
   {P:bar}
 `)
 
   test("List items (example 247)", `
 {BL:{LI:{l:-}  {P:foo}
 
-   {P:bar}
-}}`)
+   {P:bar}}}
+`)
 
   test("List items (example 248)", `
 {BL:{LI:{l:-}{P:
@@ -1629,41 +1629,41 @@ with two lines.}
   bar
   {c:\`\`\`}}}
 {LI:{l:-}{P:
-      baz}
-}}`)
+      baz}}}
+`)
 
   test("List items (example 249)", `
 {BL:{LI:{l:-}   {P:
-  foo}
-}}`)
+  foo}}}
+`)
 
   test("List items (example 250)", `
 {BL:{LI:{l:-}{P:}
 
-  {P:foo}
-}}`)
+  {P:foo}}}
+`)
 
   test("List items (example 251)", `
 {BL:{LI:{l:-} {P:foo}}
 {LI:{l:-}{P:}}
-{LI:{l:-} {P:bar}
-}}`)
+{LI:{l:-} {P:bar}}}
+`)
 
   test("List items (example 252)", `
 {BL:{LI:{l:-} {P:foo}}
 {LI:{l:-}   {P:}}
-{LI:{l:-} {P:bar}
-}}`)
+{LI:{l:-} {P:bar}}}
+`)
 
   test("List items (example 253)", `
 {OL:{LI:{l:1.} {P:foo}}
 {LI:{l:2.}{P:}}
-{LI:{l:3.} {P:bar}
-}}`)
+{LI:{l:3.} {P:bar}}}
+`)
 
   test("List items (example 254)", `
-{BL:{LI:{l:*}{P:}
-}}`)
+{BL:{LI:{l:*}{P:}}}
+`)
 
   test("List items (example 255)", `
 {P:foo
@@ -1679,8 +1679,8 @@ with two lines.}
 
          {CB:indented code}
 
-     {Q:{q:>} {P:A block quote.}}
-}}`)
+     {Q:{q:>} {P:A block quote.}}}}
+`)
 
   test("List items (example 257)", `
 {OL:{LI:  {l:1.}  {P:A paragraph
@@ -1688,8 +1688,8 @@ with two lines.}
 
           {CB:indented code}
 
-      {Q:{q:>} {P:A block quote.}}
-}}`)
+      {Q:{q:>} {P:A block quote.}}}}
+`)
 
   test("List items (example 258)", `
 {OL:{LI:   {l:1.}  {P:A paragraph
@@ -1697,8 +1697,8 @@ with two lines.}
 
            {CB:indented code}
 
-       {Q:{q:>} {P:A block quote.}}
-}}`)
+       {Q:{q:>} {P:A block quote.}}}}
+`)
 
   test("List items (example 259)", `
     {CB:1.  A paragraph
@@ -1715,13 +1715,13 @@ with two lines.}
 
           {CB:indented code}
 
-      {Q:{q:>} {P:A block quote.}}
-}}`)
+      {Q:{q:>} {P:A block quote.}}}}
+`)
 
   test("List items (example 261)", `
 {OL:{LI:  {l:1.}  {P:A paragraph
-    with two lines.}
-}}`)
+    with two lines.}}}
+`)
 
   test("List items (example 262)", `
 {Q:{q:>} {OL:{LI:{l:1.} {Q:{q:>} {P:Blockquote
@@ -1737,58 +1737,58 @@ continued here.}}}}}
 {BL:{LI:{l:-} {P:foo}
   {BL:{LI:{l:-} {P:bar}
     {BL:{LI:{l:-} {P:baz}
-      {BL:{LI:{l:-} {P:boo}
-}}}}}}}}`)
+      {BL:{LI:{l:-} {P:boo}}}}}}}}}
+`)
 
   test("List items (example 265)", `
 {BL:{LI:{l:-} {P:foo}}
 {LI: {l:-} {P:bar}}
 {LI:  {l:-} {P:baz}}
-{LI:   {l:-} {P:boo}
-}}`)
+{LI:   {l:-} {P:boo}}}
+`)
 
   test("List items (example 266)", `
 {OL:{LI:{l:10)} {P:foo}
-    {BL:{LI:{l:-} {P:bar}
-}}}}`)
+    {BL:{LI:{l:-} {P:bar}}}}}
+`)
 
   test("List items (example 267)", `
 {OL:{LI:{l:10)} {P:foo}}}
-{BL:{LI:   {l:-} {P:bar}
-}}`)
+{BL:{LI:   {l:-} {P:bar}}}
+`)
 
   test("List items (example 268)", `
-{BL:{LI:{l:-} {BL:{LI:{l:-} {P:foo}
-}}}}`)
+{BL:{LI:{l:-} {BL:{LI:{l:-} {P:foo}}}}}
+`)
 
   test("List items (example 269)", `
-{OL:{LI:{l:1.} {BL:{LI:{l:-} {OL:{LI:{l:2.} {P:foo}
-}}}}}}`)
+{OL:{LI:{l:1.} {BL:{LI:{l:-} {OL:{LI:{l:2.} {P:foo}}}}}}}
+`)
 
   test("List items (example 270)", `
 {BL:{LI:{l:-} {AH:{h:#} Foo}}
 {LI:{l:-} {SH:Bar
 {h:  ---}}
-  {P:baz}
-}}`)
+  {P:baz}}}
+`)
 
   test("Lists (example 271)", `
 {BL:{LI:{l:-} {P:foo}}
 {LI:{l:-} {P:bar}}}
-{BL:{LI:{l:+} {P:baz}
-}}`)
+{BL:{LI:{l:+} {P:baz}}}
+`)
 
   test("Lists (example 272)", `
 {OL:{LI:{l:1.} {P:foo}}
 {LI:{l:2.} {P:bar}}}
-{OL:{LI:{l:3)} {P:baz}
-}}`)
+{OL:{LI:{l:3)} {P:baz}}}
+`)
 
   test("Lists (example 273)", `
 {P:Foo}
 {BL:{LI:{l:-} {P:bar}}
-{LI:{l:-} {P:baz}
-}}`)
+{LI:{l:-} {P:baz}}}
+`)
 
   test("Lists (example 274)", `
 {P:The number of windows in my house is
@@ -1797,17 +1797,17 @@ continued here.}}}}}
 
   test("Lists (example 275)", `
 {P:The number of windows in my house is}
-{OL:{LI:{l:1.}  {P:The number of doors is 6.}
-}}`)
+{OL:{LI:{l:1.}  {P:The number of doors is 6.}}}
+`)
 
   test("Lists (example 276)", `
-{BL:{LI:{l:-} {P:foo}
-}
-{LI:{l:-} {P:bar}
+{BL:{LI:{l:-} {P:foo}}
 
-}
-{LI:{l:-} {P:baz}
-}}`)
+{LI:{l:-} {P:bar}}
+
+
+{LI:{l:-} {P:baz}}}
+`)
 
   test("Lists (example 277)", `
 {BL:{LI:{l:-} {P:foo}
@@ -1815,26 +1815,26 @@ continued here.}}}}}
     {BL:{LI:{l:-} {P:baz}
 
 
-      {P:bim}
-}}}}}}`)
+      {P:bim}}}}}}}
+`)
 
   test("Lists (example 278)", `
 {BL:{LI:{l:-} {P:foo}}
-{LI:{l:-} {P:bar}
-}}
+{LI:{l:-} {P:bar}}}
+
 {CMB:<!-- -->}
 
 {BL:{LI:{l:-} {P:baz}}
-{LI:{l:-} {P:bim}
-}}`)
+{LI:{l:-} {P:bim}}}
+`)
 
   test("Lists (example 279)", `
 {BL:{LI:{l:-}   {P:foo}
 
-    {P:notcode}
-}
-{LI:{l:-}   {P:foo}
-}}
+    {P:notcode}}
+
+{LI:{l:-}   {P:foo}}}
+
 {CMB:<!-- -->}
 
     {CB:code}
@@ -1847,62 +1847,62 @@ continued here.}}}}}
 {LI:   {l:-} {P:d}}
 {LI:  {l:-} {P:e}}
 {LI: {l:-} {P:f}}
-{LI:{l:-} {P:g}
-}}`)
+{LI:{l:-} {P:g}}}
+`)
 
   test("Lists (example 281)", `
-{OL:{LI:{l:1.} {P:a}
-}
-{LI:  {l:2.} {P:b}
-}
-{LI:   {l:3.} {P:c}
-}}`)
+{OL:{LI:{l:1.} {P:a}}
+
+{LI:  {l:2.} {P:b}}
+
+{LI:   {l:3.} {P:c}}}
+`)
 
   test("Lists (example 282)", `
 {BL:{LI:{l:-} {P:a}}
 {LI: {l:-} {P:b}}
 {LI:  {l:-} {P:c}}
 {LI:   {l:-} {P:d
-    - e}
-}}`)
+    - e}}}
+`)
 
   test("Lists (example 283)", `
-{OL:{LI:{l:1.} {P:a}
-}
-{LI:  {l:2.} {P:b}
-}}
+{OL:{LI:{l:1.} {P:a}}
+
+{LI:  {l:2.} {P:b}}}
+
     {CB:3. c}
 `)
 
   test("Lists (example 284)", `
 {BL:{LI:{l:-} {P:a}}
-{LI:{l:-} {P:b}
-}
-{LI:{l:-} {P:c}
-}}`)
+{LI:{l:-} {P:b}}
+
+{LI:{l:-} {P:c}}}
+`)
 
   test("Lists (example 285)", `
 {BL:{LI:{l:*} {P:a}}
-{LI:{l:*}{P:}
-}
-{LI:{l:*} {P:c}
-}}`)
+{LI:{l:*}{P:}}
+
+{LI:{l:*} {P:c}}}
+`)
 
   test("Lists (example 286)", `
 {BL:{LI:{l:-} {P:a}}
 {LI:{l:-} {P:b}
 
   {P:c}}
-{LI:{l:-} {P:d}
-}}`)
+{LI:{l:-} {P:d}}}
+`)
 
   test("Lists (example 287)", `
 {BL:{LI:{l:-} {P:a}}
 {LI:{l:-} {P:b}
 
   {LR:{LL:[ref]}{L::} {URL:/url}}}
-{LI:{l:-} {P:d}
-}}`)
+{LI:{l:-} {P:d}}}
+`)
 
   test("Lists (example 288)", `
 {BL:{LI:{l:-} {P:a}}
@@ -1911,23 +1911,23 @@ continued here.}}}}}
 
 
   {c:\`\`\`}}}
-{LI:{l:-} {P:c}
-}}`)
+{LI:{l:-} {P:c}}}
+`)
 
   test("Lists (example 289)", `
 {BL:{LI:{l:-} {P:a}
   {BL:{LI:{l:-} {P:b}
 
     {P:c}}}}
-{LI:{l:-} {P:d}
-}}`)
+{LI:{l:-} {P:d}}}
+`)
 
   test("Lists (example 290)", `
 {BL:{LI:{l:*} {P:a}
   {Q:{q:>} {P:b}
   {q:>}}}
-{LI:{l:*} {P:c}
-}}`)
+{LI:{l:*} {P:c}}}
+`)
 
   test("Lists (example 291)", `
 {BL:{LI:{l:-} {P:a}
@@ -1935,42 +1935,42 @@ continued here.}}}}}
   {FC:{c:\`\`\`}
   c
   {c:\`\`\`}}}
-{LI:{l:-} {P:d}
-}}`)
+{LI:{l:-} {P:d}}}
+`)
 
   test("Lists (example 292)", `
-{BL:{LI:{l:-} {P:a}
-}}`)
+{BL:{LI:{l:-} {P:a}}}
+`)
 
   test("Lists (example 293)", `
 {BL:{LI:{l:-} {P:a}
-  {BL:{LI:{l:-} {P:b}
-}}}}`)
+  {BL:{LI:{l:-} {P:b}}}}}
+`)
 
   test("Lists (example 294)", `
 {OL:{LI:{l:1.} {FC:{c:\`\`\`}
    foo
    {c:\`\`\`}}
 
-   {P:bar}
-}}`)
+   {P:bar}}}
+`)
 
   test("Lists (example 295)", `
 {BL:{LI:{l:*} {P:foo}
-  {BL:{LI:{l:*} {P:bar}
-}}
-  {P:baz}
-}}`)
+  {BL:{LI:{l:*} {P:bar}}}
+
+  {P:baz}}}
+`)
 
   test("Lists (example 296)", `
 {BL:{LI:{l:-} {P:a}
   {BL:{LI:{l:-} {P:b}}
-  {LI:{l:-} {P:c}
-}}}
+  {LI:{l:-} {P:c}}}}
+
 {LI:{l:-} {P:d}
   {BL:{LI:{l:-} {P:e}}
-  {LI:{l:-} {P:f}
-}}}}`)
+  {LI:{l:-} {P:f}}}}}
+`)
 
   test("Backslash escapes (example 297)", `
 {P:{Esc:\\!}{Esc:\\"}{Esc:\\#}{Esc:\\$}{Esc:\\%}{Esc:\\&}{Esc:\\'}{Esc:\\(}{Esc:\\)}{Esc:\\*}{Esc:\\+}{Esc:\\,}{Esc:\\-}{Esc:\\.}{Esc:\\/}{Esc:\\:}{Esc:\\;}{Esc:\\<}{Esc:\\=}{Esc:\\>}{Esc:\\?}{Esc:\\@}{Esc:\\[}{Esc:\\\\}{Esc:\\]}{Esc:\\^}{Esc:\\_}{Esc:\\\`}{Esc:\\|}{Esc:\\~}}
@@ -2110,8 +2110,8 @@ foo
   test("Entity and numeric character references (example 324)", `
 {P:{Ent:&#42;} foo}
 
-{BL:{LI:{l:*} {P:foo}
-}}`)
+{BL:{LI:{l:*} {P:foo}}}
+`)
 
   test("Entity and numeric character references (example 325)", `
 {P:foo{Ent:&#10;}{Ent:&#10;}bar}
@@ -3026,7 +3026,8 @@ bar>})}
 {LR:{LL:[Foo
   bar]}{L::} {URL:/url}}
 
-{P:{Ln:{L:[}Baz{L:]}{LL:[Foo bar]}}}`)
+{P:{Ln:{L:[}Baz{L:]}{LL:[Foo bar]}}}
+`)
 
   test("Links (example 538)", `
 {P:{Ln:{L:[}foo{L:]}} {Ln:{L:[}bar{L:]}}}
@@ -3597,5 +3598,16 @@ baz}
 
   test("Textual content (example 649)", `
 {P:Multiple     spaces}
+`)
+})
+
+describe("Custom Markdown tests", () => {
+  // (Not ideal that the 3rd mark is inside the previous item, but
+  // this'd require quite a big overhaul to fix.)
+  test("Quote markers don't end up inside inner list items", `
+{Q:{q:>} {BL:{LI:{l:-} {P:Hello}}
+{q:>} {LI:{l:-} {P:Two}
+{q:>}}
+{q:>} {LI:{l:-} {P:Three}}}}
 `)
 })

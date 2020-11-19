@@ -196,4 +196,10 @@ Another paragraph that is long enough to create a fragment
     let state = new State(doc, tree, TreeFragment.addTree(tree)).update([])
     ist(state.tree.topNode.lastChild!.from, 1)
   })
+
+  it("can reuse list items", () => {
+    let start = State.start(" - List item\n".repeat(100))
+    let state = start.update([{from: 18, to: 19}])
+    ist(overlap(start.tree, state.tree), 50, ">")
+  })
 })

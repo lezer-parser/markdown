@@ -2,9 +2,9 @@ import {Tree, TreeBuffer, NodeType, NodeProp, TreeFragment, NodeSet, TreeCursor}
 import {Input, IncrementalParser} from "lezer"
 
 class BlockContext {
-  static create(type: number, value: number, from: number, contentStart: number, parentHash: number) {
+  static create(type: number, value: number, from: number, contentStart: number, parentHash: number, end: number) {
     let hash = (parentHash + (parentHash << 8) + type + (value << 4)) | 0
-    return new BlockContext(type, value, from, contentStart, hash, [], [])
+    return new BlockContext(type, value, from, contentStart, hash, end, [], [])
   }
 
   constructor(readonly type: number,
@@ -13,17 +13,20 @@ class BlockContext {
               readonly from: number,
               readonly contentStart: number,
               readonly hash: number,
+              public end: number,
               readonly children: Tree[],
               readonly positions: number[]) {}
 
-  toTree(end: number) {
+  toTree(end = this.end) {
+    let last = this.children.length - 1
+    if (last >= 0) end = Math.max(end, this.positions[last] + this.children[last].length + this.from)
     let tree = new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance(2048)
     stampContext(tree.children, this.hash)
     return tree
   }
 
   copy() {
-    return new BlockContext(this.type, this.value, this.from, this.contentStart, this.hash,
+    return new BlockContext(this.type, this.value, this.from, this.contentStart, this.hash, this.end,
                             this.children.slice(), this.positions.slice())
   }
 }
@@ -83,11 +86,12 @@ function skipForList(cx: BlockContext, p: MarkdownParser, result: SkipResult) {
 }
 
 const SkipMarkup: {[type: number]: (cx: BlockContext, p: MarkdownParser, result: SkipResult, marks: Element[]) => boolean} = {
-  [Type.Blockquote](_cx, p, result, marks) {
+  [Type.Blockquote](cx, p, result, marks) {
     if (p.text.charCodeAt(result.start) != 62 /* '>' */) return false
     marks.push(elt(Type.QuoteMark, p.pos + result.start, p.pos + result.start + 1))
     result.start = skipSpace(p.text, result.start + 1)
     result.baseIndent = result.indent + 2
+    cx.end = p.pos + p.text.length
     return true
   },
   [Type.ListItem](cx, p, result) {
@@ -430,7 +434,7 @@ type Config = {
 
 export class MarkdownParser implements IncrementalParser {
   /// @internal
-  context: BlockContext = BlockContext.create(Type.Document, 0, 0, 0, 0)
+  context: BlockContext = BlockContext.create(Type.Document, 0, 0, 0, 0, 0)
   /// @internal
   contextStack: BlockContext[] = [this.context]
   /// @internal
@@ -542,7 +546,7 @@ export class MarkdownParser implements IncrementalParser {
 
   /// @internal
   startContext(type: Type, start: number, contentStart: number, value = 0) {
-    this.context = BlockContext.create(type, value, this.pos + start, contentStart, this.context.hash)
+    this.context = BlockContext.create(type, value, this.pos + start, contentStart, this.context.hash, this.pos + this.text.length)
     this.contextStack.push(this.context)
   }
 
@@ -555,7 +559,7 @@ export class MarkdownParser implements IncrementalParser {
 
   /// @internal
   finishContext() {
-    this.context = finishContext(this.contextStack, this.prevLineEnd())
+    this.context = finishContext(this.contextStack)
   }
 
   private finish() {
@@ -565,7 +569,7 @@ export class MarkdownParser implements IncrementalParser {
 
   forceFinish() {
     let cx = this.contextStack.map(cx => cx.copy())
-    while (cx.length > 1) finishContext(cx, this.prevLineEnd())
+    while (cx.length > 1) finishContext(cx)
     return cx[0].toTree(this.pos)
   }
 
@@ -577,11 +581,11 @@ export class MarkdownParser implements IncrementalParser {
   static Type = Type
 }
 
-function finishContext(stack: BlockContext[], pos: number): BlockContext {
-  let next = stack.pop()!
+function finishContext(stack: BlockContext[]): BlockContext {
+  let cx = stack.pop()!
   let top = stack[stack.length - 1]
-  top.children.push(next.toTree(pos))
-  top.positions.push(next.from - top.from)
+  top.children.push(cx.toTree())
+  top.positions.push(cx.from - top.from)
   return top
 }
 
