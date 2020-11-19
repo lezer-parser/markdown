@@ -980,6 +980,10 @@ function stampContext(nodes: readonly (Tree | TreeBuffer)[], hash: number) {
   }
 }
 
+// These are blocks that can span blank lines, and should thus only be
+// reused if their next sibling is also being reused.
+const NotLast = [Type.CodeBlock, Type.ListItem, Type.OrderedList, Type.BulletList]
+
 class FragmentCursor {
   // Index into fragment array
   i = 0
@@ -1031,6 +1035,7 @@ class FragmentCursor {
   takeNodes(p: MarkdownParser) {
     let cur = this.cursor!, off = this.fragment!.offset
     let start = p.pos, end = start, blockI = p.context.children.length
+    let prevEnd = end, prevI = blockI
     for (;;) {
       if (cur.to - off >= this.fragmentEnd) {
         if (cur.type.isAnonymous && cur.firstChild()) continue
@@ -1041,9 +1046,16 @@ class FragmentCursor {
       // parsing happens on block boundaries. Never stop directly
       // after an indented code block, since those can continue after
       // any number of blank lines.
-      if (cur.type.is("Block") && cur.type.id != Type.CodeBlock) {
-        end = cur.to - off
-        blockI = p.context.children.length
+      if (cur.type.is("Block")) {
+        if (NotLast.indexOf(cur.type.id) < 0) {
+          end = cur.to - off
+          blockI = p.context.children.length
+        } else {
+          end = prevEnd
+          blockI = prevI
+          prevEnd = cur.to - off
+          prevI = p.context.children.length
+        }
       }
       if (!cur.nextSibling()) break
     }
