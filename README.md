@@ -36,6 +36,11 @@ in-progress parse. It extends
      A set of tree fragments (aligned with the input) to use for
      incremental parsing.
 
+   * **`nodeSet`**`: NodeSet`\
+     The node set to use in this parse. Defaults to
+     `MarkdownParser.nodeSet`. Can be used to pass a set with
+     additional props added.
+
  * **`advance`**`(): Tree | null`\
    Move the parser forward. Will either use a chunk of content from
    the given fragments, or parse one leaf block. Returns the finished

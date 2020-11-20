@@ -16,7 +16,7 @@ class BlockContext {
               readonly children: Tree[],
               readonly positions: number[]) {}
 
-  toTree(end = this.end) {
+  toTree(nodeSet: NodeSet, end = this.end) {
     let last = this.children.length - 1
     if (last >= 0) end = Math.max(end, this.positions[last] + this.children[last].length + this.from)
     let tree = new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance(2048)
@@ -145,7 +145,6 @@ for (let i = 1, name; name = Type[i]; i++) {
     props: i >= Type.Escape ? [] : [[NodeProp.group, i in SkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]]
   })
 }
-const nodeSet = new NodeSet(nodeTypes)
 
 function space(ch: number) { return ch == 32 || ch == 9 || ch == 10 || ch == 13 }
 
@@ -307,7 +306,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
       }
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
-    p.addNode(new Buffer().writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
+    p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return ParseBlock.Leaf
   },
 
@@ -315,7 +314,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     let fenceEnd = isFencedCode(line)
     if (fenceEnd < 0) return ParseBlock.No
     let from = p.pos + line.start, ch = line.next, len = fenceEnd - line.start
-    let buf = new Buffer().write(Type.CodeMark, 0, len)
+    let buf = new Buffer(p).write(Type.CodeMark, 0, len)
     let infoFrom = skipSpace(line.text, fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
     if (infoFrom < infoTo) buf.write(Type.CodeInfo, infoFrom - line.start, infoTo - line.start)
 
@@ -391,7 +390,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     let endOfSpace = skipSpaceBack(line.text, line.text.length, off), after = endOfSpace
     while (after > off && line.text.charCodeAt(after - 1) == line.next) after--
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
-    let buf = new Buffer()
+    let buf = new Buffer(p)
       .write(Type.HeaderMark, 0, size - 1)
       .writeElements(parseInline(line.text.slice(off + size, after)), size)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
@@ -411,7 +410,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
       for (let m of line.markers) marks.push(m)
     }
     if (trailing) p.nextLine()
-    p.addNode(new Buffer().writeElements(marks, -from)
+    p.addNode(new Buffer(p).writeElements(marks, -from)
               .finish(end == CommentEnd ? Type.CommentBlock : Type.HTMLBlock, p.prevLineEnd() - from),
               from)
     return ParseBlock.Leaf
@@ -437,7 +436,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
 
     content = clearMarks(content, marks, from)
     for (;;) {
-      let ref = parseLinkReference(content)
+      let ref = parseLinkReference(p, content)
       if (!ref) break
       p.addNode(ref, from)
       if (content.length <= ref.length + 1 && !heading) return ParseBlock.Leaf
@@ -449,14 +448,14 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
 
     let inline = injectMarks(parseInline(content), marks, from)
     if (heading) {
-      let node = new Buffer()
+      let node = new Buffer(p)
         .writeElements(inline)
         .write(Type.HeaderMark, p.pos - from, p.pos + line.text.length - from)
         .finish(Type.SetextHeading, p.pos + line.text.length - from)
       p.nextLine()
       p.addNode(node, from)
     } else {
-      p.addNode(new Buffer()
+      p.addNode(new Buffer(p)
                 .writeElements(inline)
                 .finish(Type.Paragraph, content.length), from)
     }
@@ -469,7 +468,11 @@ type Config = {
   startPos?: number,
   /// A set of tree fragments (aligned with the input) to use for
   /// incremental parsing.
-  fragments?: readonly TreeFragment[]
+  fragments?: readonly TreeFragment[],
+  /// The node set to use in this parse. Defaults to
+  /// `MarkdownParser.nodeSet`. Can be used to pass a set with
+  /// additional props added.
+  nodeSet?: NodeSet
 }
 
 /// An instance of this class represents an in-progress parse.
@@ -482,12 +485,15 @@ export class MarkdownParser implements IncrementalParser {
   line = new Line()
   private atEnd = false
   private fragments: FragmentCursor | null
+  /// @internal
+  public nodeSet: NodeSet
 
   pos: number
 
   /// Create a Markdown parser.
   constructor(readonly input: Input, config: Config = {}) {
     this.pos = config.startPos || 0
+    this.nodeSet = config.nodeSet || MarkdownParser.nodeSet
     this.fragments = config.fragments ? new FragmentCursor(config.fragments, input) : null
     this.updateLine(input.lineAfter(this.pos))
   }
@@ -567,39 +573,39 @@ export class MarkdownParser implements IncrementalParser {
 
   /// @internal
   addNode(block: Type | Tree, from: number, to?: number) {
-    if (typeof block == "number") block = new Tree(nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
+    if (typeof block == "number") block = new Tree(this.nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
     this.context.children.push(block)
     this.context.positions.push(from - this.context.from)
   }
 
   /// @internal
   finishContext() {
-    this.context = finishContext(this.contextStack)
+    this.context = finishContext(this.contextStack, this.nodeSet)
   }
 
   private finish() {
     while (this.contextStack.length > 1) this.finishContext()
-    return this.context.toTree(this.pos)
+    return this.context.toTree(this.nodeSet, this.pos)
   }
 
   forceFinish() {
     let cx = this.contextStack.map(cx => cx.copy())
-    while (cx.length > 1) finishContext(cx)
-    return cx[0].toTree(this.pos)
+    while (cx.length > 1) finishContext(cx, this.nodeSet)
+    return cx[0].toTree(this.nodeSet, this.pos)
   }
 
   /// The set of node types used in the output.
-  static nodeSet = nodeSet
+  static nodeSet = new NodeSet(nodeTypes)
 
   /// The enum holding the node types (their numeric values correspond
   /// to the node type ids).
   static Type = Type
 }
 
-function finishContext(stack: BlockContext[]): BlockContext {
+function finishContext(stack: BlockContext[], nodeSet: NodeSet): BlockContext {
   let cx = stack.pop()!
   let top = stack[stack.length - 1]
-  top.children.push(cx.toTree())
+  top.children.push(cx.toTree(nodeSet))
   top.positions.push(cx.from - top.from)
   return top
 }
@@ -608,6 +614,8 @@ const none: readonly any[] = []
 
 class Buffer {
   content: number[] = []
+  nodeSet: NodeSet
+  constructor(p: MarkdownParser) { this.nodeSet = p.nodeSet }
 
   write(type: Type, from: number, to: number, children = 0) {
     this.content.push(type, from, to, 4 + children * 4)
@@ -627,7 +635,7 @@ class Buffer {
   finish(type: Type, length: number) {
     return Tree.build({
       buffer: this.content,
-      nodeSet,
+      nodeSet: this.nodeSet,
       topID: type,
       length
     })
@@ -859,7 +867,7 @@ function lineEnd(text: string, pos: number) {
   return pos
 }
 
-function parseLinkReference(text: string) {
+function parseLinkReference(p: MarkdownParser, text: string) {
   if (text.charCodeAt(0) != 91 /* '[' */) return null
   let ref = parseLinkLabel(text, 0, true)
   if (!ref || text.charCodeAt(ref.to) != 58 /* ':' */) return null
@@ -876,7 +884,7 @@ function parseLinkReference(text: string) {
     }
   }
   if (end == 0) end = lineEnd(text, url.to)
-  return end < 0 ? null : new Buffer().writeElements(elts).finish(Type.LinkReference, end)
+  return end < 0 ? null : new Buffer(p).writeElements(elts).finish(Type.LinkReference, end)
 }
 
 class InlineContext {
