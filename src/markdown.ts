@@ -309,7 +309,12 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
       }
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
-    p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
+
+    let nest = !marks.length && p.config.codeParser && p.config.codeParser("", p.input.clip(end), from, p.getFragments())
+    if (nest)
+      p.startNested(new NestedParse(from, nest, tree => new Tree(p.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
+    else
+      p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return ParseBlock.Done
   },
 
@@ -344,7 +349,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
     let nest = marks.length == ownMarks && p.config.codeParser &&
-      p.config.codeParser(info, p.input.clip(codeEnd), codeStart, p.fragments ? p.fragments.fragments : undefined)
+      p.config.codeParser(info, p.input.clip(codeEnd), codeStart, p.getFragments())
     if (nest) {
       p.startNested(new NestedParse(from, nest, tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
@@ -436,7 +441,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     let to = p.prevLineEnd()
     if (!marks.length && nodeType == Type.HTMLBlock) {
       p.startNested(new NestedParse(from, htmlParser.startParse(p.input.clip(to), {
-        fragments: p.fragments ? p.fragments.fragments : undefined,
+        fragments: p.getFragments(),
         startPos: from,
         dialect: "noMatch"
       }), tree => new Tree(p.nodeSet.types[nodeType], [tree], [0], to - from)))
@@ -527,8 +532,7 @@ export class MarkdownParser implements IncrementalParser {
   /// @internal
   line = new Line()
   private atEnd = false
-  /// @internal
-  fragments: FragmentCursor | null
+  private fragments: FragmentCursor | null
   /// @internal
   nodeSet: NodeSet
   private nested: NestedParse | null = null
@@ -667,6 +671,11 @@ export class MarkdownParser implements IncrementalParser {
     }
     while (cx.length > 1) finishContext(cx, this.nodeSet)
     return cx[0].toTree(this.nodeSet, this._pos)
+  }
+
+  /// @internal
+  getFragments() {
+    return this.fragments ? this.fragments.fragments : undefined
   }
 
   /// The set of node types used in the output.
