@@ -310,9 +310,10 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
 
-    let nest = !marks.length && p.config.codeParser && p.config.codeParser("", p.input.clip(end), from, p.getFragments())
+    let nest = !marks.length && p.config.codeParser && p.config.codeParser("")
     if (nest)
-      p.startNested(new NestedParse(from, nest, tree => new Tree(p.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
+      p.startNested(new NestedParse(from, nest(p.input.clip(end), from, p.getFragments()),
+                                    tree => new Tree(p.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
     else
       p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return ParseBlock.Done
@@ -348,10 +349,9 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     let to = p.prevLineEnd()
     if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
-    let nest = marks.length == ownMarks && p.config.codeParser &&
-      p.config.codeParser(info, p.input.clip(codeEnd), codeStart, p.getFragments())
+    let nest = marks.length == ownMarks && p.config.codeParser && p.config.codeParser(info)
     if (nest) {
-      p.startNested(new NestedParse(from, nest, tree => {
+      p.startNested(new NestedParse(from, nest(p.input.clip(codeEnd), codeStart, p.getFragments()), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
         return elt(Type.FencedCode, from, to, marks).toTree(p.nodeSet, -from)
       }))
@@ -519,8 +519,10 @@ type Config = {
   /// When provided, this will be used to parse the content of code
   /// blocks. `info` is the string after the opening ` ``` ` marker,
   /// or the empty string if there is no such info or this is an
-  /// indented code block.
-  codeParser?: (info: string, input: Input, startPos: number, fragments?: readonly TreeFragment[]) => IncrementalParser | null
+  /// indented code block. If there is a parser available for the
+  /// code, it should return a function that can construct the
+  /// [incremental parser](#lezer.IncrementalParser).
+  codeParser?: (info: string) => null | ((input: Input, startPos: number, fragments?: readonly TreeFragment[]) => IncrementalParser)
 }
 
 /// An instance of this class represents an in-progress parse.

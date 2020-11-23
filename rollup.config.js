@@ -11,7 +11,7 @@ export default {
     file: "./dist/index.es.js",
     externalLiveBindings: false
   }],
-  external: ["lezer-tree", "lezer"],
+  external: ["lezer-tree", "lezer", "lezer-html"],
   plugins: [
     typescript({
       check: false,
