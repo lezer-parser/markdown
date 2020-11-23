@@ -1,5 +1,6 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, TreeFragment, NodeSet, TreeCursor} from "lezer-tree"
-import {Input, IncrementalParser} from "lezer"
+import {Input, IncrementalParser, stringInput} from "lezer"
+import {parser as htmlParser} from "lezer-html"
 
 class BlockContext {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -46,6 +47,7 @@ enum Type {
   LinkReference,
   Paragraph,
   CommentBlock,
+  ProcessingInstructionBlock,
 
   // Inline
   Escape,
@@ -58,6 +60,7 @@ enum Type {
   InlineCode,
   HTMLTag,
   Comment,
+  ProcessingInstruction,
   URL,
 
   // Smaller tokens
@@ -234,11 +237,11 @@ function isAtxHeading(line: Line) {
   return size > 6 ? -1 : size + 1
 }
 
-const EmptyLine = /^[ \t]*$/, CommentEnd = /-->/
+const EmptyLine = /^[ \t]*$/, CommentEnd = /-->/, ProcessingEnd = /\?>/
 const HTMLBlockStyle = [
   [/^<(?:script|pre|style)(?:\s|>|$)/i, /<\/(?:script|pre|style)>/i],
   [/^\s*<!--/, CommentEnd],
-  [/^\s*<\?/, /\?>/],
+  [/^\s*<\?/, ProcessingEnd],
   [/^\s*<![A-Z]/, />/],
   [/^\s*<!\[CDATA\[/, /\]\]>/],
   [/^\s*<\/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|\/?>|$)/i, EmptyLine],
@@ -410,9 +413,8 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
       for (let m of line.markers) marks.push(m)
     }
     if (trailing) p.nextLine()
-    p.addNode(new Buffer(p).writeElements(marks, -from)
-              .finish(end == CommentEnd ? Type.CommentBlock : Type.HTMLBlock, p.prevLineEnd() - from),
-              from)
+    let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
+    p.addNode(new Buffer(p).writeElements(marks, -from).finish(nodeType, p.prevLineEnd() - from), from)
     return ParseBlock.Leaf
   },
 
@@ -615,6 +617,7 @@ const none: readonly any[] = []
 class Buffer {
   content: number[] = []
   nodeSet: NodeSet
+  nodes: Tree[] = []
   constructor(p: MarkdownParser) { this.nodeSet = p.nodeSet }
 
   write(type: Type, from: number, to: number, children = 0) {
@@ -622,13 +625,8 @@ class Buffer {
     return this
   }
 
-  writeElements(elts: readonly Element[], offset = 0) {
-    let write = (elt: Element) => {
-      let startOff = this.content.length
-      if (elt.children) for (let ch of elt.children) write(ch)
-      this.content.push(elt.type, elt.from + offset, elt.to + offset, this.content.length + 4 - startOff)
-    }
-    elts.forEach(write)
+  writeElements(elts: readonly (Element | TreeElement)[], offset = 0) {
+    for (let e of elts) e.writeTo(this, offset)
     return this
   }
 
@@ -636,6 +634,7 @@ class Buffer {
     return Tree.build({
       buffer: this.content,
       nodeSet: this.nodeSet,
+      reused: this.nodes,
       topID: type,
       length
     })
@@ -646,10 +645,27 @@ class Element {
   constructor(readonly type: Type,
               readonly from: number,
               readonly to: number,
-              readonly children: readonly Element[] | null = null) {}
+              readonly children: readonly (Element | TreeElement)[] | null = null) {}
+
+  writeTo(buf: Buffer, offset: number) {
+    let startOff = buf.content.length
+    if (this.children) buf.writeElements(this.children, offset)
+    buf.content.push(this.type, this.from + offset, this.to + offset, buf.content.length + 4 - startOff)
+  }
 }
 
-function elt(type: Type, from: number, to: number, children?: readonly Element[]) {
+class TreeElement {
+  constructor(readonly tree: Tree, readonly from: number) {}
+
+  get to() { return this.from + this.tree.length }
+
+  writeTo(buf: Buffer, offset: number) {
+    buf.nodes.push(this.tree)
+    buf.content.push(buf.nodes.length - 1, this.from + offset, this.to + offset, -1)
+  }
+}
+
+function elt(type: Type, from: number, to: number, children?: readonly (Element | TreeElement)[]) {
   return new Element(type, from, to, children)
 }
 
@@ -709,8 +725,12 @@ const InlineTokens: ((cx: InlineContext, next: number, pos: number) => number)[]
     if (url) return cx.append(elt(Type.URL, start, start + 1 + url[0].length))
     let comment = /^!--[^>](?:-[^-]|[^-])*?-->/i.exec(after)
     if (comment) return cx.append(elt(Type.Comment, start, start + 1 + comment[0].length))
-    let m = /^(?:![A-Z][^]*?>|\?[^]*?\?>|!\[CDATA\[[^]*?\]\]>|\/\s*[a-zA-Z][\w-]*\s*>|\s*[a-zA-Z][\w-]*(\s+[a-zA-Z:_][\w-.:]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*(\/\s*)?>)/.exec(after)
-    return m ? cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length)) : -1
+    let procInst = /^\?[^]*?\?>/.exec(after)
+    if (procInst) return cx.append(elt(Type.ProcessingInstruction, start, start + 1 + procInst[0].length))
+    let m = /^(?:![A-Z][^]*?>|!\[CDATA\[[^]*?\]\]>|\/\s*[a-zA-Z][\w-]*\s*>|\s*[a-zA-Z][\w-]*(\s+[a-zA-Z:_][\w-.:]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*(\/\s*)?>)/.exec(after)
+    if (!m) return -1
+    let tree = htmlParser.parse(stringInput(cx.text.slice(start, start + 1 + m[0].length)), {dialect: "noMatch"})
+    return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length, [new TreeElement(tree, start)]))
   },
 
   function emphasis(cx, next, start) {
@@ -965,14 +985,15 @@ function clearMarks(content: string, marks: Element[], offset: number) {
   return result
 }
 
-function injectMarks(elts: Element[], marks: Element[], offset: number) {
+function injectMarks(elts: (Element | TreeElement)[], marks: Element[], offset: number) {
   let eI = 0
   for (let mark of marks) {
     let m = elt(mark.type, mark.from - offset, mark.to - offset)
     while (eI < elts.length && elts[eI].to < m.to) eI++
     if (eI < elts.length && elts[eI].from < m.from) {
       let e = elts[eI]
-      elts[eI] = new Element(e.type, e.from, e.to, e.children ? injectMarks(e.children.slice(), [m], 0) : [m])
+      if (e instanceof Element)
+        elts[eI] = new Element(e.type, e.from, e.to, e.children ? injectMarks(e.children.slice(), [m], 0) : [m])
     } else {
       elts.splice(eI++, 0, m)
     }

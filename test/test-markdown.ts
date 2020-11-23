@@ -16,6 +16,7 @@ const abbrev: {[abbr: string]: number} = {
   AH: Type.ATXHeading,
   SH: Type.SetextHeading,
   HB: Type.HTMLBlock,
+  PI: Type.ProcessingInstructionBlock,
   CMB: Type.CommentBlock,
   LR: Type.LinkReference,
   P: Type.Paragraph,
@@ -29,6 +30,7 @@ const abbrev: {[abbr: string]: number} = {
   C: Type.InlineCode,
   HT: Type.HTMLTag,
   CM: Type.Comment,
+  Pi: Type.ProcessingInstruction,
   h: Type.HeaderMark,
   q: Type.QuoteMark,
   l: Type.ListMark,
@@ -976,7 +978,7 @@ bar
 `)
 
   test("HTML blocks (example 149)", `
-{HB:<?php
+{PI:<?php
 
   echo '>';
 
@@ -3484,7 +3486,7 @@ comment - with hyphen -->}}
 `)
 
   test("Raw HTML (example 624)", `
-{P:foo {HT:<?php echo $a; ?>}}
+{P:foo {Pi:<?php echo $a; ?>}}
 `)
 
   test("Raw HTML (example 625)", `
