@@ -1,10 +1,10 @@
-import {MarkdownParser} from ".."
+import {parser} from ".."
 import {Tree, TreeCursor} from "lezer-tree"
 
 function nextMD(cursor: TreeCursor) {
   for (;;) {
     if (!cursor.next()) return false
-    if (cursor.type == MarkdownParser.nodeSet.types[cursor.type.id]) return true
+    if (cursor.type == parser.nodeSet.types[cursor.type.id]) return true
   }
 }
 

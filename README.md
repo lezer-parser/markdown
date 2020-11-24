@@ -2,7 +2,7 @@
 
 This is an incremental Markdown
 ([CommonMark](https://commonmark.org/), in fact) parser that
-integrates will with the [Lezer](https://lezer.codemirror.net/) parser
+integrates well with the [Lezer](https://lezer.codemirror.net/) parser
 system. It does not in fact use the Lezer runtime (that runs LR
 parsers, and Markdown can't really be parsed that way), but it
 produces Lezer-style compact syntax trees and consumes fragments of
@@ -20,11 +20,10 @@ The code is licensed under an MIT license.
 
 ## Interface
 
-This module exports a `MarkdownParser` class, which represents an
-in-progress parse. It extends
+This module exports a `parser` object. It extends
 [`IncrementalParser`](https://lezer.codemirror.net/docs/ref/#lezer.IncrementalParser).
 
- * **`constructor`**`(input: Input, options?: Object)`
+ * **`startParse`**`(input: Input, options?: Object)`
 
    Create a Markdown parser. The following optional options are
    recognized:
@@ -36,25 +35,26 @@ in-progress parse. It extends
      A set of tree fragments (aligned with the input) to use for
      incremental parsing.
 
-   * **`nodeSet`**`: NodeSet`\
+ * **`nodeSet`**`: NodeSet`
+
+   The set of node types used in the output.
+
+ * **`configure`**`(config: Object)`
+
+   Reconfigure the parser, returning a new parser. The following
+   options are recognized:
+
+   * **`nodeSet`**`?: NodeSet`\
      The node set to use in this parse. Defaults to
      `MarkdownParser.nodeSet`. Can be used to pass a set with
      additional props added.
 
- * **`advance`**`(): Tree | null`\
-   Move the parser forward. Will either use a chunk of content from
-   the given fragments, or parse one leaf block. Returns the finished
-   tree when the entire document has been parsed.
+   * **`codeParser`**`?: (info: string) => null | IncrementalParser`\
+     When provided, this will be used to parse the content of code
+     blocks. `info` is the string after the opening ` ``` ` marker, or
+     the empty string if there is no such info or this is an indented
+     code block. If there is a parser available for the code, it
+     should return an [incremental parser](#lezer.IncrementalParser).
 
- * **`forceFinish`**`(): Tree`\
-   Retrieve the tree for an unfinished parse.
-
- * **`pos`**`: number`\
-   The current parse position.
-
- * `static `**`nodeSet`**`: NodeSet`\
-   The set of node types used in the output.
-
- * `static `**`Type`**`: enum`\
-   The enum holding the node types (their numeric values correspond
-   to the node type ids).
+   * **`htmlParser`**`?: IncrementalParser`\
+     The parser used to parse HTML tags (both block and inline).

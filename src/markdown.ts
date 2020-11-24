@@ -1,6 +1,5 @@
-import {Tree, TreeBuffer, NodeType, NodeProp, TreeFragment, NodeSet, TreeCursor} from "lezer-tree"
-import {Input, IncrementalParser, stringInput} from "lezer"
-import {parser as htmlParser} from "lezer-html"
+import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor} from "lezer-tree"
+import {Input, IncrementalParser, IncrementalParse, stringInput} from "lezer"
 
 class BlockContext {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -109,7 +108,7 @@ class Line {
   }
 }
 
-function skipForList(cx: BlockContext, p: MarkdownParser, line: Line) {
+function skipForList(cx: BlockContext, p: Parse, line: Line) {
   if (line.start == line.text.length ||
       (cx != p.context && line.indent >= p.contextStack[line.depth + 1].value + line.baseIndent)) return true
   if (line.indent >= line.baseIndent + 4) return false
@@ -119,7 +118,7 @@ function skipForList(cx: BlockContext, p: MarkdownParser, line: Line) {
     line.text.charCodeAt(line.start + size - 1) == cx.value
 }
 
-const SkipMarkup: {[type: number]: (cx: BlockContext, p: MarkdownParser, line: Line) => boolean} = {
+const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean} = {
   [Type.Blockquote](cx, p, line) {
     if (line.next != 62 /* '>' */) return false
     line.markers.push(elt(Type.QuoteMark, p._pos + line.start, p._pos + line.start + 1))
@@ -200,18 +199,18 @@ function isHorizontalRule(line: Line) {
   return count < 3 ? -1 : 1
 }
 
-function inList(p: MarkdownParser, type: Type) {
+function inList(p: Parse, type: Type) {
   return p.context.type == type ||
     p.contextStack.length > 1 && p.contextStack[p.contextStack.length - 2].type == type
 }
 
-function isBulletList(line: Line, p: MarkdownParser, breaking: boolean) {
+function isBulletList(line: Line, p: Parse, breaking: boolean) {
   return (line.next == 45 || line.next == 43 || line.next == 42 /* '-+*' */) &&
     (line.start == line.text.length - 1 || space(line.text.charCodeAt(line.start + 1))) &&
     (!breaking || inList(p, Type.BulletList) || skipSpace(line.text, line.start + 2) < line.text.length) ? 1 : -1
 }
 
-function isOrderedList(line: Line, p: MarkdownParser, breaking: boolean) {
+function isOrderedList(line: Line, p: Parse, breaking: boolean) {
   let pos = line.start, next = line.next
   for (;;) {
     if (next >= 48 && next <= 57 /* '0-9' */) pos++
@@ -248,7 +247,7 @@ const HTMLBlockStyle = [
   [/^\s*(?:<\/[a-z][\w-]*\s*>|<[a-z][\w-]*(\s+[a-z:_][\w-.]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*>)\s*$/i, EmptyLine]
 ]
 
-function isHTMLBlock(line: Line, _p: MarkdownParser, breaking: boolean) {
+function isHTMLBlock(line: Line, _p: Parse, breaking: boolean) {
   if (line.next != 60 /* '<' */) return -1
   let rest = line.text.slice(line.start)
   for (let i = 0, e = HTMLBlockStyle.length - (breaking ? 1 : 0); i < e; i++)
@@ -264,7 +263,7 @@ function isSetextUnderline(line: Line) {
   return pos == line.text.length ? 1 : -1
 }
 
-const BreakParagraph: ((line: Line, p: MarkdownParser, breaking: boolean) => number)[] = [
+const BreakParagraph: ((line: Line, p: Parse, breaking: boolean) => number)[] = [
   isAtxHeading,
   isFencedCode,
   isBlockquote,
@@ -286,7 +285,7 @@ const enum ParseBlock { No, Done, Continue }
 // doesn't apply here, true means it does. When true is returned and
 // `p.line` has been updated, the rule is assumed to have consumed a
 // leaf block. Otherwise, it is assumed to have opened a context.
-const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
+const Blocks: ((p: Parse, line: Line) => ParseBlock)[] = [
   function indentedCode(p, line) {
     let base = line.baseIndent + 4
     if (line.indent < base) return ParseBlock.No
@@ -310,10 +309,10 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
 
-    let nest = !marks.length && p.config.codeParser && p.config.codeParser("")
+    let nest = !marks.length && p.parser.codeParser && p.parser.codeParser("")
     if (nest)
-      p.startNested(new NestedParse(from, nest(p.input.clip(end), from, p.getFragments()),
-                                    tree => new Tree(p.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
+      p.startNested(new NestedParse(from, nest.startParse(p.input.clip(end), {startPos: from, fragments: p.getFragments()}),
+                                    tree => new Tree(p.parser.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
     else
       p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return ParseBlock.Done
@@ -349,11 +348,14 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     let to = p.prevLineEnd()
     if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
-    let nest = marks.length == ownMarks && p.config.codeParser && p.config.codeParser(info)
+    let nest = marks.length == ownMarks && p.parser.codeParser && p.parser.codeParser(info)
     if (nest) {
-      p.startNested(new NestedParse(from, nest(p.input.clip(codeEnd), codeStart, p.getFragments()), tree => {
+      p.startNested(new NestedParse(from, nest.startParse(p.input.clip(codeEnd), {
+        startPos: codeStart,
+        fragments: p.getFragments()
+      }), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
-        return elt(Type.FencedCode, from, to, marks).toTree(p.nodeSet, -from)
+        return elt(Type.FencedCode, from, to, marks).toTree(p.parser.nodeSet, -from)
       }))
     } else {
       p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.FencedCode, p.prevLineEnd() - from), from)
@@ -419,7 +421,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
     let buf = new Buffer(p)
       .write(Type.HeaderMark, 0, size - 1)
-      .writeElements(parseInline(line.text.slice(off + size, after)), size)
+      .writeElements(parseInline(p, line.text.slice(off + size, after)), size)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
     let node = buf.finish(Type.ATXHeading, line.text.length - off)
     p.nextLine()
@@ -439,12 +441,11 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
     if (trailing) p.nextLine()
     let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
     let to = p.prevLineEnd()
-    if (!marks.length && nodeType == Type.HTMLBlock) {
-      p.startNested(new NestedParse(from, htmlParser.startParse(p.input.clip(to), {
+    if (!marks.length && nodeType == Type.HTMLBlock && p.parser.htmlParser) {
+      p.startNested(new NestedParse(from, p.parser.htmlParser.startParse(p.input.clip(to), {
         fragments: p.getFragments(),
-        startPos: from,
-        dialect: "noMatch"
-      }), tree => new Tree(p.nodeSet.types[nodeType], [tree], [0], to - from)))
+        startPos: from
+      }), tree => new Tree(p.parser.nodeSet.types[nodeType], [tree], [0], to - from)))
       return ParseBlock.Done
     }
     p.addNode(new Buffer(p).writeElements(marks, -from).finish(nodeType, to - from), from)
@@ -481,7 +482,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
       while (marks.length && marks[0].to <= from) marks.shift()
     }
 
-    let inline = injectMarks(parseInline(content), marks, from)
+    let inline = injectMarks(parseInline(p, content), marks, from)
     if (heading) {
       let node = new Buffer(p)
         .writeElements(inline)
@@ -501,7 +502,7 @@ const Blocks: ((p: MarkdownParser, line: Line) => ParseBlock)[] = [
 class NestedParse {
   constructor(
     readonly from: number,
-    readonly parser: IncrementalParser,
+    readonly parser: IncrementalParse,
     readonly finish: (tree: Tree) => Tree | TreeBuffer
   ) {}
 }
@@ -512,44 +513,20 @@ type Config = {
   /// A set of tree fragments (aligned with the input) to use for
   /// incremental parsing.
   fragments?: readonly TreeFragment[],
-  /// The node set to use in this parse. Defaults to
-  /// `MarkdownParser.nodeSet`. Can be used to pass a set with
-  /// additional props added.
-  nodeSet?: NodeSet,
-  /// When provided, this will be used to parse the content of code
-  /// blocks. `info` is the string after the opening ` ``` ` marker,
-  /// or the empty string if there is no such info or this is an
-  /// indented code block. If there is a parser available for the
-  /// code, it should return a function that can construct the
-  /// [incremental parser](#lezer.IncrementalParser).
-  codeParser?: (info: string) => null | ((input: Input, startPos: number, fragments?: readonly TreeFragment[]) => IncrementalParser)
 }
 
-/// An instance of this class represents an in-progress parse.
-export class MarkdownParser implements IncrementalParser {
-  /// @internal
+class Parse implements IncrementalParse {
   context: BlockContext = BlockContext.create(Type.Document, 0, 0, 0, 0)
-  /// @internal
   contextStack: BlockContext[] = [this.context]
-  /// @internal
   line = new Line()
   private atEnd = false
   private fragments: FragmentCursor | null
-  /// @internal
-  nodeSet: NodeSet
   private nested: NestedParse | null = null
 
-  /// @internal
   _pos: number
 
-  /// Create a Markdown parser.
-  constructor(
-    readonly input: Input,
-    /// @internal
-    readonly config: Config = {}
-  ) {
+  constructor(readonly parser: MarkdownParser, readonly input: Input, config: Config = {}) {
     this._pos = config.startPos || 0
-    this.nodeSet = config.nodeSet || MarkdownParser.nodeSet
     this.fragments = config.fragments ? new FragmentCursor(config.fragments, input) : null
     this.updateLine(input.lineAfter(this._pos))
   }
@@ -558,9 +535,6 @@ export class MarkdownParser implements IncrementalParser {
     return this.nested ? this.nested.parser.pos : this._pos
   }
 
-  /// Move the parser forward. Will either use a chunk of content from
-  /// the given fragments, or parse one leaf block. Returns the
-  /// finished tree when the entire document has been parsed.
   advance() {
     if (this.nested) {
       let done = this.nested.parser.advance()
@@ -608,7 +582,6 @@ export class MarkdownParser implements IncrementalParser {
     return true
   }
 
-  /// @internal
   nextLine() {
     this._pos += this.line.text.length
     if (this._pos >= this.input.length) {
@@ -622,7 +595,6 @@ export class MarkdownParser implements IncrementalParser {
     }
   }
 
-  /// @internal
   updateLine(text: string) {
     let {line} = this
     line.reset(text)
@@ -633,35 +605,30 @@ export class MarkdownParser implements IncrementalParser {
     }
   }
 
-  /// @internal
   prevLineEnd() { return this.atEnd ? this._pos : this._pos - 1 }
 
-  /// @internal
   startContext(type: Type, start: number, value = 0) {
     this.context = BlockContext.create(type, value, this._pos + start, this.context.hash, this._pos + this.line.text.length)
     this.contextStack.push(this.context)
   }
 
-  /// @internal
   addNode(block: Type | Tree | TreeBuffer, from: number, to?: number) {
-    if (typeof block == "number") block = new Tree(this.nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
+    if (typeof block == "number") block = new Tree(this.parser.nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
     this.context.children.push(block)
     this.context.positions.push(from - this.context.from)
   }
 
-  /// @internal
   startNested(parse: NestedParse) {
     this.nested = parse
   }
 
-  /// @internal
   finishContext() {
-    this.context = finishContext(this.contextStack, this.nodeSet)
+    this.context = finishContext(this.contextStack, this.parser.nodeSet)
   }
 
   private finish() {
     while (this.contextStack.length > 1) this.finishContext()
-    return this.context.toTree(this.nodeSet, this._pos)
+    return this.context.toTree(this.parser.nodeSet, this._pos)
   }
 
   forceFinish() {
@@ -671,22 +638,47 @@ export class MarkdownParser implements IncrementalParser {
       inner.children.push(this.nested.parser.forceFinish())
       inner.positions.push(this.nested.from - inner.from)
     }
-    while (cx.length > 1) finishContext(cx, this.nodeSet)
-    return cx[0].toTree(this.nodeSet, this._pos)
+    while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
+    return cx[0].toTree(this.parser.nodeSet, this._pos)
   }
 
-  /// @internal
   getFragments() {
     return this.fragments ? this.fragments.fragments : undefined
   }
-
-  /// The set of node types used in the output.
-  static nodeSet = new NodeSet(nodeTypes)
-
-  /// The enum holding the node types (their numeric values correspond
-  /// to the node type ids).
-  static Type = Type
 }
+
+class MarkdownParser implements IncrementalParser {
+  constructor(
+    readonly nodeSet: NodeSet,
+    readonly codeParser: null | ((input: string) => null | IncrementalParser),
+    readonly htmlParser: IncrementalParser | null
+  ) {}
+
+  /// Start a parse on the given input.
+  startParse(input: Input, config: Config = {}): IncrementalParse {
+    return new Parse(this, input, config)
+  }
+
+  configure(config: {
+    /// Node props to add to the parser's node set.
+    props?: readonly NodePropSource[],
+    /// When provided, this will be used to parse the content of code
+    /// blocks. `info` is the string after the opening ` ``` ` marker,
+    /// or the empty string if there is no such info or this is an
+    /// indented code block. If there is a parser available for the
+    /// code, it should return a function that can construct the
+    /// [incremental parser](#lezer.IncrementalParser).
+    codeParser?: (info: string) => null | IncrementalParser
+    /// The parser used to parse HTML tags (both block and inline).
+    htmlParser?: IncrementalParser
+  }) {
+    return new MarkdownParser(config.props ? this.nodeSet.extend(...config.props) : this.nodeSet,
+                              config.codeParser || this.codeParser,
+                              config.htmlParser || this.htmlParser)
+  }
+}
+
+export const parser = new MarkdownParser(new NodeSet(nodeTypes), null, null)
 
 function finishContext(stack: BlockContext[], nodeSet: NodeSet): BlockContext {
   let cx = stack.pop()!
@@ -702,7 +694,7 @@ class Buffer {
   content: number[] = []
   nodeSet: NodeSet
   nodes: (Tree | TreeBuffer)[] = []
-  constructor(p: MarkdownParser) { this.nodeSet = p.nodeSet }
+  constructor(p: Parse) { this.nodeSet = p.parser.nodeSet }
 
   write(type: Type, from: number, to: number, children = 0) {
     this.content.push(type, from, to, 4 + children * 4)
@@ -820,9 +812,13 @@ const InlineTokens: ((cx: InlineContext, next: number, pos: number) => number)[]
     if (procInst) return cx.append(elt(Type.ProcessingInstruction, start, start + 1 + procInst[0].length))
     let m = /^(?:![A-Z][^]*?>|!\[CDATA\[[^]*?\]\]>|\/\s*[a-zA-Z][\w-]*\s*>|\s*[a-zA-Z][\w-]*(\s+[a-zA-Z:_][\w-.:]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*(\/\s*)?>)/.exec(after)
     if (!m) return -1
-    let tree = htmlParser.parse(stringInput(cx.text.slice(start, start + 1 + m[0].length)), {dialect: "noMatch"})
-    return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length,
-                         tree.children.map((ch, i) => new TreeElement(ch, start + tree.positions[i]))))
+    let children: TreeElement[] = []
+    if (cx.parser.htmlParser) {
+      let p = cx.parser.htmlParser.startParse(stringInput(cx.text.slice(start, start + 1 + m[0].length)), {}), tree: Tree | null
+      while (!(tree = p.advance())) {}
+      children = tree.children.map((ch, i) => new TreeElement(ch, start + tree!.positions[i]))
+    }
+    return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length, children))
   },
 
   function emphasis(cx, next, start) {
@@ -979,7 +975,7 @@ function lineEnd(text: string, pos: number) {
   return pos
 }
 
-function parseLinkReference(p: MarkdownParser, text: string) {
+function parseLinkReference(p: Parse, text: string) {
   if (text.charCodeAt(0) != 91 /* '[' */) return null
   let ref = parseLinkLabel(text, 0, true)
   if (!ref || text.charCodeAt(ref.to) != 58 /* ':' */) return null
@@ -1002,7 +998,7 @@ function parseLinkReference(p: MarkdownParser, text: string) {
 class InlineContext {
   parts: (Element | InlineMarker | null)[] = []
 
-  constructor(readonly text: string) {}
+  constructor(readonly parser: MarkdownParser, readonly text: string) {}
 
   append(elt: Element | InlineMarker) {
     this.parts.push(elt)
@@ -1051,8 +1047,8 @@ class InlineContext {
   }
 }
 
-function parseInline(text: string) {
-  let cx = new InlineContext(text)
+function parseInline(p: Parse, text: string) {
+  let cx = new InlineContext(p.parser, text)
   outer: for (let pos = 0; pos < text.length;) {
     let next = text.charCodeAt(pos)
     for (let token of InlineTokens) {
@@ -1154,7 +1150,7 @@ class FragmentCursor {
     return tree && ContextHash.get(tree) == hash
   }
 
-  takeNodes(p: MarkdownParser) {
+  takeNodes(p: Parse) {
     let cur = this.cursor!, off = this.fragment!.offset
     let start = p._pos, end = start, blockI = p.context.children.length
     let prevEnd = end, prevI = blockI

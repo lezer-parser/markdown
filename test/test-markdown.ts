@@ -1,49 +1,51 @@
-import {MarkdownParser} from ".."
+import {parser} from ".."
 import {stringInput} from "lezer"
 import {Tree} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 
-const {Type} = MarkdownParser
+function type(name: string) {
+  return parser.nodeSet.types.find(t => t.name == name)!.id
+}
 
 const abbrev: {[abbr: string]: number} = {
-  CB: Type.CodeBlock,
-  FC: Type.FencedCode,
-  Q: Type.Blockquote,
-  HR: Type.HorizontalRule,
-  BL: Type.BulletList,
-  OL: Type.OrderedList,
-  LI: Type.ListItem,
-  AH: Type.ATXHeading,
-  SH: Type.SetextHeading,
-  HB: Type.HTMLBlock,
-  PI: Type.ProcessingInstructionBlock,
-  CMB: Type.CommentBlock,
-  LR: Type.LinkReference,
-  P: Type.Paragraph,
-  Esc: Type.Escape,
-  Ent: Type.Entity,
-  BR: Type.HardBreak,
-  Em: Type.Emphasis,
-  St: Type.StrongEmphasis,
-  Ln: Type.Link,
-  Im: Type.Image,
-  C: Type.InlineCode,
-  HT: Type.HTMLTag,
-  CM: Type.Comment,
-  Pi: Type.ProcessingInstruction,
-  h: Type.HeaderMark,
-  q: Type.QuoteMark,
-  l: Type.ListMark,
-  L: Type.LinkMark,
-  e: Type.EmphasisMark,
-  c: Type.CodeMark,
-  cI: Type.CodeInfo,
-  LT: Type.LinkTitle,
-  LL: Type.LinkLabel
+  CB: type("CodeBlock"),
+  FC: type("FencedCode"),
+  Q: type("Blockquote"),
+  HR: type("HorizontalRule"),
+  BL: type("BulletList"),
+  OL: type("OrderedList"),
+  LI: type("ListItem"),
+  AH: type("ATXHeading"),
+  SH: type("SetextHeading"),
+  HB: type("HTMLBlock"),
+  PI: type("ProcessingInstructionBlock"),
+  CMB: type("CommentBlock"),
+  LR: type("LinkReference"),
+  P: type("Paragraph"),
+  Esc: type("Escape"),
+  Ent: type("Entity"),
+  BR: type("HardBreak"),
+  Em: type("Emphasis"),
+  St: type("StrongEmphasis"),
+  Ln: type("Link"),
+  Im: type("Image"),
+  C: type("InlineCode"),
+  HT: type("HTMLTag"),
+  CM: type("Comment"),
+  Pi: type("ProcessingInstruction"),
+  h: type("HeaderMark"),
+  q: type("QuoteMark"),
+  l: type("ListMark"),
+  L: type("LinkMark"),
+  e: type("EmphasisMark"),
+  c: type("CodeMark"),
+  cI: type("CodeInfo"),
+  LT: type("LinkTitle"),
+  LL: type("LinkLabel")
 }
 
 function getType(name: string) {
-  return abbrev[name] || Type[name as any] as any as number
+  return abbrev[name] || type(name)
 }
 
 function parseSpec(spec: string, specName: string) {
@@ -64,14 +66,14 @@ function parseSpec(spec: string, specName: string) {
     }
   }
   if (stack.length) throw new Error(`Unclosed node in ${specName}`)
-  return {tree: Tree.build({buffer, nodeSet: MarkdownParser.nodeSet, topID: Type.Document, length: doc.length}), doc}
+  return {tree: Tree.build({buffer, nodeSet: parser.nodeSet, topID: type("Document"), length: doc.length}), doc}
 }
 
 function test(name: string, spec: string) {
   it(name, () => {
     let {tree, doc} = parseSpec(spec, name)
-    let parser = new MarkdownParser(stringInput(doc)), result: Tree
-    while (!(result = parser.advance())) {}
+    let parse = parser.startParse(stringInput(doc)), result: Tree | null
+    while (!(result = parse.advance())) {}
     compareTree(result, tree)
   })
 }

@@ -1,7 +1,7 @@
 import {Tree, TreeFragment} from "lezer-tree"
 import {stringInput} from "lezer"
 import ist from "ist"
-import {MarkdownParser} from ".."
+import {parser} from ".."
 import {compareTree} from "./compare-tree"
 
 let doc1 = `
@@ -34,8 +34,8 @@ The end.
 `
 
 function parse(d: string, fragments?: readonly TreeFragment[]) {
-  let parser = new MarkdownParser(stringInput(d), {fragments}), result: Tree
-  while (!(result = parser.advance())) {}
+  let parse = parser.startParse(stringInput(d), {fragments}), result: Tree | null
+  while (!(result = parse.advance())) {}
   return result
 }
 
@@ -189,10 +189,10 @@ Another paragraph that is long enough to create a fragment
 
 2. Oh no the list continues.
 `
-    let parser = new MarkdownParser(stringInput(doc))
-    parser.advance()
-    ist(parser.pos, doc.length, "<")
-    let tree = parser.forceFinish()
+    let parse = parser.startParse(stringInput(doc))
+    parse.advance()
+    ist(parse.pos, doc.length, "<")
+    let tree = parse.forceFinish()
     let state = new State(doc, tree, TreeFragment.addTree(tree)).update([])
     ist(state.tree.topNode.lastChild!.from, 1)
   })
