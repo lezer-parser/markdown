@@ -202,4 +202,12 @@ Another paragraph that is long enough to create a fragment
     let state = start.update([{from: 18, to: 19}])
     ist(overlap(start.tree, state.tree), 80, ">")
   })
+
+  it("returns a tree starting at startPos", () => {
+    let parse = parser.startParse(stringInput("foo\n\nbar"), {startPos: 5}), result: Tree | null
+    while (!(result = parse.advance())) {}
+    ist(result.toString(), "Document(Paragraph)")
+    ist(result.length, 3)
+    ist(result.positions[0], 0)
+  })
 })

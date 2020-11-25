@@ -516,8 +516,8 @@ type Config = {
 }
 
 class Parse implements IncrementalParse {
-  context: BlockContext = BlockContext.create(Type.Document, 0, 0, 0, 0)
-  contextStack: BlockContext[] = [this.context]
+  context: BlockContext
+  contextStack: BlockContext[]
   line = new Line()
   private atEnd = false
   private fragments: FragmentCursor | null
@@ -527,6 +527,8 @@ class Parse implements IncrementalParse {
 
   constructor(readonly parser: MarkdownParser, readonly input: Input, config: Config = {}) {
     this._pos = config.startPos || 0
+    this.context = BlockContext.create(Type.Document, 0, this._pos, 0, 0)
+    this.contextStack = [this.context]
     this.fragments = config.fragments ? new FragmentCursor(config.fragments, input) : null
     this.updateLine(input.lineAfter(this._pos))
   }
