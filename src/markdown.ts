@@ -649,22 +649,8 @@ class Parse implements IncrementalParse {
   }
 }
 
-/// Options to `parser.configure`.
-export type MarkdownConfig = {
-  /// Node props to add to the parser's node set.
-  props?: readonly NodePropSource[],
-  /// When provided, this will be used to parse the content of code
-  /// blocks. `info` is the string after the opening ` ``` ` marker,
-  /// or the empty string if there is no such info or this is an
-  /// indented code block. If there is a parser available for the
-  /// code, it should return a function that can construct the
-  /// [incremental parser](#lezer.IncrementalParser).
-  codeParser?: (info: string) => null | IncrementalParser
-  /// The parser used to parse HTML tags (both block and inline).
-  htmlParser?: IncrementalParser
-}
-
-class MarkdownParser implements IncrementalParser<MarkdownConfig> {
+export class MarkdownParser implements IncrementalParser {
+  /// @internal
   constructor(
     readonly nodeSet: NodeSet,
     readonly codeParser: null | ((input: string) => null | IncrementalParser),
@@ -677,7 +663,19 @@ class MarkdownParser implements IncrementalParser<MarkdownConfig> {
   }
 
   /// Reconfigure the parser.
-  configure(config: MarkdownConfig) {
+  configure(config: {
+    /// Node props to add to the parser's node set.
+    props?: readonly NodePropSource[],
+    /// When provided, this will be used to parse the content of code
+    /// blocks. `info` is the string after the opening ` ``` ` marker,
+    /// or the empty string if there is no such info or this is an
+    /// indented code block. If there is a parser available for the
+    /// code, it should return a function that can construct the
+    /// [incremental parser](#lezer.IncrementalParser).
+    codeParser?: (info: string) => null | IncrementalParser
+    /// The parser used to parse HTML tags (both block and inline).
+    htmlParser?: IncrementalParser
+  }) {
     return new MarkdownParser(config.props ? this.nodeSet.extend(...config.props) : this.nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser)
