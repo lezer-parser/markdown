@@ -1,6 +1,5 @@
 import {parser} from ".."
-import {stringInput} from "lezer"
-import {Tree} from "lezer-tree"
+import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 
 function type(name: string) {

@@ -1,5 +1,4 @@
-import {Tree, TreeFragment} from "lezer-tree"
-import {stringInput} from "lezer"
+import {Tree, TreeFragment, stringInput} from "lezer-tree"
 import ist from "ist"
 import {parser} from ".."
 import {compareTree} from "./compare-tree"
@@ -34,7 +33,7 @@ The end.
 `
 
 function parse(d: string, fragments?: readonly TreeFragment[]) {
-  let parse = parser.startParse(stringInput(d), {fragments}), result: Tree | null
+  let parse = parser.startParse(stringInput(d), 0, {fragments}), result: Tree | null
   while (!(result = parse.advance())) {}
   return result
 }
@@ -204,7 +203,7 @@ Another paragraph that is long enough to create a fragment
   })
 
   it("returns a tree starting at startPos", () => {
-    let parse = parser.startParse(stringInput("foo\n\nbar"), {startPos: 5}), result: Tree | null
+    let parse = parser.startParse(stringInput("foo\n\nbar"), 5), result: Tree | null
     while (!(result = parse.advance())) {}
     ist(result.toString(), "Document(Paragraph)")
     ist(result.length, 3)

@@ -23,19 +23,13 @@ The code is licensed under an MIT license.
 This module exports a `parser` object. It extends
 [`IncrementalParser`](https://lezer.codemirror.net/docs/ref/#lezer.IncrementalParser).
 
- * **`startParse`**`(input: Input, options?: Object)`
+ * **`startParse`**`(input: Input, startPos?: number, context?: ParseContext)`
 
-   Create a Markdown parser. The following optional options are
-   recognized:
+   Create a Markdown parser. When the context contains an array of
+   tree fragments (aligned with the input), they will be used for
+   incremental parsing.
 
-   * **`startPos`**`: number`\
-     The position at which to start parsing. Defaults to 0.
-
-   * **`fragments`**`: TreeFragment[]`\
-     A set of tree fragments (aligned with the input) to use for
-     incremental parsing.
-
- * **`nodeSet`**`: NodeSet`
+ * **`nodeSet`**`?: NodeSet`
 
    The set of node types used in the output.
 
@@ -44,17 +38,19 @@ This module exports a `parser` object. It extends
    Reconfigure the parser, returning a new parser. The following
    options are recognized:
 
-   * **`nodeSet`**`?: NodeSet`\
-     The node set to use in this parse. Defaults to
-     `MarkdownParser.nodeSet`. Can be used to pass a set with
-     additional props added.
+   * **`props`**`?: readonly NodePropSource[]`\
+     Node props to add to the parser's node set.
 
-   * **`codeParser`**`?: (info: string) => null | IncrementalParser`\
+   * **`codeParser`**`?: (info: string) => null | InnerParser`\
      When provided, this will be used to parse the content of code
      blocks. `info` is the string after the opening ` ``` ` marker, or
      the empty string if there is no such info or this is an indented
      code block. If there is a parser available for the code, it
-     should return an [incremental parser](#lezer.IncrementalParser).
+     should return an `InnerParser`.
 
-   * **`htmlParser`**`?: IncrementalParser`\
+   * **`htmlParser`**`?: InnerParser`\
      The parser used to parse HTML tags (both block and inline).
+
+`interface `**`InnerParser`**` {`\
+`  startParse(input: Input, startPos: number, context: ParseContext): PartialParse`\
+`}`
