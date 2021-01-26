@@ -853,17 +853,23 @@ const InlineTokens: ((cx: InlineContext, next: number, pos: number) => number)[]
 
   function linkEnd(cx, next, start) {
     if (next != 93 /* ']' */) return -1
+    // Scanning back to the next link/image start marker
     for (let i = cx.parts.length - 1; i >= 0; i--) {
       let part = cx.parts[i]
       if (part instanceof InlineMarker && (part.type == Type.Link || part.type == Type.Image)) {
-        if (!part.value) {
+        // If this one has been set invalid (because it would produce
+        // a nested link) or there's no valid link here ignore both.
+        if (!part.value ||
+            skipSpace(cx.text, part.to) == start && !/[(\[]/.test(cx.text[start + 1])) {
           cx.parts[i] = null
           return -1
         }
-        if (skipSpace(cx.text, part.to) == start && !/[(\[]/.test(cx.text[start + 1])) return -1
+        // Finish the content and replace the entire range in
+        // this.parts with the link/image node.
         let content = cx.resolveMarkers(i + 1)
         cx.parts.length = i
         let link = cx.parts[i] = finishLink(cx.text, content, part.type, part.from, start + 1)
+        // Set any open-link markers before this link to invalid.
         for (let j = 0; j < i; j++) {
           let p = cx.parts[j]
           if (part.type == Type.Link && p instanceof InlineMarker && p.type == Type.Link) p.value = 0
