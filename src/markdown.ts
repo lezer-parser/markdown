@@ -147,7 +147,7 @@ function skipForList(cx: BlockContext, p: Parse, line: Line) {
     line.text.charCodeAt(line.pos + size - 1) == cx.value
 }
 
-const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean} = {
+const DefaultSkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean} = {
   [Type.Blockquote](cx, p, line) {
     if (line.next != 62 /* '>' */) return false
     line.markers.push(elt(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1))
@@ -596,7 +596,7 @@ class Parse implements PartialParse {
     let {line} = this
     line.reset(text)
     for (; line.depth < this.contextStack.length; line.depth++) {
-      let cx = this.contextStack[line.depth], handler = SkipMarkup[cx.type]
+      let cx = this.contextStack[line.depth], handler = this.parser.skipContextMarkup[cx.type]
       if (!handler) throw new Error("Unhandled block context " + Type[cx.type])
       if (!handler(cx, this, line)) break
       line.forward()
@@ -655,6 +655,7 @@ export class MarkdownParser {
     readonly blockParsers: readonly ((p: Parse, line: Line) => BlockResult)[],
     readonly blockNames: readonly string[],
     readonly endParagraph: readonly ((line: Line, p: Parse, breaking: boolean) => number)[],
+    readonly skipContextMarkup: {readonly [type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean},
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
     readonly inlineNames: readonly string[]
   ) {}
@@ -681,7 +682,8 @@ export class MarkdownParser {
     return new MarkdownParser(config.props ? this.nodeSet.extend(...config.props) : this.nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser,
-                              this.blockParsers, this.blockNames, this.endParagraph,
+                              this.blockParsers, this.blockNames,
+                              this.endParagraph, this.skipContextMarkup,
                               this.inlineParsers, this.inlineNames)
   }
 }
@@ -691,7 +693,7 @@ for (let i = 1, name; name = Type[i]; i++) {
   nodeTypes[i] = NodeType.define({
     id: i,
     name,
-    props: i >= Type.Escape ? [] : [[NodeProp.group, i in SkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]]
+    props: i >= Type.Escape ? [] : [[NodeProp.group, i in DefaultSkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]]
   })
 }
 
@@ -1215,6 +1217,7 @@ export const parser = new MarkdownParser(
   Object.keys(DefaultBlocks).map(n => DefaultBlocks[n]),
   Object.keys(DefaultBlocks),
   DefaultEndParagraph,
+  DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
   Object.keys(DefaultInline)
 )
