@@ -92,8 +92,8 @@ class Line {
   // The character code of the character after this.start
   next = -1
 
-  moveStart(pos = this.basePos) {
-    this.pos = skipSpace(this.text, pos)
+  forward() {
+    this.pos = skipSpace(this.text, this.basePos)
     this.indent = countIndent(this.text, this.pos)
     this.next = this.pos == this.text.length ? -1 : this.text.charCodeAt(this.pos)
   }
@@ -101,7 +101,7 @@ class Line {
   reset(text: string) {
     this.text = text
     this.baseIndent = this.basePos = 0
-    this.moveStart(0)
+    this.forward()
     this.indent = countIndent(text, this.pos)
     this.depth = 1
     while (this.markers.length) this.markers.pop()
@@ -124,7 +124,6 @@ const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => b
     line.markers.push(elt(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1))
     line.basePos = line.pos + 1
     line.baseIndent = line.indent + 1
-    line.moveStart()
     cx.end = p.lineStart + line.text.length
     return true
   },
@@ -358,7 +357,6 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     p.addNode(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1)
     line.basePos = line.pos + size
     line.baseIndent = line.indent + size
-    line.moveStart()
     return ParseBlock.Continue
   },
 
@@ -380,7 +378,6 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.baseIndent = newBase
     line.basePos = findIndent(line.text, newBase)
-    line.moveStart()
     return ParseBlock.Continue
   },
 
@@ -394,7 +391,6 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.baseIndent = newBase
     line.basePos = findIndent(line.text, newBase)
-    line.moveStart()
     return ParseBlock.Continue
   },
 
@@ -541,6 +537,7 @@ class Parse implements PartialParse {
         let result = type(this, line)
         if (result != ParseBlock.No) {
           if (result == ParseBlock.Done) return null
+          if (this.line.pos < this.line.basePos) this.line.forward()
           break
         }
       }
@@ -583,6 +580,7 @@ class Parse implements PartialParse {
       let cx = this.contextStack[line.depth], handler = SkipMarkup[cx.type]
       if (!handler) throw new Error("Unhandled block context " + Type[cx.type])
       if (!handler(cx, this, line)) break
+      if (line.basePos > line.pos) line.forward()
     }
   }
 
