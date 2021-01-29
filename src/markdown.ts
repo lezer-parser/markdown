@@ -281,16 +281,26 @@ function getListIndent(line: Line, pos: number) {
   return indented >= indentAfter + 5 ? indentAfter + 1 : indented
 }
 
-const enum ParseBlock { No, Done, Continue }
+// Return type for block parsing functions. Can be either:
+//
+// - false to indicate that nothing was matched and lower-precedence
+//   parsers should run.
+//
+// - true to indicate that a leaf block was parsed and the stream
+//   was advanced past its content.
+//
+// - null to indicate that a context was opened and block parsing
+//   should continue on this line.
+type BlockResult = boolean | null
 
 // Rules for parsing blocks. A return value of false means the rule
 // doesn't apply here, true means it does. When true is returned and
 // `p.line` has been updated, the rule is assumed to have consumed a
 // leaf block. Otherwise, it is assumed to have opened a context.
-const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
+const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
   indentedCode(p, line) {
     let base = line.baseIndent + 4
-    if (line.indent < base) return ParseBlock.No
+    if (line.indent < base) return false
     let start = line.findIndent(base)
     let from = p.lineStart + start, end = p.lineStart + line.text.length
     let marks: Element[] = [], pendingMarks: Element[] = []
@@ -317,12 +327,12 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
                                     tree => new Tree(p.parser.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
     else
       p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
-    return ParseBlock.Done
+    return true
   },
 
   fencedCode(p, line) {
     let fenceEnd = isFencedCode(line)
-    if (fenceEnd < 0) return ParseBlock.No
+    if (fenceEnd < 0) return false
     let from = p.lineStart + line.pos, ch = line.next, len = fenceEnd - line.pos
     let infoFrom = line.skipSpace(fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
     let marks: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)], info = ""
@@ -359,53 +369,53 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     } else {
       p.addNode(new Buffer(p).writeElements(marks, -from).finish(Type.FencedCode, p.prevLineEnd() - from), from)
     }
-    return ParseBlock.Done
+    return true
   },
 
   blockquote(p, line) {
     let size = isBlockquote(line)
-    if (size < 0) return ParseBlock.No
+    if (size < 0) return false
     p.startContext(Type.Blockquote, line.pos)
     p.addNode(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1)
     line.moveBase(line.pos + size)
-    return ParseBlock.Continue
+    return null
   },
 
   horizontalRule(p, line) {
-    if (isHorizontalRule(line) < 0) return ParseBlock.No
+    if (isHorizontalRule(line) < 0) return false
     let from = p.lineStart + line.pos
     p.nextLine()
     p.addNode(Type.HorizontalRule, from)
-    return ParseBlock.Done
+    return true
   },
 
   bulletList(p, line) {
     let size = isBulletList(line, p, false)
-    if (size < 0) return ParseBlock.No
+    if (size < 0) return false
     if (p.context.type != Type.BulletList)
       p.startContext(Type.BulletList, line.basePos, line.next)
     let newBase = getListIndent(line, line.pos + 1)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.moveBaseIndent(newBase)
-    return ParseBlock.Continue
+    return null
   },
 
   orderedList(p, line) {
     let size = isOrderedList(line, p, false)
-    if (size < 0) return ParseBlock.No
+    if (size < 0) return false
     if (p.context.type != Type.OrderedList)
       p.startContext(Type.OrderedList, line.basePos, line.text.charCodeAt(line.pos + size - 1))
     let newBase = getListIndent(line, line.pos + size)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.moveBaseIndent(newBase)
-    return ParseBlock.Continue
+    return null
   },
 
   atxHeading(p, line) {
     let size = isAtxHeading(line)
-    if (size < 0) return ParseBlock.No
+    if (size < 0) return false
     let off = line.pos, from = p.lineStart + off
     let endOfSpace = skipSpaceBack(line.text, line.text.length, off), after = endOfSpace
     while (after > off && line.text.charCodeAt(after - 1) == line.next) after--
@@ -417,12 +427,12 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     let node = buf.finish(Type.ATXHeading, line.text.length - off)
     p.nextLine()
     p.addNode(node, from)
-    return ParseBlock.Done
+    return true
   },
 
   htmlBlock(p, line) {
     let type = isHTMLBlock(line, p, false)
-    if (type < 0) return ParseBlock.No
+    if (type < 0) return false
     let from = p.lineStart + line.pos, end = HTMLBlockStyle[type][1]
     let marks: Element[] = [], trailing = end != EmptyLine
     while (!end.test(line.text) && p.nextLine()) {
@@ -435,10 +445,10 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     if (!marks.length && nodeType == Type.HTMLBlock && p.parser.htmlParser) {
       p.startNested(new NestedParse(from, p.parser.htmlParser.startParse(p.input.clip(to), from, p.parseContext),
                                     tree => new Tree(p.parser.nodeSet.types[nodeType], [tree], [0], to - from)))
-      return ParseBlock.Done
+    } else {
+      p.addNode(new Buffer(p).writeElements(marks, -from).finish(nodeType, to - from), from)
     }
-    p.addNode(new Buffer(p).writeElements(marks, -from).finish(nodeType, to - from), from)
-    return ParseBlock.Done
+    return true
   },
 
   paragraph(p, line) {
@@ -464,7 +474,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
       let ref = parseLinkReference(p, content)
       if (!ref) break
       p.addNode(ref, from)
-      if (content.length <= ref.length + 1 && !heading) return ParseBlock.Done
+      if (content.length <= ref.length + 1 && !heading) return true
       content = content.slice(ref.length + 1)
       from += ref.length + 1
       // FIXME these are dropped, but should be added to the ref (awkward!)
@@ -484,7 +494,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
                 .writeElements(inline)
                 .finish(Type.Paragraph, content.length), from)
     }
-    return ParseBlock.Done
+    return true
   }
 }
 
@@ -544,8 +554,8 @@ class Parse implements PartialParse {
     for (;;) {
       for (let type of this.parser.blockParsers) {
         let result = type(this, line)
-        if (result != ParseBlock.No) {
-          if (result == ParseBlock.Done) return null
+        if (result != false) {
+          if (result == true) return null
           this.line.forward()
           break
         }
@@ -642,7 +652,7 @@ export class MarkdownParser {
     readonly nodeSet: NodeSet,
     readonly codeParser: null | ((info: string) => null | InnerParser),
     readonly htmlParser: null | InnerParser,
-    readonly blockParsers: readonly ((p: Parse, line: Line) => ParseBlock)[],
+    readonly blockParsers: readonly ((p: Parse, line: Line) => BlockResult)[],
     readonly blockNames: readonly string[],
     readonly endParagraph: readonly ((line: Line, p: Parse, breaking: boolean) => number)[],
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
