@@ -97,11 +97,13 @@ class Line {
   }
   
   forwardInner() {
-    let newPos = skipSpace(this.text, this.basePos)
-    this.indent = countIndent(this.text, newPos, this.pos, this.indent)
+    let newPos = this.skipSpace(this.basePos)
+    this.indent = this.countIndent(newPos, this.pos, this.indent)
     this.pos = newPos
     this.next = newPos == this.text.length ? -1 : this.text.charCodeAt(newPos)
   }
+
+  skipSpace(from: number) { return skipSpace(this.text, from) }
 
   reset(text: string) {
     this.text = text
@@ -109,6 +111,29 @@ class Line {
     this.forwardInner()
     this.depth = 1
     while (this.markers.length) this.markers.pop()
+  }
+
+  moveBase(to: number) {
+    this.basePos = to
+    this.baseIndent = this.countIndent(to, this.pos, this.indent)
+  }
+
+  moveBaseIndent(indent: number) {
+    this.baseIndent = indent
+    this.basePos = this.findIndent(indent)
+  }
+
+  countIndent(to: number, from = 0, indent = 0) {
+    for (let i = from; i < to; i++)
+      indent += this.text.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
+    return indent
+  }
+
+  findIndent(goal: number) {
+    let i = 0
+    for (let indent = 0; i < this.text.length && indent < goal; i++)
+      indent += this.text.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
+    return i
   }
 }
 
@@ -126,15 +151,13 @@ const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => b
   [Type.Blockquote](cx, p, line) {
     if (line.next != 62 /* '>' */) return false
     line.markers.push(elt(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1))
-    line.basePos = line.pos + 1
-    line.baseIndent = line.indent + 1
+    line.moveBase(line.pos + 1)
     cx.end = p.lineStart + line.text.length
     return true
   },
   [Type.ListItem](cx, _p, line) {
     if (line.indent < line.baseIndent + cx.value && line.next > -1) return false
-    line.baseIndent += cx.value
-    line.basePos = findIndent(line.text, line.baseIndent)
+    line.moveBaseIndent(line.baseIndent + cx.value)
     return true
   },
   [Type.OrderedList]: skipForList,
@@ -143,19 +166,6 @@ const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => b
 }
 
 function space(ch: number) { return ch == 32 || ch == 9 || ch == 10 || ch == 13 }
-
-function countIndent(line: string, to: number, from = 0, indent = 0) {
-  for (let i = from; i < to; i++)
-    indent += line.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
-  return indent
-}
-
-function findIndent(line: string, goal: number) {
-  let i = 0
-  for (let indent = 0; i < line.length && indent < goal; i++)
-    indent += line.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
-  return i
-}
 
 function skipSpace(line: string, i = 0) {
   while (i < line.length && space(line.charCodeAt(i))) i++
@@ -199,7 +209,7 @@ function inList(p: Parse, type: Type) {
 function isBulletList(line: Line, p: Parse, breaking: boolean) {
   return (line.next == 45 || line.next == 43 || line.next == 42 /* '-+*' */) &&
     (line.pos == line.text.length - 1 || space(line.text.charCodeAt(line.pos + 1))) &&
-    (!breaking || inList(p, Type.BulletList) || skipSpace(line.text, line.pos + 2) < line.text.length) ? 1 : -1
+    (!breaking || inList(p, Type.BulletList) || line.skipSpace(line.pos + 2) < line.text.length) ? 1 : -1
 }
 
 function isOrderedList(line: Line, p: Parse, breaking: boolean) {
@@ -214,7 +224,7 @@ function isOrderedList(line: Line, p: Parse, breaking: boolean) {
       (next != 46 && next != 41 /* '.)' */) ||
       (pos < line.text.length - 1 && !space(line.text.charCodeAt(pos + 1))) ||
       breaking && !inList(p, Type.OrderedList) &&
-      (skipSpace(line.text, pos + 1) == line.text.length || pos > line.pos + 1 || line.next != 49 /* '1' */))
+      (line.skipSpace(pos + 1) == line.text.length || pos > line.pos + 1 || line.next != 49 /* '1' */))
     return -1
   return pos + 1 - line.pos
 }
@@ -266,8 +276,8 @@ const DefaultEndParagraph: ((line: Line, p: Parse, breaking: boolean) => number)
 ]
 
 function getListIndent(line: Line, pos: number) {
-  let indentAfter = countIndent(line.text, pos, line.pos, line.indent)
-  let indented = countIndent(line.text, skipSpace(line.text, pos), pos, indentAfter)
+  let indentAfter = line.countIndent(pos, line.pos, line.indent)
+  let indented = line.countIndent(line.skipSpace(pos), pos, indentAfter)
   return indented >= indentAfter + 5 ? indentAfter + 1 : indented
 }
 
@@ -281,7 +291,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
   indentedCode(p, line) {
     let base = line.baseIndent + 4
     if (line.indent < base) return ParseBlock.No
-    let start = findIndent(line.text, base)
+    let start = line.findIndent(base)
     let from = p.lineStart + start, end = p.lineStart + line.text.length
     let marks: Element[] = [], pendingMarks: Element[] = []
     for (; p.nextLine();) {
@@ -314,7 +324,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     let fenceEnd = isFencedCode(line)
     if (fenceEnd < 0) return ParseBlock.No
     let from = p.lineStart + line.pos, ch = line.next, len = fenceEnd - line.pos
-    let infoFrom = skipSpace(line.text, fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
+    let infoFrom = line.skipSpace(fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
     let marks: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)], info = ""
     if (infoFrom < infoTo) {
       marks.push(elt(Type.CodeInfo, p.lineStart + infoFrom, p.lineStart + infoTo))
@@ -329,7 +339,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
       let i = line.pos
       if (line.indent - line.baseIndent < 4)
         while (i < line.text.length && line.text.charCodeAt(i) == ch) i++
-      if (i - line.pos >= len && skipSpace(line.text, i) == line.text.length) {
+      if (i - line.pos >= len && line.skipSpace(i) == line.text.length) {
         marks.push(elt(Type.CodeMark, p.lineStart + line.pos, p.lineStart + i))
         ownMarks++
         codeEnd = p.lineStart - 1
@@ -357,8 +367,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     if (size < 0) return ParseBlock.No
     p.startContext(Type.Blockquote, line.pos)
     p.addNode(Type.QuoteMark, p.lineStart + line.pos, p.lineStart + line.pos + 1)
-    line.basePos = line.pos + size
-    line.baseIndent = line.indent + size
+    line.moveBase(line.pos + size)
     return ParseBlock.Continue
   },
 
@@ -378,8 +387,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     let newBase = getListIndent(line, line.pos + 1)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
-    line.baseIndent = newBase
-    line.basePos = findIndent(line.text, newBase)
+    line.moveBaseIndent(newBase)
     return ParseBlock.Continue
   },
 
@@ -391,8 +399,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     let newBase = getListIndent(line, line.pos + size)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
-    line.baseIndent = newBase
-    line.basePos = findIndent(line.text, newBase)
+    line.moveBaseIndent(newBase)
     return ParseBlock.Continue
   },
 
@@ -863,7 +870,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         // If this one has been set invalid (because it would produce
         // a nested link) or there's no valid link here ignore both.
         if (!part.value ||
-            skipSpace(cx.text, part.to) == start && !/[(\[]/.test(cx.text[start + 1])) {
+            cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.text[start + 1])) {
           cx.parts[i] = null
           return -1
         }
@@ -871,7 +878,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         // this.parts with the link/image node.
         let content = cx.resolveMarkers(i + 1)
         cx.parts.length = i
-        let link = cx.parts[i] = finishLink(cx.text, content, part.type, part.from, start + 1)
+        let link = cx.parts[i] = finishLink(cx, content, part.type, part.from, start + 1)
         // Set any open-link markers before this link to invalid.
         for (let j = 0; j < i; j++) {
           let p = cx.parts[j]
@@ -884,17 +891,17 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   }
 }
 
-function finishLink(text: string, content: Element[], type: Type, start: number, startPos: number) {
-  let next = startPos < text.length ? text.charCodeAt(startPos) : -1, endPos = startPos
+function finishLink(cx: InlineContext, content: Element[], type: Type, start: number, startPos: number) {
+  let {text} = cx, next = startPos < text.length ? text.charCodeAt(startPos) : -1, endPos = startPos
   content.unshift(elt(Type.LinkMark, start, start + (type == Type.Image ? 2 : 1)))
   content.push(elt(Type.LinkMark, startPos - 1, startPos))
   if (next == 40 /* '(' */) {
-    let pos = skipSpace(text, startPos + 1)
+    let pos = cx.skipSpace(startPos + 1)
     let dest = parseURL(text, pos), title
     if (dest) {
-      pos = skipSpace(text, dest.to)
+      pos = cx.skipSpace(dest.to)
       title = parseLinkTitle(text, pos)
-      if (title) pos = skipSpace(text, title.to)
+      if (title) pos = cx.skipSpace(title.to)
     }
     if (text.charCodeAt(pos) == 41 /* ')' */) {
       content.push(elt(Type.LinkMark, startPos, startPos + 1))
@@ -1049,6 +1056,8 @@ class InlineContext {
     }
     return result
   }
+
+  skipSpace(from: number) { return skipSpace(this.text, from) }
 }
 
 function parseInline(p: Parse, text: string) {
