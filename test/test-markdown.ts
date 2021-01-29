@@ -3609,8 +3609,8 @@ describe("Custom Markdown tests", () => {
   // this'd require quite a big overhaul to fix.)
   test("Quote markers don't end up inside inner list items", `
 {Q:{q:>} {BL:{LI:{l:-} {P:Hello}}
-{q:>} {LI:{l:-} {P:Two}
+{q:>}{LI: {l:-} {P:Two}
 {q:>}}
-{q:>} {LI:{l:-} {P:Three}}}}
+{q:>}{LI: {l:-} {P:Three}}}}
 `)
 })
