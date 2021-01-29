@@ -77,10 +77,6 @@ enum Type {
 class Line {
   // The line's text
   text = ""
-  // The next non-whitespace character
-  pos = 0
-  // The column of the next non-whitespace character
-  indent = 0
   // The base indent provided by the contexts (handled so far)
   baseIndent = 0
   // The position corresponding to the base indent
@@ -89,20 +85,28 @@ class Line {
   depth = 0
   // Any markers (i.e. block quote markers) parsed for the contexts.
   markers: Element[] = []
-  // The character code of the character after this.start
+  // The next non-whitespace character
+  pos = 0
+  // The column of the next non-whitespace character
+  indent = 0
+  // The character code of the character after this.pos
   next = -1
 
   forward() {
-    this.pos = skipSpace(this.text, this.basePos)
-    this.indent = countIndent(this.text, this.pos)
-    this.next = this.pos == this.text.length ? -1 : this.text.charCodeAt(this.pos)
+    if (this.basePos > this.pos) this.forwardInner()
+  }
+  
+  forwardInner() {
+    let newPos = skipSpace(this.text, this.basePos)
+    this.indent = countIndent(this.text, newPos, this.pos, this.indent)
+    this.pos = newPos
+    this.next = newPos == this.text.length ? -1 : this.text.charCodeAt(newPos)
   }
 
   reset(text: string) {
     this.text = text
-    this.baseIndent = this.basePos = 0
-    this.forward()
-    this.indent = countIndent(text, this.pos)
+    this.baseIndent = this.basePos = this.pos = this.indent = 0
+    this.forwardInner()
     this.depth = 1
     while (this.markers.length) this.markers.pop()
   }
@@ -140,10 +144,8 @@ const SkipMarkup: {[type: number]: (cx: BlockContext, p: Parse, line: Line) => b
 
 function space(ch: number) { return ch == 32 || ch == 9 || ch == 10 || ch == 13 }
 
-// FIXME more incremental
-function countIndent(line: string, to: number) {
-  let indent = 0
-  for (let i = 0; i < to; i++)
+function countIndent(line: string, to: number, from = 0, indent = 0) {
+  for (let i = from; i < to; i++)
     indent += line.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
   return indent
 }
@@ -263,10 +265,10 @@ const DefaultEndParagraph: ((line: Line, p: Parse, breaking: boolean) => number)
   isHTMLBlock
 ]
 
-function getListIndent(text: string, pos: number) {
-  let indentAfter = countIndent(text, pos) + 1
-  let indented = countIndent(text, skipSpace(text, pos))
-  return indented >= indentAfter + 4 ? indentAfter : indented
+function getListIndent(line: Line, pos: number) {
+  let indentAfter = countIndent(line.text, pos, line.pos, line.indent)
+  let indented = countIndent(line.text, skipSpace(line.text, pos), pos, indentAfter)
+  return indented >= indentAfter + 5 ? indentAfter + 1 : indented
 }
 
 const enum ParseBlock { No, Done, Continue }
@@ -373,7 +375,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     if (size < 0) return ParseBlock.No
     if (p.context.type != Type.BulletList)
       p.startContext(Type.BulletList, line.basePos, line.next)
-    let newBase = getListIndent(line.text, line.pos + 1)
+    let newBase = getListIndent(line, line.pos + 1)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.baseIndent = newBase
@@ -386,7 +388,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => ParseBlock} = {
     if (size < 0) return ParseBlock.No
     if (p.context.type != Type.OrderedList)
       p.startContext(Type.OrderedList, line.basePos, line.text.charCodeAt(line.pos + size - 1))
-    let newBase = getListIndent(line.text, line.pos + size)
+    let newBase = getListIndent(line, line.pos + size)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
     line.baseIndent = newBase
@@ -537,7 +539,7 @@ class Parse implements PartialParse {
         let result = type(this, line)
         if (result != ParseBlock.No) {
           if (result == ParseBlock.Done) return null
-          if (this.line.pos < this.line.basePos) this.line.forward()
+          this.line.forward()
           break
         }
       }
@@ -580,7 +582,7 @@ class Parse implements PartialParse {
       let cx = this.contextStack[line.depth], handler = SkipMarkup[cx.type]
       if (!handler) throw new Error("Unhandled block context " + Type[cx.type])
       if (!handler(cx, this, line)) break
-      if (line.basePos > line.pos) line.forward()
+      line.forward()
     }
   }
 
