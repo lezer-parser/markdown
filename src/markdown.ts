@@ -646,6 +646,25 @@ export type InnerParser = {
   startParse(input: Input, startPos: number, context: ParseContext): PartialParse
 }
 
+export interface NodeSpec {
+  name: string,
+  block?: boolean,
+  composite?(p: Parse, value: number): boolean
+}
+
+export interface InlineParser {
+  parse(cx: InlineContext, next: number, pos: number): number,
+  before?: string,
+  after?: string
+}  
+
+export interface BlockParser {
+  parse(p: Parse): BlockResult
+  before?: string,
+  after?: string,
+  endParagraph?(p: Parse, breaking: boolean): boolean
+}
+
 export class MarkdownParser {
   /// @internal
   constructor(
@@ -677,15 +696,70 @@ export class MarkdownParser {
     /// [partse](#lezer.PartialParse).
     codeParser?: (info: string) => null | InnerParser
     /// The parser used to parse HTML tags (both block and inline).
-    htmlParser?: InnerParser
+    htmlParser?: InnerParser,
+    defineNodes?: readonly (string | NodeSpec)[],
+    parseBlock?: {[name: string]: BlockParser},
+    parseInline?: {[name: string]: InlineParser}
   }) {
-    return new MarkdownParser(config.props ? this.nodeSet.extend(...config.props) : this.nodeSet,
+    let {nodeSet, blockParsers, blockNames, endParagraph, skipContextMarkup, inlineParsers, inlineNames} = this
+    if (config.defineNodes) {
+      skipContextMarkup = Object.assign({}, skipContextMarkup)
+      let nodeTypes = nodeSet.types.slice()
+      for (let s of config.defineNodes) {
+        let {name, block, composite}: NodeSpec = typeof s == "string" ? {name: s} : s
+        if (nodeTypes.some(t => t.name == name)) throw new RangeError(`Duplicate definition of node ${name}`)
+        if (composite) (skipContextMarkup as any)[nodeTypes.length] = (cx: BlockContext, p: Parse) => composite!(p, cx.value)
+        nodeTypes.push(NodeType.define({
+          id: nodeTypes.length,
+          name,
+          props: composite ? [[NodeProp.group, ["Block", "BlockContext"]]]
+            : block ? [[NodeProp.group, ["Block", "LeafBlock"]]] : undefined
+        }))
+      }
+      nodeSet = new NodeSet(nodeTypes)
+    }
+
+    if (config.props) nodeSet = this.nodeSet.extend(...config.props)
+
+    if (config.parseBlock) {
+      blockParsers = blockParsers.slice()
+      blockNames = blockNames.slice()
+      endParagraph = endParagraph.slice()
+      for (let name of Object.keys(config.parseBlock)) {
+        let spec = config.parseBlock[name]
+        let pos = spec.before ? findName(blockNames, spec.before)
+          : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
+        ;(blockParsers as any).splice(pos, 0, spec.parse)
+        ;(blockNames as any).splice(pos, 0, name)
+        if (spec.endParagraph) (endParagraph as any).push(spec.endParagraph)
+      }
+    }
+
+    if (config.parseInline) {
+      inlineParsers = inlineParsers.slice()
+      inlineNames = inlineNames.slice()
+      for (let name of Object.keys(config.parseInline)) {
+        let spec = config.parseInline[name]
+        let pos = spec.before ? findName(inlineNames, spec.before)
+          : spec.after ? findName(inlineNames, spec.after) + 1 : inlineNames.length - 1
+        ;(inlineParsers as any).splice(pos, 0, spec.parse)
+        ;(inlineNames as any).splice(pos, 0, name)
+      }
+    }
+
+    return new MarkdownParser(nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser,
-                              this.blockParsers, this.blockNames,
-                              this.endParagraph, this.skipContextMarkup,
-                              this.inlineParsers, this.inlineNames)
+                              blockParsers, blockNames,
+                              endParagraph, skipContextMarkup,
+                              inlineParsers, inlineNames)
   }
+}
+
+function findName(names: readonly string[], name: string) {
+  let found = names.indexOf(name)
+  if (found < 0) throw new RangeError(`Position specified relative to unknown parser ${name}`)
+  return found
 }
 
 let nodeTypes = [NodeType.none]
@@ -1077,7 +1151,7 @@ function parseInline(p: Parse, text: string) {
   outer: for (let pos = 0; pos < text.length;) {
     let next = text.charCodeAt(pos)
     for (let token of p.parser.inlineParsers) {
-        let result = token(cx, next, pos)
+      let result = token(cx, next, pos)
       if (result >= 0) { pos = result; continue outer }
     }
     pos++
