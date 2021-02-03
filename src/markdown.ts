@@ -261,19 +261,10 @@ function isSetextUnderline(line: Line) {
   if (line.next != 45 && line.next != 61 /* '-=' */) return -1
   let pos = line.pos + 1
   while (pos < line.text.length && line.text.charCodeAt(pos) == line.next) pos++
+  let end = pos
   while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++
-  return pos == line.text.length ? 1 : -1
+  return pos == line.text.length ? end : -1
 }
-
-const DefaultEndParagraph: ((line: Line, p: Parse, breaking: boolean) => number)[] = [
-  isAtxHeading,
-  isFencedCode,
-  isBlockquote,
-  isBulletList,
-  isOrderedList,
-  isHorizontalRule,
-  isHTMLBlock
-]
 
 function getListIndent(line: Line, pos: number) {
   let indentAfter = line.countIndent(pos, line.pos, line.indent)
@@ -297,8 +288,8 @@ type BlockResult = boolean | null
 // doesn't apply here, true means it does. When true is returned and
 // `p.line` has been updated, the rule is assumed to have consumed a
 // leaf block. Otherwise, it is assumed to have opened a context.
-const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
-  indentedCode(p, line) {
+const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult) | undefined} = {
+  IndentedCode(p, line) {
     let base = line.baseIndent + 4
     if (line.indent < base) return false
     let start = line.findIndent(base)
@@ -330,7 +321,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return true
   },
 
-  fencedCode(p, line) {
+  FencedCode(p, line) {
     let fenceEnd = isFencedCode(line)
     if (fenceEnd < 0) return false
     let from = p.lineStart + line.pos, ch = line.next, len = fenceEnd - line.pos
@@ -372,7 +363,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return true
   },
 
-  blockquote(p, line) {
+  Blockquote(p, line) {
     let size = isBlockquote(line)
     if (size < 0) return false
     p.startContext(Type.Blockquote, line.pos)
@@ -381,7 +372,9 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return null
   },
 
-  horizontalRule(p, line) {
+  SetextHeading: undefined, // Specifies relative precedence for block-continue function
+
+  HorizontalRule(p, line) {
     if (isHorizontalRule(line) < 0) return false
     let from = p.lineStart + line.pos
     p.nextLine()
@@ -389,7 +382,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return true
   },
 
-  bulletList(p, line) {
+  BulletList(p, line) {
     let size = isBulletList(line, p, false)
     if (size < 0) return false
     if (p.context.type != Type.BulletList)
@@ -401,7 +394,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return null
   },
 
-  orderedList(p, line) {
+  OrderedList(p, line) {
     let size = isOrderedList(line, p, false)
     if (size < 0) return false
     if (p.context.type != Type.OrderedList)
@@ -413,7 +406,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return null
   },
 
-  atxHeading(p, line) {
+  ATXHeading(p, line) {
     let size = isAtxHeading(line)
     if (size < 0) return false
     let off = line.pos, from = p.lineStart + off
@@ -422,7 +415,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
     let buf = new Buffer(p)
       .write(Type.HeaderMark, 0, size - 1)
-      .writeElements(parseInline(p, line.text.slice(off + size, after)), size)
+      .writeElements(parseInline(p, line.text.slice(off + size, after), from + size), -from)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
     let node = buf.finish(Type.ATXHeading, line.text.length - off)
     p.nextLine()
@@ -430,7 +423,7 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return true
   },
 
-  htmlBlock(p, line) {
+  HTMLBlock(p, line) {
     let type = isHTMLBlock(line, p, false)
     if (type < 0) return false
     let from = p.lineStart + line.pos, end = HTMLBlockStyle[type][1]
@@ -451,51 +444,69 @@ const DefaultBlocks: {[name: string]: (p: Parse, line: Line) => BlockResult} = {
     return true
   },
 
-  paragraph(p, line) {
+  Paragraph(p, line) {
     let from = p.lineStart + line.pos, content = line.text.slice(line.pos), marks: Element[] = []
-    let heading = false
-    lines: for (; p.nextLine();) {
+    lines: while (p.nextLine()) {
       if (line.pos == line.text.length) break
       if (line.indent < line.baseIndent + 4) {
-        if (isSetextUnderline(line) > -1 && line.depth == p.contextStack.length) {
-          for (let m of line.markers) marks.push(m)
-          heading = true
-          break
+        for (let cont of p.parser.blockContinue) if (cont) {
+          let result = cont(p, line, content, from)
+          if (result === true) break lines
+          if (result !== false) { // Created a node
+            let node = new Buffer(p)
+              .writeElements(injectMarks(result.children ? result.children.slice() : [], marks), -result.from)
+              .finish(result.type, result.to - result.from)
+            p.addNode(node, result.from)
+            return true
+          }
         }
-        for (let check of p.parser.endParagraph) if (check(line, p, true) >= 0) break lines
       }
-      for (let m of line.markers) marks.push(m)
       content += "\n"
-      content += line.text
+      for (let i = 0; i < line.basePos; i++) content += " "
+      content += line.text.slice(line.basePos)
+      for (let m of line.markers) marks.push(m)
     }
 
-    content = clearMarks(content, marks, from)
     for (;;) {
       let ref = parseLinkReference(p, content)
       if (!ref) break
       p.addNode(ref, from)
-      if (content.length <= ref.length + 1 && !heading) return true
+      if (content.length <= ref.length + 1) return true
       content = content.slice(ref.length + 1)
       from += ref.length + 1
       // FIXME these are dropped, but should be added to the ref (awkward!)
       while (marks.length && marks[0].to <= from) marks.shift()
     }
 
-    let inline = injectMarks(parseInline(p, content), marks, from)
-    if (heading) {
-      let node = new Buffer(p)
-        .writeElements(inline)
-        .write(Type.HeaderMark, p.lineStart - from, p.lineStart + line.text.length - from)
-        .finish(Type.SetextHeading, p.lineStart + line.text.length - from)
-      p.nextLine()
-      p.addNode(node, from)
-    } else {
-      p.addNode(new Buffer(p)
-                .writeElements(inline)
-                .finish(Type.Paragraph, content.length), from)
-    }
+    let inline = injectMarks(parseInline(p, content, from), marks)
+    p.addNode(new Buffer(p)
+      .writeElements(inline, -from)
+      .finish(Type.Paragraph, content.length), from)
     return true
   }
+}
+
+//  (line: Line, p: Parse, breaking: boolean) => number)[] = [
+const DefaultBlockContinue: {[name: string]: (p: Parse, line: Line, content: string, start: number) => boolean | Element} = {
+  SetextHeading(p, line, content, start) {
+    let underline = isSetextUnderline(line)
+    if (underline < 0 || line.depth < p.contextStack.length) return false
+    let inline = parseInline(p, content, start)
+    let {lineStart} = p, markStart = lineStart + line.pos, end = p.lineStart + line.text.length
+    p.nextLine()
+    return elt(Type.SetextHeading, start, end, [
+      ...inline,
+      elt(Type.HeaderMark, markStart, lineStart + underline)
+    ])
+  },
+
+  ATXHeading(_, line) { return isAtxHeading(line) >= 0 },
+  FencedCode(_, line) { return isFencedCode(line) >= 0 },
+  Blockquote(_, line) { return isBlockquote(line) >= 0 },
+  BulletList(p, line) { return isBulletList(line, p, true) >= 0 },
+  OrderedList(p, line) { return isOrderedList(line, p, true) >= 0 },
+  HorizontalRule(_, line) { return isHorizontalRule(line) >= 0 },
+  HTMLBlock(p, line) { return isHTMLBlock(line, p, true) >= 0 }
 }
 
 class NestedParse {
@@ -552,7 +563,7 @@ class Parse implements PartialParse {
 
     if (this.fragments && this.reuseFragment(line.basePos)) return null
     for (;;) {
-      for (let type of this.parser.blockParsers) {
+      for (let type of this.parser.blockStart) if (type) {
         let result = type(this, line)
         if (result != false) {
           if (result == true) return null
@@ -659,7 +670,8 @@ export interface InlineParser {
 }  
 
 export interface BlockParser {
-  parse(p: Parse): BlockResult
+  start?(p: Parse): BlockResult
+  continue?(p: Parse, content: string): BlockResult
   before?: string,
   after?: string,
   endParagraph?(p: Parse, breaking: boolean): boolean
@@ -671,9 +683,9 @@ export class MarkdownParser {
     readonly nodeSet: NodeSet,
     readonly codeParser: null | ((info: string) => null | InnerParser),
     readonly htmlParser: null | InnerParser,
-    readonly blockParsers: readonly ((p: Parse, line: Line) => BlockResult)[],
+    readonly blockStart: readonly (((p: Parse, line: Line) => BlockResult) | undefined)[],
+    readonly blockContinue: readonly (((p: Parse, line: Line, content: string, start: number) => (Element | boolean)) | undefined)[],
     readonly blockNames: readonly string[],
-    readonly endParagraph: readonly ((line: Line, p: Parse, breaking: boolean) => number)[],
     readonly skipContextMarkup: {readonly [type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean},
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
     readonly inlineNames: readonly string[]
@@ -701,7 +713,7 @@ export class MarkdownParser {
     parseBlock?: {[name: string]: BlockParser},
     parseInline?: {[name: string]: InlineParser}
   }) {
-    let {nodeSet, blockParsers, blockNames, endParagraph, skipContextMarkup, inlineParsers, inlineNames} = this
+    let {nodeSet, blockStart, blockContinue, blockNames, skipContextMarkup, inlineParsers, inlineNames} = this
     if (config.defineNodes) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
       let nodeTypes = nodeSet.types.slice()
@@ -722,16 +734,15 @@ export class MarkdownParser {
     if (config.props) nodeSet = this.nodeSet.extend(...config.props)
 
     if (config.parseBlock) {
-      blockParsers = blockParsers.slice()
+      blockStart = blockStart.slice()
       blockNames = blockNames.slice()
-      endParagraph = endParagraph.slice()
       for (let name of Object.keys(config.parseBlock)) {
         let spec = config.parseBlock[name]
         let pos = spec.before ? findName(blockNames, spec.before)
           : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
-        ;(blockParsers as any).splice(pos, 0, spec.parse)
+        ;(blockStart as any).splice(pos, 0, spec.start)
+        ;(blockContinue as any).splice(pos, 0, spec.continue)
         ;(blockNames as any).splice(pos, 0, name)
-        if (spec.endParagraph) (endParagraph as any).push(spec.endParagraph)
       }
     }
 
@@ -750,8 +761,8 @@ export class MarkdownParser {
     return new MarkdownParser(nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser,
-                              blockParsers, blockNames,
-                              endParagraph, skipContextMarkup,
+                              blockStart, blockContinue, blockNames,
+                              skipContextMarkup,
                               inlineParsers, inlineNames)
   }
 }
@@ -812,6 +823,7 @@ class Element {
   constructor(readonly type: Type,
               readonly from: number,
               readonly to: number,
+              // FIXME drop null exception for none?
               readonly children: readonly (Element | TreeElement)[] | null = null) {}
 
   writeTo(buf: Buffer, offset: number) {
@@ -859,8 +871,8 @@ try { Punctuation = /[\p{Pc}|\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}]/u } catc
 
 const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: number) => number} = {
   escape(cx, next, start) {
-    if (next != 92 /* '\\' */ || start == cx.text.length - 1) return -1
-    let escaped = cx.text.charCodeAt(start + 1)
+    if (next != 92 /* '\\' */ || start == cx.end - 1) return -1
+    let escaped = cx.char(start + 1)
     for (let i = 0; i < Escapable.length; i++) if (Escapable.charCodeAt(i) == escaped)
       return cx.append(elt(Type.Escape, start, start + 2))
     return -1
@@ -868,19 +880,19 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
 
   entity(cx, next, start) {
     if (next != 38 /* '&' */) return -1
-    let m = /^(?:#\d+|#x[a-f\d]+|\w+);/i.exec(cx.text.slice(start + 1, start + 31))
+    let m = /^(?:#\d+|#x[a-f\d]+|\w+);/i.exec(cx.slice(start + 1, start + 31))
     return m ? cx.append(elt(Type.Entity, start, start + 1 + m[0].length)) : -1
   },
 
   code(cx, next, start) {
-    if (next != 96 /* '`' */ || start && cx.text.charCodeAt(start - 1) == 96) return -1
+    if (next != 96 /* '`' */ || start && cx.char(start - 1) == 96) return -1
     let pos = start + 1
-    while (pos < cx.text.length && cx.text.charCodeAt(pos) == 96) pos++
+    while (pos < cx.end && cx.char(pos) == 96) pos++
     let size = pos - start, curSize = 0
-    for (; pos < cx.text.length; pos++) {
-      if (cx.text.charCodeAt(pos) == 96) {
+    for (; pos < cx.end; pos++) {
+      if (cx.char(pos) == 96) {
         curSize++
-        if (curSize == size && cx.text.charCodeAt(pos + 1) != 96)
+        if (curSize == size && cx.char(pos + 1) != 96)
           return cx.append(elt(Type.InlineCode, start, pos + 1, [
             elt(Type.CodeMark, start, start + size),
             elt(Type.CodeMark, pos + 1 - size, pos + 1)
@@ -893,8 +905,8 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   htmlTagOrURL(cx, next, start) {
-    if (next != 60 /* '<' */ || start == cx.text.length - 1) return -1
-    let after = cx.text.slice(start + 1)
+    if (next != 60 /* '<' */ || start == cx.end - 1) return -1
+    let after = cx.slice(start + 1, cx.end)
     let url = /^(?:[a-z][-\w+.]+:[^\s>]+|[a-z\d.!#$%&'*+/=?^_`{|}~-]+@[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)*)>/i.exec(after)
     if (url) return cx.append(elt(Type.URL, start, start + 1 + url[0].length))
     let comment = /^!--[^>](?:-[^-]|[^-])*?-->/i.exec(after)
@@ -905,7 +917,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     if (!m) return -1
     let children: TreeElement[] = []
     if (cx.parser.htmlParser) {
-      let p = cx.parser.htmlParser.startParse(stringInput(cx.text.slice(start, start + 1 + m[0].length)), 0, {}), tree: Tree | null
+      let p = cx.parser.htmlParser.startParse(stringInput(cx.slice(start, start + 1 + m[0].length)), 0, {}), tree: Tree | null
       while (!(tree = p.advance())) {}
       children = tree.children.map((ch, i) => new TreeElement(ch, start + tree!.positions[i]))
     }
@@ -915,8 +927,8 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   emphasis(cx, next, start) {
     if (next != 95 && next != 42) return -1
     let pos = start + 1
-    while (pos < cx.text.length && cx.text.charCodeAt(pos) == next) pos++
-    let before = cx.text.charAt(start - 1), after = cx.text.charAt(pos)
+    while (pos < cx.end && cx.char(pos) == next) pos++
+    let before = cx.slice(start - 1, start), after = cx.slice(pos, pos + 1)
     let pBefore = Punctuation.test(before), pAfter = Punctuation.test(after)
     let sBefore = /\s|^$/.test(before), sAfter = /\s|^$/.test(after)
     let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore)
@@ -927,12 +939,12 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   hardBreak(cx, next, start) {
-    if (next == 92 /* '\\' */ && cx.text.charCodeAt(start + 1) == 10 /* '\n' */)
+    if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
       return cx.append(elt(Type.HardBreak, start, start + 2))
     if (next == 32) {
       let pos = start + 1
-      while (pos < cx.text.length && cx.text.charCodeAt(pos) == 32) pos++
-      if (cx.text.charCodeAt(pos) == 10 && pos >= start + 2)
+      while (pos < cx.end && cx.char(pos) == 32) pos++
+      if (cx.char(pos) == 10 && pos >= start + 2)
         return cx.append(elt(Type.HardBreak, start, pos + 1))
     }
     return -1
@@ -943,7 +955,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   imageOpen(cx, next, start) {
-    return next == 33 /* '!' */ && start < cx.text.length - 1 && cx.text.charCodeAt(start + 1) == 91 /* '[' */
+    return next == 33 /* '!' */ && start < cx.end - 1 && cx.char(start + 1) == 91 /* '[' */
       ? cx.append(new InlineMarker(Type.Image, start, start + 2, 1)) : -1
   },
 
@@ -955,8 +967,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
       if (part instanceof InlineMarker && (part.type == Type.Link || part.type == Type.Image)) {
         // If this one has been set invalid (because it would produce
         // a nested link) or there's no valid link here ignore both.
-        if (!part.value ||
-            cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.text[start + 1])) {
+        if (!part.value || cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.slice(start + 1, start + 2))) {
           cx.parts[i] = null
           return -1
         }
@@ -978,18 +989,18 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
 }
 
 function finishLink(cx: InlineContext, content: Element[], type: Type, start: number, startPos: number) {
-  let {text} = cx, next = startPos < text.length ? text.charCodeAt(startPos) : -1, endPos = startPos
+  let {text} = cx, next = startPos < cx.end ? cx.char(startPos) : -1, endPos = startPos
   content.unshift(elt(Type.LinkMark, start, start + (type == Type.Image ? 2 : 1)))
   content.push(elt(Type.LinkMark, startPos - 1, startPos))
   if (next == 40 /* '(' */) {
     let pos = cx.skipSpace(startPos + 1)
-    let dest = parseURL(text, pos), title
+    let dest = parseURL(text, pos - cx.offset, cx.offset), title
     if (dest) {
       pos = cx.skipSpace(dest.to)
-      title = parseLinkTitle(text, pos)
+      title = parseLinkTitle(text, pos - cx.offset, cx.offset)
       if (title) pos = cx.skipSpace(title.to)
     }
-    if (text.charCodeAt(pos) == 41 /* ')' */) {
+    if (cx.char(pos) == 41 /* ')' */) {
       content.push(elt(Type.LinkMark, startPos, startPos + 1))
       endPos = pos + 1
       if (dest) content.push(dest)
@@ -997,7 +1008,7 @@ function finishLink(cx: InlineContext, content: Element[], type: Type, start: nu
       content.push(elt(Type.LinkMark, pos, endPos))
     }
   } else if (next == 91 /* '[' */) {
-    let label = parseLinkLabel(text, startPos, false)
+    let label = parseLinkLabel(text, startPos - cx.offset, cx.offset, false)
     if (label) {
       content.push(label)
       endPos = label.to
@@ -1006,12 +1017,12 @@ function finishLink(cx: InlineContext, content: Element[], type: Type, start: nu
   return elt(type, start, endPos, content)
 }
 
-function parseURL(text: string, start: number) {
+function parseURL(text: string, start: number, offset: number) {
   let next = text.charCodeAt(start)
   if (next == 60 /* '<' */) {
     for (let pos = start + 1; pos < text.length; pos++) {
       let ch = text.charCodeAt(pos)
-      if (ch == 62 /* '>' */) return elt(Type.URL, start, pos + 1)
+      if (ch == 62 /* '>' */) return elt(Type.URL, start + offset, pos + 1 + offset)
       if (ch == 60 || ch == 10 /* '<\n' */) break
     }
     return null
@@ -1032,28 +1043,28 @@ function parseURL(text: string, start: number) {
         escaped = true
       }
     }
-    return pos > start ? elt(Type.URL, start, pos) : null
+    return pos > start ? elt(Type.URL, start + offset, pos + offset) : null
   }
 }
 
-function parseLinkTitle(text: string, start: number) {
+function parseLinkTitle(text: string, start: number, offset: number) {
   let next = text.charCodeAt(start)
   if (next != 39 && next != 34 && next != 40 /* '"\'(' */) return null
   let end = next == 40 ? 41 : next
   for (let pos = start + 1, escaped = false; pos < text.length; pos++) {
     let ch = text.charCodeAt(pos)
     if (escaped) escaped = false
-    else if (ch == end) return elt(Type.LinkTitle, start, pos + 1)
+    else if (ch == end) return elt(Type.LinkTitle, start + offset, pos + 1 + offset)
     else if (ch == 92 /* '\\' */) escaped = true
   }
   return null
 }
 
-function parseLinkLabel(text: string, start: number, requireNonWS: boolean) {
+function parseLinkLabel(text: string, start: number, offset: number, requireNonWS: boolean) {
   for (let escaped = false, pos = start + 1, end = Math.min(text.length, pos + 999); pos < end; pos++) {
     let ch = text.charCodeAt(pos)
     if (escaped) escaped = false
-    else if (ch == 93 /* ']' */) return requireNonWS ? null : elt(Type.LinkLabel, start, pos + 1)
+    else if (ch == 93 /* ']' */) return requireNonWS ? null : elt(Type.LinkLabel, start + offset, pos + 1 + offset)
     else {
       if (requireNonWS && !space(ch)) requireNonWS = false
       if (ch == 91 /* '[' */) break
@@ -1074,14 +1085,14 @@ function lineEnd(text: string, pos: number) {
 
 function parseLinkReference(p: Parse, text: string) {
   if (text.charCodeAt(0) != 91 /* '[' */) return null
-  let ref = parseLinkLabel(text, 0, true)
+  let ref = parseLinkLabel(text, 0, 0, true)
   if (!ref || text.charCodeAt(ref.to) != 58 /* ':' */) return null
   let elts = [ref, elt(Type.LinkMark, ref.to, ref.to + 1)]
-  let url = parseURL(text, skipSpace(text, ref.to + 1))
+  let url = parseURL(text, skipSpace(text, ref.to + 1), 0)
   if (!url) return null
   elts.push(url)
   let pos = skipSpace(text, url.to), title, end = 0
-  if (pos > url.to && (title = parseLinkTitle(text, pos))) {
+  if (pos > url.to && (title = parseLinkTitle(text, pos, 0))) {
     let afterURL = lineEnd(text, title.to)
     if (afterURL > 0) {
       elts.push(title)
@@ -1095,7 +1106,11 @@ function parseLinkReference(p: Parse, text: string) {
 class InlineContext {
   parts: (Element | InlineMarker | null)[] = []
 
-  constructor(readonly parser: MarkdownParser, readonly text: string) {}
+  constructor(readonly parser: MarkdownParser, readonly text: string, readonly offset: number) {}
+
+  char(pos: number) { return this.text.charCodeAt(pos - this.offset) }
+  get end() { return this.offset + this.text.length }
+  slice(from: number, to: number) { return this.text.slice(from - this.offset, to - this.offset) }
 
   append(elt: Element | InlineMarker) {
     this.parts.push(elt)
@@ -1107,11 +1122,12 @@ class InlineContext {
       let close = this.parts[i]
       if (!(close instanceof InlineMarker && close.type == Type.Emphasis && (close.value & Mark.Close))) continue
 
-      let type = this.text.charCodeAt(close.from), closeSize = close.to - close.from
+      let type = this.char(close.from), closeSize = close.to - close.from
       let open: InlineMarker | undefined, openSize = 0, j = i - 1
       for (; j >= from; j--) {
         let part = this.parts[j] as InlineMarker
-        if (!(part instanceof InlineMarker && (part.value & Mark.Open) && this.text.charCodeAt(part.from) == type)) continue
+        if (!(part instanceof InlineMarker && (part.value & Mark.Open) && this.char(part.from) == type))
+          continue
         openSize = part.to - part.from
         if (!((close.value & Mark.Open) || (part.value & Mark.Close)) ||
             (openSize + closeSize) % 3 || (openSize % 3 == 0 && closeSize % 3 == 0)) {
@@ -1143,13 +1159,13 @@ class InlineContext {
     return result
   }
 
-  skipSpace(from: number) { return skipSpace(this.text, from) }
+  skipSpace(from: number) { return skipSpace(this.text, from - this.offset) + this.offset }
 }
 
-function parseInline(p: Parse, text: string) {
-  let cx = new InlineContext(p.parser, text)
-  outer: for (let pos = 0; pos < text.length;) {
-    let next = text.charCodeAt(pos)
+function parseInline(p: Parse, text: string, offset: number) {
+  let cx = new InlineContext(p.parser, text, offset)
+  outer: for (let pos = offset; pos < cx.end;) {
+    let next = cx.char(pos)
     for (let token of p.parser.inlineParsers) {
       let result = token(cx, next, pos)
       if (result >= 0) { pos = result; continue outer }
@@ -1159,30 +1175,16 @@ function parseInline(p: Parse, text: string) {
   return cx.resolveMarkers(0)
 }
 
-function clearMarks(content: string, marks: Element[], offset: number) {
-  if (!marks.length) return content
-  let result = "", pos = 0
-  for (let m of marks) {
-    let from = m.from - offset, to = m.to - offset
-    result += content.slice(pos, from)
-    for (let i = from; i < to; i++) result += " "
-    pos = to
-  }
-  result += content.slice(pos)
-  return result
-}
-
-function injectMarks(elts: (Element | TreeElement)[], marks: Element[], offset: number) {
+function injectMarks(elts: (Element | TreeElement)[], marks: Element[]) {
   let eI = 0
   for (let mark of marks) {
-    let m = elt(mark.type, mark.from - offset, mark.to - offset)
-    while (eI < elts.length && elts[eI].to < m.to) eI++
-    if (eI < elts.length && elts[eI].from < m.from) {
+    while (eI < elts.length && elts[eI].to < mark.to) eI++
+    if (eI < elts.length && elts[eI].from < mark.from) {
       let e = elts[eI]
       if (e instanceof Element)
-        elts[eI] = new Element(e.type, e.from, e.to, e.children ? injectMarks(e.children.slice(), [m], 0) : [m])
+        elts[eI] = new Element(e.type, e.from, e.to, e.children ? injectMarks(e.children.slice(), [mark]) : [mark])
     } else {
-      elts.splice(eI++, 0, m)
+      elts.splice(eI++, 0, mark)
     }
   }
   return elts
@@ -1288,9 +1290,9 @@ export const parser = new MarkdownParser(
   new NodeSet(nodeTypes),
   null,
   null,
-  Object.keys(DefaultBlocks).map(n => DefaultBlocks[n]),
-  Object.keys(DefaultBlocks),
-  DefaultEndParagraph,
+  Object.keys(DefaultBlockStart).map(n => DefaultBlockStart[n]),
+  Object.keys(DefaultBlockStart).map(n => DefaultBlockContinue[n]),
+  Object.keys(DefaultBlockStart),
   DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
   Object.keys(DefaultInline)

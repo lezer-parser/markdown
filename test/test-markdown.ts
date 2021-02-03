@@ -366,7 +366,7 @@ baz{e:*}}
 {h:-----}}
 
   {SH:Foo
-{h:  ===}}
+  {h:===}}
 `)
 
   test("Setext headings (example 55)", `
@@ -379,7 +379,7 @@ baz{e:*}}
 
   test("Setext headings (example 56)", `
 {SH:Foo
-{h:   ----      }}
+   {h:----}      }
 `)
 
   test("Setext headings (example 57)", `
@@ -1771,7 +1771,7 @@ continued here.}}}}}
   test("List items (example 270)", `
 {BL:{LI:{l:-} {AH:{h:#} Foo}}
 {LI:{l:-} {SH:Bar
-{h:  ---}}
+  {h:---}}
   {P:baz}}}
 `)
 
