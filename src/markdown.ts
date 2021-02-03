@@ -74,6 +74,39 @@ enum Type {
   LinkLabel
 }
 
+class ParagraphMap {
+  data: number[] = []
+  text: string[] = []
+
+  constructor(start: number, public content: string) {
+    this.text.push(content)
+    this.data.push(start << 1)
+  }
+
+  addLine(text: string, endContext: boolean) {
+    let from = this.lineEnd(this.lines - 1) + 1
+    this.data.push((from << 1) | (endContext ? 1 : 0))
+    this.text.push(text)
+    this.content += "\n" + text
+  }
+
+  drop(n: number) {
+    this.content = this.content.slice(n)
+    while (n > 0) {
+      n -= this.text.shift()!.length + 1
+      this.data.shift()
+    }
+  }
+
+  get start() { return this.data[0] >> 1 }
+  get lines() { return this.text.length }
+
+  line(n: number) { return this.text[n] }
+  lineStart(n: number) { return this.data[n] >> 1 }
+  lineEnd(n: number) { return (this.data[n] >> 1) + this.text[n].length }
+  endsContext(n: number) { return (this.data[n] & 1) > 0 }
+}
+
 class Line {
   // The line's text
   text = ""
@@ -143,7 +176,7 @@ function skipForList(cx: BlockContext, p: Parse, line: Line) {
   if (line.indent >= line.baseIndent + 4) return false
   let size = (cx.type == Type.OrderedList ? isOrderedList : isBulletList)(line, p, false)
   return size > 0 &&
-    (cx.type != Type.BulletList || isHorizontalRule(line) < 0) &&
+    (cx.type != Type.BulletList || isHorizontalRule(line, p, false) < 0) &&
     line.text.charCodeAt(line.pos + size - 1) == cx.value
 }
 
@@ -190,15 +223,15 @@ function isBlockquote(line: Line) {
   return line.next != 62 /* '>' */ ? -1 : line.text.charCodeAt(line.pos + 1) == 32 ? 2 : 1
 }
 
-function isHorizontalRule(line: Line) {
-  if (line.next != 42 && line.next != 45 && line.next != 95 /* '-_*' */) return -1
+function isHorizontalRule(line: Line, p: Parse, breaking: boolean) {
+  if (line.next != 42 && line.next != 45 && line.next != 95 /* '_-*' */) return -1
   let count = 1
   for (let pos = line.pos + 1; pos < line.text.length; pos++) {
     let ch = line.text.charCodeAt(pos)
     if (ch == line.next) count++
     else if (!space(ch)) return -1
   }
-  return count < 3 ? -1 : 1
+  return count < 3 || (breaking && line.next == 45 && isSetextUnderline(line) > -1 && line.depth == p.contextStack.length) ? -1 : 1
 }
 
 function inList(p: Parse, type: Type) {
@@ -238,6 +271,15 @@ function isAtxHeading(line: Line) {
   return size > 6 ? -1 : size + 1
 }
 
+function isSetextUnderline(line: Line) {
+  if (line.next != 45 && line.next != 61 /* '-=' */) return -1
+  let pos = line.pos + 1
+  while (pos < line.text.length && line.text.charCodeAt(pos) == line.next) pos++
+  let end = pos
+  while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++
+  return pos == line.text.length ? end : -1
+}
+
 const EmptyLine = /^[ \t]*$/, CommentEnd = /-->/, ProcessingEnd = /\?>/
 const HTMLBlockStyle = [
   [/^<(?:script|pre|style)(?:\s|>|$)/i, /<\/(?:script|pre|style)>/i],
@@ -255,15 +297,6 @@ function isHTMLBlock(line: Line, _p: Parse, breaking: boolean) {
   for (let i = 0, e = HTMLBlockStyle.length - (breaking ? 1 : 0); i < e; i++)
     if (HTMLBlockStyle[i][0].test(rest)) return i
   return -1
-}
-
-function isSetextUnderline(line: Line) {
-  if (line.next != 45 && line.next != 61 /* '-=' */) return -1
-  let pos = line.pos + 1
-  while (pos < line.text.length && line.text.charCodeAt(pos) == line.next) pos++
-  let end = pos
-  while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++
-  return pos == line.text.length ? end : -1
 }
 
 function getListIndent(line: Line, pos: number) {
@@ -289,6 +322,8 @@ type BlockResult = boolean | null
 // `p.line` has been updated, the rule is assumed to have consumed a
 // leaf block. Otherwise, it is assumed to have opened a context.
 const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult) | undefined} = {
+  LinkReference: undefined,
+
   IndentedCode(p, line) {
     let base = line.baseIndent + 4
     if (line.indent < base) return false
@@ -372,10 +407,8 @@ const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult
     return null
   },
 
-  SetextHeading: undefined, // Specifies relative precedence for block-continue function
-
   HorizontalRule(p, line) {
-    if (isHorizontalRule(line) < 0) return false
+    if (isHorizontalRule(line, p, false) < 0) return false
     let from = p.lineStart + line.pos
     p.nextLine()
     p.addNode(Type.HorizontalRule, from)
@@ -445,67 +478,98 @@ const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult
   },
 
   Paragraph(p, line) {
-    let from = p.lineStart + line.pos, content = line.text.slice(line.pos), marks: Element[] = []
+    let map = new ParagraphMap(p.lineStart + line.pos, line.text.slice(line.pos))
+    let marks: Element[] = []
     lines: while (p.nextLine()) {
       if (line.pos == line.text.length) break
       if (line.indent < line.baseIndent + 4) {
         for (let cont of p.parser.blockContinue) if (cont) {
-          let result = cont(p, line, content, from)
+          let result = cont(p, line)
           if (result === true) break lines
-          if (result !== false) { // Created a node
-            let node = new Buffer(p)
-              .writeElements(injectMarks(result.children ? result.children.slice() : [], marks), -result.from)
-              .finish(result.type, result.to - result.from)
-            p.addNode(node, result.from)
-            return true
-          }
         }
       }
-      content += "\n"
-      for (let i = 0; i < line.basePos; i++) content += " "
-      content += line.text.slice(line.basePos)
+      let lineText = ""
+      for (let i = 0; i < line.basePos; i++) lineText += " "
+      lineText += line.text.slice(line.basePos)
+      map.addLine(lineText, line.depth < p.contextStack.length)
       for (let m of line.markers) marks.push(m)
     }
 
-    for (;;) {
-      let ref = parseLinkReference(p, content)
-      if (!ref) break
-      p.addNode(ref, from)
-      if (content.length <= ref.length + 1) return true
-      content = content.slice(ref.length + 1)
-      from += ref.length + 1
-      // FIXME these are dropped, but should be added to the ref (awkward!)
-      while (marks.length && marks[0].to <= from) marks.shift()
+    fromPara: for (;;) {
+      for (let parse of p.parser.fromParagraph) if (parse) {
+        let result = parse(p, map)
+        if (result) {
+          let nextNewline = map.content.indexOf("\n", result.to - map.start)
+          let nextFrom = map.start + (nextNewline < 0 ? map.content.length : nextNewline + 1), markIndex = 0
+          while (markIndex < marks.length && marks[markIndex].from < nextFrom) markIndex++
+
+          p.addNode(new Buffer(p)
+            .writeElements(injectMarks(result.children ? result.children.slice() : [], marks.slice(0, markIndex)), -result.from)
+            .finish(result.type, result.to - result.from), result.from)
+          if (nextNewline < 0) return true
+          map.drop(nextNewline + 1)
+          marks = marks.slice(markIndex)
+          continue fromPara
+        }
+      }
+      break
     }
 
-    let inline = injectMarks(parseInline(p, content, from), marks)
+    let inline = injectMarks(parseInline(p, map.content, map.start), marks)
     p.addNode(new Buffer(p)
-      .writeElements(inline, -from)
-      .finish(Type.Paragraph, content.length), from)
+      .writeElements(inline, -map.start)
+      .finish(Type.Paragraph, map.content.length), map.start)
     return true
+  },
+
+  SetextHeading: undefined // Specifies relative precedence for block-continue function
+}
+
+const DefaultFromParagraph: {[name: string]: (p: Parse, para: ParagraphMap) => Element | null} = {
+  LinkReference(p, para) {
+    let {start, content} = para
+    if (para.content.charCodeAt(0) != 91 /* '[' */) return null
+    let ref = parseLinkLabel(content, 0, start, true)
+    if (!ref || content.charCodeAt(ref.to - start) != 58 /* ':' */) return null
+    let elts = [ref, elt(Type.LinkMark, ref.to, ref.to + 1)]
+    let url = parseURL(content, skipSpace(content, ref.to - start + 1), start)
+    if (!url) return null
+    elts.push(url)
+    let pos = skipSpace(content, url.to - start) + start, title, len = 0
+    if (pos > url.to && (title = parseLinkTitle(content, pos - start, start))) {
+      let afterURL = lineEnd(content, title.to - start)
+      if (afterURL > 0) {
+        elts.push(title)
+        len = afterURL
+      }
+    }
+    if (len == 0) len = lineEnd(content, url.to - start)
+    return len < 0 ? null : elt(Type.LinkReference, start, start + len, elts)
+  },
+
+  SetextHeading(p, para) {
+    for (let i = 1; i < para.lines; i++) {
+      let underline = /^([ \t]{0,3})(-+|=+)[ \t]*$/.exec(para.line(i))
+      if (!underline || para.endsContext(i)) continue
+      let {start} = para, markStart = para.lineStart(i) + underline[1].length
+      let inline = parseInline(p, para.content.slice(0, para.lineEnd(i - 1) - start), start)
+      return elt(Type.SetextHeading, start, para.lineEnd(i), [
+        ...inline,
+        elt(Type.HeaderMark, markStart, markStart + underline[2].length)
+      ])
+    }
+    return null
   }
 }
 
 //  (line: Line, p: Parse, breaking: boolean) => number)[] = [
-const DefaultBlockContinue: {[name: string]: (p: Parse, line: Line, content: string, start: number) => boolean | Element} = {
-  SetextHeading(p, line, content, start) {
-    let underline = isSetextUnderline(line)
-    if (underline < 0 || line.depth < p.contextStack.length) return false
-    let inline = parseInline(p, content, start)
-    let {lineStart} = p, markStart = lineStart + line.pos, end = p.lineStart + line.text.length
-    p.nextLine()
-    return elt(Type.SetextHeading, start, end, [
-      ...inline,
-      elt(Type.HeaderMark, markStart, lineStart + underline)
-    ])
-  },
-
+const DefaultBlockContinue: {[name: string]: (p: Parse, line: Line) => boolean | Element} = {
   ATXHeading(_, line) { return isAtxHeading(line) >= 0 },
   FencedCode(_, line) { return isFencedCode(line) >= 0 },
   Blockquote(_, line) { return isBlockquote(line) >= 0 },
   BulletList(p, line) { return isBulletList(line, p, true) >= 0 },
   OrderedList(p, line) { return isOrderedList(line, p, true) >= 0 },
-  HorizontalRule(_, line) { return isHorizontalRule(line) >= 0 },
+  HorizontalRule(p, line) { return isHorizontalRule(line, p, true) >= 0 },
   HTMLBlock(p, line) { return isHTMLBlock(line, p, true) >= 0 }
 }
 
@@ -671,7 +735,8 @@ export interface InlineParser {
 
 export interface BlockParser {
   start?(p: Parse): BlockResult
-  continue?(p: Parse, content: string): BlockResult
+  fromParagraph?(p: Parse, content: string, start: number): Element | null
+  continue?(p: Parse): BlockResult
   before?: string,
   after?: string,
   endParagraph?(p: Parse, breaking: boolean): boolean
@@ -684,7 +749,8 @@ export class MarkdownParser {
     readonly codeParser: null | ((info: string) => null | InnerParser),
     readonly htmlParser: null | InnerParser,
     readonly blockStart: readonly (((p: Parse, line: Line) => BlockResult) | undefined)[],
-    readonly blockContinue: readonly (((p: Parse, line: Line, content: string, start: number) => (Element | boolean)) | undefined)[],
+    readonly fromParagraph: readonly(((p: Parse, para: ParagraphMap) => Element | null) | undefined)[],
+    readonly blockContinue: readonly (((p: Parse, line: Line) => (Element | boolean)) | undefined)[],
     readonly blockNames: readonly string[],
     readonly skipContextMarkup: {readonly [type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean},
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
@@ -713,7 +779,7 @@ export class MarkdownParser {
     parseBlock?: {[name: string]: BlockParser},
     parseInline?: {[name: string]: InlineParser}
   }) {
-    let {nodeSet, blockStart, blockContinue, blockNames, skipContextMarkup, inlineParsers, inlineNames} = this
+    let {nodeSet, blockStart, fromParagraph, blockContinue, blockNames, skipContextMarkup, inlineParsers, inlineNames} = this
     if (config.defineNodes) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
       let nodeTypes = nodeSet.types.slice()
@@ -741,6 +807,7 @@ export class MarkdownParser {
         let pos = spec.before ? findName(blockNames, spec.before)
           : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
         ;(blockStart as any).splice(pos, 0, spec.start)
+        ;(fromParagraph as any).splice(pos, 0, spec.fromParagraph)
         ;(blockContinue as any).splice(pos, 0, spec.continue)
         ;(blockNames as any).splice(pos, 0, name)
       }
@@ -761,7 +828,7 @@ export class MarkdownParser {
     return new MarkdownParser(nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser,
-                              blockStart, blockContinue, blockNames,
+                              blockStart, fromParagraph, blockContinue, blockNames,
                               skipContextMarkup,
                               inlineParsers, inlineNames)
   }
@@ -1083,26 +1150,6 @@ function lineEnd(text: string, pos: number) {
   return pos
 }
 
-function parseLinkReference(p: Parse, text: string) {
-  if (text.charCodeAt(0) != 91 /* '[' */) return null
-  let ref = parseLinkLabel(text, 0, 0, true)
-  if (!ref || text.charCodeAt(ref.to) != 58 /* ':' */) return null
-  let elts = [ref, elt(Type.LinkMark, ref.to, ref.to + 1)]
-  let url = parseURL(text, skipSpace(text, ref.to + 1), 0)
-  if (!url) return null
-  elts.push(url)
-  let pos = skipSpace(text, url.to), title, end = 0
-  if (pos > url.to && (title = parseLinkTitle(text, pos, 0))) {
-    let afterURL = lineEnd(text, title.to)
-    if (afterURL > 0) {
-      elts.push(title)
-      end = afterURL
-    }
-  }
-  if (end == 0) end = lineEnd(text, url.to)
-  return end < 0 ? null : new Buffer(p).writeElements(elts).finish(Type.LinkReference, end)
-}
-
 class InlineContext {
   parts: (Element | InlineMarker | null)[] = []
 
@@ -1291,6 +1338,7 @@ export const parser = new MarkdownParser(
   null,
   null,
   Object.keys(DefaultBlockStart).map(n => DefaultBlockStart[n]),
+  Object.keys(DefaultBlockStart).map(n => DefaultFromParagraph[n]),
   Object.keys(DefaultBlockStart).map(n => DefaultBlockContinue[n]),
   Object.keys(DefaultBlockStart),
   DefaultSkipMarkup,
