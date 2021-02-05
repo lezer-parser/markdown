@@ -461,24 +461,6 @@ const DefaultBlockParsers: {[name: string]: ((p: Parse, line: Line) => BlockResu
     return true
   },
 
-  Paragraph(p, line) { // FIXME move somewhere else?
-    let leaf = new LeafBlock(p.lineStart + line.pos, line.text.slice(line.pos))
-    for (let parse of p.parser.leafBlockParsers) if (parse) {
-      let parser = parse(p, leaf)
-      if (parser) leaf.parsers.push(parser)
-    }
-    lines: while (p.nextLine()) {
-      if (line.pos == line.text.length) return p.finishLeaf(leaf)
-      for (let parser of leaf.parsers) if (parser.nextLine(p, line, leaf)) return true
-      if (line.indent < line.baseIndent + 4) {
-        for (let stop of parser.endLeafBlock) if (stop(p, line)) return p.finishLeaf(leaf)
-      }
-      leaf.content += "\n" + line.scrub()
-      for (let m of line.markers) leaf.marks.push(m)
-    }
-    return p.finishLeaf(leaf)
-  },
-
   SetextHeading: undefined // Specifies relative precedence for block-continue function
 }
 
@@ -655,16 +637,35 @@ class Parse implements PartialParse {
     }
 
     if (this.fragments && this.reuseFragment(line.basePos)) return null
-    for (;;) {
+
+    start: for (;;) {
       for (let type of this.parser.blockParsers) if (type) {
         let result = type(this, line)
         if (result != false) {
           if (result == true) return null
           this.line.forward()
-          break
+          continue start
         }
       }
+      break
     }
+      
+    let leaf = new LeafBlock(this.lineStart + line.pos, line.text.slice(line.pos))
+    for (let parse of this.parser.leafBlockParsers) if (parse) {
+      let parser = parse!(this, leaf)
+      if (parser) leaf.parsers.push(parser!)
+    }
+    lines: while (this.nextLine()) {
+      if (line.pos == line.text.length) break
+      for (let parser of leaf.parsers) if (parser.nextLine(this, line, leaf)) return null
+      if (line.indent < line.baseIndent + 4) {
+        for (let stop of parser.endLeafBlock) if (stop(this, line)) break lines
+      }
+      leaf.content += "\n" + line.scrub()
+      for (let m of line.markers) leaf.marks.push(m)
+    }
+    this.finishLeaf(leaf)
+    return null
   }
 
   private reuseFragment(start: number) {
@@ -751,12 +752,11 @@ class Parse implements PartialParse {
   }
 
   finishLeaf(leaf: LeafBlock) {
-    for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return true
+    for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return
     let inline = injectMarks(parseInline(this, leaf.content, leaf.start), leaf.marks)
     this.addNode(new Buffer(this)
       .writeElements(inline, -leaf.start)
       .finish(Type.Paragraph, leaf.content.length), leaf.start)
-    return true
   }
 }
 
