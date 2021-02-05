@@ -723,7 +723,7 @@ class Parse implements PartialParse {
 
   addLeafNode(leaf: LeafBlock, elt: Element) {
     this.addNode(new Buffer(this)
-      .writeElements(injectMarks(elt.children ? elt.children.slice() : [], leaf.marks), -elt.from)
+      .writeElements(injectMarks(elt.children, leaf.marks), -elt.from)
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
 
@@ -942,18 +942,19 @@ class Element {
   constructor(readonly type: Type,
               readonly from: number,
               readonly to: number,
-              // FIXME drop null exception for none?
-              readonly children: readonly (Element | TreeElement)[] | null = null) {}
+              readonly children: readonly (Element | TreeElement)[] = none) {}
 
   writeTo(buf: Buffer, offset: number) {
     let startOff = buf.content.length
-    if (this.children) buf.writeElements(this.children, offset)
+    buf.writeElements(this.children, offset)
     buf.content.push(this.type, this.from + offset, this.to + offset, buf.content.length + 4 - startOff)
   }
 
   toTree(nodeSet: NodeSet, offset: number): Tree | TreeBuffer {
-    return new Tree(nodeSet.types[this.type], this.children ? this.children.map(ch => ch.toTree(nodeSet, this.from)) : [],
-                    this.children ? this.children.map(ch => ch.from + offset) : [], this.to - this.from)
+    return new Tree(nodeSet.types[this.type],
+                    this.children.length ? this.children.map(ch => ch.toTree(nodeSet, this.from)) : none,
+                    this.children.length ? this.children.map(ch => ch.from + offset) : none,
+                    this.to - this.from)
   }
 }
 
@@ -1269,14 +1270,16 @@ function parseInline(p: Parse, text: string, offset: number) {
   return cx.resolveMarkers(0)
 }
 
-function injectMarks(elts: (Element | TreeElement)[], marks: Element[]) {
-  let eI = 0
+function injectMarks(elements: readonly (Element | TreeElement)[], marks: Element[]) {
+  if (!marks.length) return elements
+  if (!elements.length) return marks
+  let elts = elements.slice(), eI = 0
   for (let mark of marks) {
     while (eI < elts.length && elts[eI].to < mark.to) eI++
     if (eI < elts.length && elts[eI].from < mark.from) {
       let e = elts[eI]
       if (e instanceof Element)
-        elts[eI] = new Element(e.type, e.from, e.to, e.children ? injectMarks(e.children.slice(), [mark]) : [mark])
+        elts[eI] = new Element(e.type, e.from, e.to, injectMarks(e.children, [mark]))
     } else {
       elts.splice(eI++, 0, mark)
     }
