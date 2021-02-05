@@ -74,37 +74,14 @@ enum Type {
   LinkLabel
 }
 
-class ParagraphMap {
-  data: number[] = []
-  text: string[] = []
+class LeafBlock {
+  marks: Element[] = []
+  parsers: LeafBlockParser[] = []
 
-  constructor(start: number, public content: string) {
-    this.text.push(content)
-    this.data.push(start << 1)
-  }
-
-  addLine(text: string, endContext: boolean) {
-    let from = this.lineEnd(this.lines - 1) + 1
-    this.data.push((from << 1) | (endContext ? 1 : 0))
-    this.text.push(text)
-    this.content += "\n" + text
-  }
-
-  drop(n: number) {
-    this.content = this.content.slice(n)
-    while (n > 0) {
-      n -= this.text.shift()!.length + 1
-      this.data.shift()
-    }
-  }
-
-  get start() { return this.data[0] >> 1 }
-  get lines() { return this.text.length }
-
-  line(n: number) { return this.text[n] }
-  lineStart(n: number) { return this.data[n] >> 1 }
-  lineEnd(n: number) { return (this.data[n] >> 1) + this.text[n].length }
-  endsContext(n: number) { return (this.data[n] & 1) > 0 }
+  constructor(
+    readonly start: number,
+    public content: string
+  ) {}
 }
 
 class Line {
@@ -168,6 +145,13 @@ class Line {
       indent += this.text.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
     return i
   }
+
+  scrub() {
+    if (!this.baseIndent) return this.text
+    let result = ""
+    for (let i = 0; i < this.baseIndent; i++) result += " "
+    return result + this.text.slice(this.basePos)
+  }
 }
 
 function skipForList(cx: BlockContext, p: Parse, line: Line) {
@@ -176,7 +160,7 @@ function skipForList(cx: BlockContext, p: Parse, line: Line) {
   if (line.indent >= line.baseIndent + 4) return false
   let size = (cx.type == Type.OrderedList ? isOrderedList : isBulletList)(line, p, false)
   return size > 0 &&
-    (cx.type != Type.BulletList || isHorizontalRule(line, p, false) < 0) &&
+    (cx.type != Type.BulletList || isHorizontalRule(line) < 0) &&
     line.text.charCodeAt(line.pos + size - 1) == cx.value
 }
 
@@ -223,7 +207,7 @@ function isBlockquote(line: Line) {
   return line.next != 62 /* '>' */ ? -1 : line.text.charCodeAt(line.pos + 1) == 32 ? 2 : 1
 }
 
-function isHorizontalRule(line: Line, p: Parse, breaking: boolean) {
+function isHorizontalRule(line: Line) {
   if (line.next != 42 && line.next != 45 && line.next != 95 /* '_-*' */) return -1
   let count = 1
   for (let pos = line.pos + 1; pos < line.text.length; pos++) {
@@ -231,7 +215,7 @@ function isHorizontalRule(line: Line, p: Parse, breaking: boolean) {
     if (ch == line.next) count++
     else if (!space(ch)) return -1
   }
-  return count < 3 || (breaking && line.next == 45 && isSetextUnderline(line) > -1 && line.depth == p.contextStack.length) ? -1 : 1
+  return count < 3 ? -1 : 1
 }
 
 function inList(p: Parse, type: Type) {
@@ -272,7 +256,7 @@ function isAtxHeading(line: Line) {
 }
 
 function isSetextUnderline(line: Line) {
-  if (line.next != 45 && line.next != 61 /* '-=' */) return -1
+  if (line.next != 45 && line.next != 61 /* '-=' */ || line.indent >= line.baseIndent + 4) return -1
   let pos = line.pos + 1
   while (pos < line.text.length && line.text.charCodeAt(pos) == line.next) pos++
   let end = pos
@@ -321,7 +305,7 @@ type BlockResult = boolean | null
 // doesn't apply here, true means it does. When true is returned and
 // `p.line` has been updated, the rule is assumed to have consumed a
 // leaf block. Otherwise, it is assumed to have opened a context.
-const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult) | undefined} = {
+const DefaultBlockParsers: {[name: string]: ((p: Parse, line: Line) => BlockResult) | undefined} = {
   LinkReference: undefined,
 
   IndentedCode(p, line) {
@@ -408,7 +392,7 @@ const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult
   },
 
   HorizontalRule(p, line) {
-    if (isHorizontalRule(line, p, false) < 0) return false
+    if (isHorizontalRule(line) < 0) return false
     let from = p.lineStart + line.pos
     p.nextLine()
     p.addNode(Type.HorizontalRule, from)
@@ -477,101 +461,146 @@ const DefaultBlockStart: {[name: string]: ((p: Parse, line: Line) => BlockResult
     return true
   },
 
-  Paragraph(p, line) {
-    let map = new ParagraphMap(p.lineStart + line.pos, line.text.slice(line.pos))
-    let marks: Element[] = []
+  Paragraph(p, line) { // FIXME move somewhere else?
+    let leaf = new LeafBlock(p.lineStart + line.pos, line.text.slice(line.pos))
+    for (let parse of p.parser.leafBlockParsers) if (parse) {
+      let parser = parse(p, leaf)
+      if (parser) leaf.parsers.push(parser)
+    }
     lines: while (p.nextLine()) {
-      if (line.pos == line.text.length) break
+      if (line.pos == line.text.length) return p.finishLeaf(leaf)
+      for (let parser of leaf.parsers) if (parser.nextLine(p, line, leaf)) return true
       if (line.indent < line.baseIndent + 4) {
-        for (let cont of p.parser.blockContinue) if (cont) {
-          let result = cont(p, line)
-          if (result === true) break lines
-        }
+        for (let stop of parser.endLeafBlock) if (stop(p, line)) return p.finishLeaf(leaf)
       }
-      let lineText = ""
-      for (let i = 0; i < line.basePos; i++) lineText += " "
-      lineText += line.text.slice(line.basePos)
-      map.addLine(lineText, line.depth < p.contextStack.length)
-      for (let m of line.markers) marks.push(m)
+      leaf.content += "\n" + line.scrub()
+      for (let m of line.markers) leaf.marks.push(m)
     }
-
-    fromPara: for (;;) {
-      for (let parse of p.parser.fromParagraph) if (parse) {
-        let result = parse(p, map)
-        if (result) {
-          let nextNewline = map.content.indexOf("\n", result.to - map.start)
-          let nextFrom = map.start + (nextNewline < 0 ? map.content.length : nextNewline + 1), markIndex = 0
-          while (markIndex < marks.length && marks[markIndex].from < nextFrom) markIndex++
-
-          p.addNode(new Buffer(p)
-            .writeElements(injectMarks(result.children ? result.children.slice() : [], marks.slice(0, markIndex)), -result.from)
-            .finish(result.type, result.to - result.from), result.from)
-          if (nextNewline < 0) return true
-          map.drop(nextNewline + 1)
-          marks = marks.slice(markIndex)
-          continue fromPara
-        }
-      }
-      break
-    }
-
-    let inline = injectMarks(parseInline(p, map.content, map.start), marks)
-    p.addNode(new Buffer(p)
-      .writeElements(inline, -map.start)
-      .finish(Type.Paragraph, map.content.length), map.start)
-    return true
+    return p.finishLeaf(leaf)
   },
 
   SetextHeading: undefined // Specifies relative precedence for block-continue function
 }
 
-const DefaultFromParagraph: {[name: string]: (p: Parse, para: ParagraphMap) => Element | null} = {
-  LinkReference(p, para) {
-    let {start, content} = para
-    if (para.content.charCodeAt(0) != 91 /* '[' */) return null
-    let ref = parseLinkLabel(content, 0, start, true)
-    if (!ref || content.charCodeAt(ref.to - start) != 58 /* ':' */) return null
-    let elts = [ref, elt(Type.LinkMark, ref.to, ref.to + 1)]
-    let url = parseURL(content, skipSpace(content, ref.to - start + 1), start)
-    if (!url) return null
-    elts.push(url)
-    let pos = skipSpace(content, url.to - start) + start, title, len = 0
-    if (pos > url.to && (title = parseLinkTitle(content, pos - start, start))) {
-      let afterURL = lineEnd(content, title.to - start)
-      if (afterURL > 0) {
-        elts.push(title)
-        len = afterURL
+const enum RefStage { Failed = -1, Start, Label, Link, Title }
+
+// This implements a state machine that incrementally parses link references. At each
+// next line, it looks ahead to see if the line continues the reference or not. If it
+// doesn't and a valid link is available ending before that line, it finishes that.
+// Similarly, on `finish` (when the leaf is terminated by external circumstances), it
+// creates a link reference if there's a valid reference up to the current point.
+class LinkReferenceParser implements LeafBlockParser {
+  stage = RefStage.Start
+  elts: Element[] = []
+  pos = 0
+  start: number
+
+  constructor(leaf: LeafBlock) {
+    this.start = leaf.start
+    this.advance(leaf.content)
+  }
+
+  nextLine(p: Parse, line: Line, leaf: LeafBlock) {
+    if (this.stage == RefStage.Failed) return false
+    let content = leaf.content + "\n" + line.scrub()
+    let finish = this.advance(content)
+    if (finish > -1 && finish < content.length) return this.complete(p, leaf, finish)
+    return false
+  }
+
+  finish(p: Parse, leaf: LeafBlock) {
+    if ((this.stage == RefStage.Link || this.stage == RefStage.Title) && skipSpace(leaf.content, this.pos) == leaf.content.length)
+      return this.complete(p, leaf, leaf.content.length)
+    return false
+  }
+
+  complete(p: Parse, leaf: LeafBlock, len: number) {
+    p.addLeafNode(leaf, elt(Type.LinkReference, this.start, this.start + len, this.elts))
+    return true
+  }
+
+  nextStage(elt: Element | null | false) {
+    if (elt) {
+      this.pos = elt.to - this.start
+      this.elts.push(elt)
+      this.stage++
+      return true
+    }
+    if (elt === false) this.stage = RefStage.Failed
+    return false
+  }
+
+  advance(content: string) {
+    for (;;) {
+      if (this.stage == RefStage.Failed) {
+        return -1
+      } else if (this.stage == RefStage.Start) {
+        if (!this.nextStage(parseLinkLabel(content, this.pos, this.start, true))) return -1
+        if (content.charCodeAt(this.pos) != 58 /* ':' */) return this.stage = RefStage.Failed
+        this.elts.push(elt(Type.LinkMark, this.pos + this.start, this.pos + this.start + 1))
+        this.pos++
+      } else if (this.stage == RefStage.Label) {
+        if (!this.nextStage(parseURL(content, skipSpace(content, this.pos), this.start))) return -1
+      } else if (this.stage == RefStage.Link) {
+        let skip = skipSpace(content, this.pos), end = 0
+        if (skip > this.pos) {
+          let title = parseLinkTitle(content, skip, this.start)
+          if (title) {
+            let titleEnd = lineEnd(content, title.to - this.start)
+            if (titleEnd > 0) { this.nextStage(title); end = titleEnd }
+          }
+        }
+        if (!end) end = lineEnd(content, this.pos)
+        return end > 0 && end < content.length ? end : -1
+      } else { // RefStage.Title
+        return lineEnd(content, this.pos)
       }
     }
-    if (len == 0) len = lineEnd(content, url.to - start)
-    return len < 0 ? null : elt(Type.LinkReference, start, start + len, elts)
-  },
-
-  SetextHeading(p, para) {
-    for (let i = 1; i < para.lines; i++) {
-      let underline = /^([ \t]{0,3})(-+|=+)[ \t]*$/.exec(para.line(i))
-      if (!underline || para.endsContext(i)) continue
-      let {start} = para, markStart = para.lineStart(i) + underline[1].length
-      let inline = parseInline(p, para.content.slice(0, para.lineEnd(i - 1) - start), start)
-      return elt(Type.SetextHeading, start, para.lineEnd(i), [
-        ...inline,
-        elt(Type.HeaderMark, markStart, markStart + underline[2].length)
-      ])
-    }
-    return null
   }
 }
 
-//  (line: Line, p: Parse, breaking: boolean) => number)[] = [
-const DefaultBlockContinue: {[name: string]: (p: Parse, line: Line) => boolean | Element} = {
-  ATXHeading(_, line) { return isAtxHeading(line) >= 0 },
-  FencedCode(_, line) { return isFencedCode(line) >= 0 },
-  Blockquote(_, line) { return isBlockquote(line) >= 0 },
-  BulletList(p, line) { return isBulletList(line, p, true) >= 0 },
-  OrderedList(p, line) { return isOrderedList(line, p, true) >= 0 },
-  HorizontalRule(p, line) { return isHorizontalRule(line, p, true) >= 0 },
-  HTMLBlock(p, line) { return isHTMLBlock(line, p, true) >= 0 }
+function lineEnd(text: string, pos: number) {
+  for (; pos < text.length; pos++) {
+    let next = text.charCodeAt(pos)
+    if (next == 10) break
+    if (!space(next)) return -1
+  }
+  return pos
 }
+
+class SetextHeadingParser implements LeafBlockParser {
+  nextLine(p: Parse, line: Line, leaf: LeafBlock) {
+    let underline = line.depth < p.contextStack.length ? -1 : isSetextUnderline(line)
+    if (underline < 0) return false
+    let underlineMark = elt(Type.HeaderMark, p.lineStart + line.pos, p.lineStart + underline)
+    p.nextLine()
+    p.addLeafNode(leaf, elt(Type.SetextHeading, leaf.start, p.prevLineEnd(), [
+      ...parseInline(p, leaf.content, leaf.start),
+      underlineMark
+    ]))
+    return true
+  }
+
+  finish() {
+    return false
+  }
+}
+
+const DefaultLeafBlocks: {[name: string]: (p: Parse, leaf: LeafBlock) => LeafBlockParser | null} = {
+  LinkReference(_, leaf) { return leaf.content.charCodeAt(0) == 91 /* '[' */ ? new LinkReferenceParser(leaf) : null },
+  SetextHeading() { return new SetextHeadingParser }
+}
+
+//  (line: Line, p: Parse, breaking: boolean) => number)[] = [
+const DefaultEndLeaf: readonly ((p: Parse, line: Line) => boolean)[] = [
+  (_, line) => isAtxHeading(line) >= 0,
+  (_, line) => isFencedCode(line) >= 0,
+  (_, line) => isBlockquote(line) >= 0,
+  (p, line) => isBulletList(line, p, true) >= 0,
+  (p, line) => isOrderedList(line, p, true) >= 0,
+  (_, line) => isHorizontalRule(line) >= 0,
+  (p, line) => isHTMLBlock(line, p, true) >= 0
+]
 
 class NestedParse {
   constructor(
@@ -627,7 +656,7 @@ class Parse implements PartialParse {
 
     if (this.fragments && this.reuseFragment(line.basePos)) return null
     for (;;) {
-      for (let type of this.parser.blockStart) if (type) {
+      for (let type of this.parser.blockParsers) if (type) {
         let result = type(this, line)
         if (result != false) {
           if (result == true) return null
@@ -691,6 +720,12 @@ class Parse implements PartialParse {
     this.context.positions.push(from - this.context.from)
   }
 
+  addLeafNode(leaf: LeafBlock, elt: Element) {
+    this.addNode(new Buffer(this)
+      .writeElements(injectMarks(elt.children ? elt.children.slice() : [], leaf.marks), -elt.from)
+      .finish(elt.type, elt.to - elt.from), elt.from)
+  }
+
   startNested(parse: NestedParse) {
     this.nested = parse
   }
@@ -714,6 +749,15 @@ class Parse implements PartialParse {
     while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
     return cx[0].toTree(this.parser.nodeSet, this.lineStart)
   }
+
+  finishLeaf(leaf: LeafBlock) {
+    for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return true
+    let inline = injectMarks(parseInline(this, leaf.content, leaf.start), leaf.marks)
+    this.addNode(new Buffer(this)
+      .writeElements(inline, -leaf.start)
+      .finish(Type.Paragraph, leaf.content.length), leaf.start)
+    return true
+  }
 }
 
 /// The type that nested parsers should conform to.
@@ -734,12 +778,16 @@ export interface InlineParser {
 }  
 
 export interface BlockParser {
-  start?(p: Parse): BlockResult
-  fromParagraph?(p: Parse, content: string, start: number): Element | null
-  continue?(p: Parse): BlockResult
+  parse?(p: Parse): BlockResult
+  leaf?(p: Parse, leaf: LeafBlock): LeafBlockParser | null
+  endLeaf?(p: Parse, line: Line): boolean
   before?: string,
   after?: string,
-  endParagraph?(p: Parse, breaking: boolean): boolean
+}
+
+export interface LeafBlockParser {
+  nextLine(p: Parse, line: Line, leaf: LeafBlock): boolean
+  finish(p: Parse, leaf: LeafBlock): boolean
 }
 
 export class MarkdownParser {
@@ -748,10 +796,10 @@ export class MarkdownParser {
     readonly nodeSet: NodeSet,
     readonly codeParser: null | ((info: string) => null | InnerParser),
     readonly htmlParser: null | InnerParser,
-    readonly blockStart: readonly (((p: Parse, line: Line) => BlockResult) | undefined)[],
-    readonly fromParagraph: readonly(((p: Parse, para: ParagraphMap) => Element | null) | undefined)[],
-    readonly blockContinue: readonly (((p: Parse, line: Line) => (Element | boolean)) | undefined)[],
+    readonly blockParsers: readonly (((p: Parse, line: Line) => BlockResult) | undefined)[],
+    readonly leafBlockParsers: readonly (((p: Parse, leaf: LeafBlock) => LeafBlockParser | null) | undefined)[],
     readonly blockNames: readonly string[],
+    readonly endLeafBlock: readonly ((p: Parse, line: Line) => boolean)[],
     readonly skipContextMarkup: {readonly [type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean},
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
     readonly inlineNames: readonly string[]
@@ -779,7 +827,9 @@ export class MarkdownParser {
     parseBlock?: {[name: string]: BlockParser},
     parseInline?: {[name: string]: InlineParser}
   }) {
-    let {nodeSet, blockStart, fromParagraph, blockContinue, blockNames, skipContextMarkup, inlineParsers, inlineNames} = this
+    let {nodeSet, blockParsers, leafBlockParsers, blockNames, endLeafBlock,
+         skipContextMarkup, inlineParsers, inlineNames} = this
+
     if (config.defineNodes) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
       let nodeTypes = nodeSet.types.slice()
@@ -800,16 +850,18 @@ export class MarkdownParser {
     if (config.props) nodeSet = this.nodeSet.extend(...config.props)
 
     if (config.parseBlock) {
-      blockStart = blockStart.slice()
+      blockParsers = blockParsers.slice()
+      leafBlockParsers = leafBlockParsers.slice()
       blockNames = blockNames.slice()
+      endLeafBlock = endLeafBlock.slice()
       for (let name of Object.keys(config.parseBlock)) {
         let spec = config.parseBlock[name]
         let pos = spec.before ? findName(blockNames, spec.before)
           : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
-        ;(blockStart as any).splice(pos, 0, spec.start)
-        ;(fromParagraph as any).splice(pos, 0, spec.fromParagraph)
-        ;(blockContinue as any).splice(pos, 0, spec.continue)
+        ;(blockParsers as any).splice(pos, 0, spec.parse)
+        ;(leafBlockParsers as any).splice(pos, 0, spec.leaf)
         ;(blockNames as any).splice(pos, 0, name)
+        if (spec.endLeaf) (endLeafBlock as any).push(spec.endLeaf)
       }
     }
 
@@ -828,8 +880,8 @@ export class MarkdownParser {
     return new MarkdownParser(nodeSet,
                               config.codeParser || this.codeParser,
                               config.htmlParser || this.htmlParser,
-                              blockStart, fromParagraph, blockContinue, blockNames,
-                              skipContextMarkup,
+                              blockParsers, leafBlockParsers, blockNames,
+                              endLeafBlock, skipContextMarkup,
                               inlineParsers, inlineNames)
   }
 }
@@ -1084,13 +1136,17 @@ function finishLink(cx: InlineContext, content: Element[], type: Type, start: nu
   return elt(type, start, endPos, content)
 }
 
-function parseURL(text: string, start: number, offset: number) {
+// These return `null` when falling off the end of the input, `false`
+// when parsing fails otherwise (for use in the incremental link
+// reference parser).
+
+function parseURL(text: string, start: number, offset: number): null | false | Element {
   let next = text.charCodeAt(start)
   if (next == 60 /* '<' */) {
     for (let pos = start + 1; pos < text.length; pos++) {
       let ch = text.charCodeAt(pos)
       if (ch == 62 /* '>' */) return elt(Type.URL, start + offset, pos + 1 + offset)
-      if (ch == 60 || ch == 10 /* '<\n' */) break
+      if (ch == 60 || ch == 10 /* '<\n' */) return false
     }
     return null
   } else {
@@ -1110,13 +1166,13 @@ function parseURL(text: string, start: number, offset: number) {
         escaped = true
       }
     }
-    return pos > start ? elt(Type.URL, start + offset, pos + offset) : null
+    return pos > start ? elt(Type.URL, start + offset, pos + offset) : pos == text.length ? null : false
   }
 }
 
-function parseLinkTitle(text: string, start: number, offset: number) {
+function parseLinkTitle(text: string, start: number, offset: number): null | false | Element {
   let next = text.charCodeAt(start)
-  if (next != 39 && next != 34 && next != 40 /* '"\'(' */) return null
+  if (next != 39 && next != 34 && next != 40 /* '"\'(' */) return false
   let end = next == 40 ? 41 : next
   for (let pos = start + 1, escaped = false; pos < text.length; pos++) {
     let ch = text.charCodeAt(pos)
@@ -1127,27 +1183,18 @@ function parseLinkTitle(text: string, start: number, offset: number) {
   return null
 }
 
-function parseLinkLabel(text: string, start: number, offset: number, requireNonWS: boolean) {
+function parseLinkLabel(text: string, start: number, offset: number, requireNonWS: boolean): null | false | Element {
   for (let escaped = false, pos = start + 1, end = Math.min(text.length, pos + 999); pos < end; pos++) {
     let ch = text.charCodeAt(pos)
     if (escaped) escaped = false
-    else if (ch == 93 /* ']' */) return requireNonWS ? null : elt(Type.LinkLabel, start + offset, pos + 1 + offset)
+    else if (ch == 93 /* ']' */) return requireNonWS ? false : elt(Type.LinkLabel, start + offset, pos + 1 + offset)
     else {
       if (requireNonWS && !space(ch)) requireNonWS = false
-      if (ch == 91 /* '[' */) break
+      if (ch == 91 /* '[' */) return false
       else if (ch == 92 /* '\\' */) escaped = true
     }
   }
   return null
-}
-
-function lineEnd(text: string, pos: number) {
-  for (; pos < text.length; pos++) {
-    let next = text.charCodeAt(pos)
-    if (next == 10) break
-    if (!space(next)) return -1
-  }
-  return pos
 }
 
 class InlineContext {
@@ -1337,10 +1384,10 @@ export const parser = new MarkdownParser(
   new NodeSet(nodeTypes),
   null,
   null,
-  Object.keys(DefaultBlockStart).map(n => DefaultBlockStart[n]),
-  Object.keys(DefaultBlockStart).map(n => DefaultFromParagraph[n]),
-  Object.keys(DefaultBlockStart).map(n => DefaultBlockContinue[n]),
-  Object.keys(DefaultBlockStart),
+  Object.keys(DefaultBlockParsers).map(n => DefaultBlockParsers[n]),
+  Object.keys(DefaultBlockParsers).map(n => DefaultLeafBlocks[n]),
+  Object.keys(DefaultBlockParsers),
+  DefaultEndLeaf,
   DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
   Object.keys(DefaultInline)

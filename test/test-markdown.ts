@@ -1239,8 +1239,8 @@ foo
 
   test("Link reference definitions (example 185)", `
 {LR:{LL:[foo]}{L::} {URL:/url}}
-{SH:{h:===}}
-{P:{Ln:{L:[}foo{L:]}}}
+{P:===
+{Ln:{L:[}foo{L:]}}}
 `)
 
   test("Link reference definitions (example 186)", `
