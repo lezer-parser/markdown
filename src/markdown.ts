@@ -792,6 +792,9 @@ export interface LeafBlockParser {
 
 export class MarkdownParser {
   /// @internal
+  nodeTypes: {[name: string]: number} = Object.create(null)
+
+  /// @internal
   constructor(
     readonly nodeSet: NodeSet,
     readonly codeParser: null | ((info: string) => null | InnerParser),
@@ -803,7 +806,9 @@ export class MarkdownParser {
     readonly skipContextMarkup: {readonly [type: number]: (cx: BlockContext, p: Parse, line: Line) => boolean},
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
     readonly inlineNames: readonly string[]
-  ) {}
+  ) {
+    for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id
+  }
 
   /// Start a parse on the given input.
   startParse(input: Input, startPos = 0, parseContext: ParseContext = {}): PartialParse {
@@ -883,6 +888,13 @@ export class MarkdownParser {
                               blockParsers, leafBlockParsers, blockNames,
                               endLeafBlock, skipContextMarkup,
                               inlineParsers, inlineNames)
+  }
+
+  /// @internal
+  getNodeType(name: string) {
+    let found = this.nodeTypes[name]
+    if (found == null) throw new RangeError(`Unknown node type '${name}'`)
+    return found
   }
 }
 
@@ -977,8 +989,17 @@ function elt(type: Type, from: number, to: number, children?: readonly (Element 
 
 const enum Mark { Open = 1, Close = 2 }
 
+export interface DelimiterType {
+  resolve?: string,
+  mark?: string
+}
+
+const EmphasisUnderscore: DelimiterType = {resolve: "Emphasis", mark: "EmphasisMark"}
+const EmphasisAsterisk: DelimiterType = {resolve: "Emphasis", mark: "EmphasisMark"}
+const LinkStart: DelimiterType = {}, ImageStart: DelimiterType = {}
+
 class InlineDelimiter {
-  constructor(readonly type: string,
+  constructor(readonly type: DelimiterType,
               readonly from: number,
               readonly to: number,
               public side: Mark) {}
@@ -1055,7 +1076,8 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter)
     let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore)
     let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter)
-    return cx.append(new InlineDelimiter("Emphasis", start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
+    return cx.append(new InlineDelimiter(next == 95 ? EmphasisUnderscore : EmphasisAsterisk, start, pos,
+                                         (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
   },
 
   hardBreak(cx, next, start) {
@@ -1071,12 +1093,12 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   linkOpen(cx, next, start) {
-    return next == 91 /* '[' */ ? cx.append(new InlineDelimiter("LinkOpen", start, start + 1, Mark.Open)) : -1
+    return next == 91 /* '[' */ ? cx.append(new InlineDelimiter(LinkStart, start, start + 1, Mark.Open)) : -1
   },
 
   imageOpen(cx, next, start) {
     return next == 33 /* '!' */ && start < cx.end - 1 && cx.char(start + 1) == 91 /* '[' */
-      ? cx.append(new InlineDelimiter("ImageOpen", start, start + 2, Mark.Open)) : -1
+      ? cx.append(new InlineDelimiter(ImageStart, start, start + 2, Mark.Open)) : -1
   },
 
   linkEnd(cx, next, start) {
@@ -1084,7 +1106,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     // Scanning back to the next link/image start marker
     for (let i = cx.parts.length - 1; i >= 0; i--) {
       let part = cx.parts[i]
-      if (part instanceof InlineDelimiter && (part.type == "LinkOpen" || part.type == "ImageOpen")) {
+      if (part instanceof InlineDelimiter && (part.type == LinkStart || part.type == ImageStart)) {
         // If this one has been set invalid (because it would produce
         // a nested link) or there's no valid link here ignore both.
         if (!part.side || cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.slice(start + 1, start + 2))) {
@@ -1095,11 +1117,11 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         // this.parts with the link/image node.
         let content = cx.resolveMarkers(i + 1)
         cx.parts.length = i
-        let link = cx.parts[i] = finishLink(cx, content, part.type == "LinkOpen" ? Type.Link : Type.Image, part.from, start + 1)
+        let link = cx.parts[i] = finishLink(cx, content, part.type == LinkStart ? Type.Link : Type.Image, part.from, start + 1)
         // Set any open-link markers before this link to invalid.
-        if (part.type == "LinkOpen") for (let j = 0; j < i; j++) {
+        if (part.type == LinkStart) for (let j = 0; j < i; j++) {
           let p = cx.parts[j]
-          if (p instanceof InlineDelimiter && p.type == "LinkOpen") p.side = 0
+          if (p instanceof InlineDelimiter && p.type == LinkStart) p.side = 0
         }
         return link.to
       }
@@ -1215,33 +1237,39 @@ class InlineContext {
   resolveMarkers(from: number) {
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
-      if (!(close instanceof InlineDelimiter && close.type == "Emphasis" && (close.side & Mark.Close))) continue
+      if (!(close instanceof InlineDelimiter && close.type.resolve && (close.side & Mark.Close))) continue
 
-      let type = this.char(close.from), closeSize = close.to - close.from
-      let open: InlineDelimiter | undefined, openSize = 0, j = i - 1
+      let emp = close.type == EmphasisUnderscore || close.type == EmphasisAsterisk
+      let closeSize = close.to - close.from
+      let open: InlineDelimiter | undefined, j = i - 1
       for (; j >= from; j--) {
         let part = this.parts[j] as InlineDelimiter
-        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && this.char(part.from) == type))
+        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && part.type == close.type) ||
+            emp && ((close.side & Mark.Open) || (part.side & Mark.Close)) &&
+            (part.to - part.from + closeSize) % 3 == 0 && ((part.to - part.from) % 3 || closeSize % 3))
           continue
-        openSize = part.to - part.from
-        if (!((close.side & Mark.Open) || (part.side & Mark.Close)) ||
-            (openSize + closeSize) % 3 || (openSize % 3 == 0 && closeSize % 3 == 0)) {
-          open = part
-          break
-        }
+        open = part
+        break
       }
       if (!open) continue
 
-      let size = Math.min(2, openSize, closeSize)
-      let start = open.to - size, end: number = close.from + size, content = [elt(Type.EmphasisMark, start, open.to)]
+      let type = close.type.resolve, content = []
+      let start = open.from, end = close.to
+      if (emp) {
+        let size = Math.min(2, open.to - open.from, closeSize)
+        start = open.to - size
+        end = close.from + size
+        type = size == 1 ? "Emphasis" : "StrongEmphasis"
+      }
+      if (open.type.mark) content.push(this.elt(open.type.mark, start, open.to))
       for (let k = j + 1; k < i; k++) {
         if (this.parts[k] instanceof Element) content.push(this.parts[k] as Element)
         this.parts[k] = null
       }
-      content.push(elt(Type.EmphasisMark, close.from, end))
-      let element = elt(size == 1 ? Type.Emphasis : Type.StrongEmphasis, open.to - size, close.from + size, content)
-      this.parts[j] = open.from == start ? null : new InlineDelimiter(open.type, open.from, start, open.side)
-      let keep = this.parts[i] = close.to == end ? null : new InlineDelimiter(close.type, end, close.to, close.side)
+      if (close.type.mark) content.push(this.elt(close.type.mark, close.from, end))
+      let element = this.elt(type, start, end, content)
+      this.parts[j] = emp && open.from != start ? new InlineDelimiter(open.type, open.from, start, open.side) : null
+      let keep = this.parts[i] = emp && close.to != end ? new InlineDelimiter(close.type, end, close.to, close.side) : null
       if (keep) this.parts.splice(i, 0, element)
       else this.parts[i] = element
     }
@@ -1255,6 +1283,10 @@ class InlineContext {
   }
 
   skipSpace(from: number) { return skipSpace(this.text, from - this.offset) + this.offset }
+
+  elt(type: string, from: number, to: number, children?: readonly Element[]) {
+    return elt(this.parser.getNodeType(type), from, to, children)
+  }
 }
 
 function parseInline(p: Parse, text: string, offset: number) {
