@@ -772,12 +772,14 @@ export interface NodeSpec {
 }
 
 export interface InlineParser {
+  name: string,
   parse(cx: InlineContext, next: number, pos: number): number,
   before?: string,
   after?: string
 }  
 
 export interface BlockParser {
+  name: string,
   parse?(p: Parse): BlockResult
   leaf?(p: Parse, leaf: LeafBlock): LeafBlockParser | null
   endLeaf?(p: Parse, line: Line): boolean
@@ -789,6 +791,25 @@ export interface LeafBlockParser {
   nextLine(p: Parse, line: Line, leaf: LeafBlock): boolean
   finish(p: Parse, leaf: LeafBlock): boolean
 }
+
+export interface MarkdownConfig {
+  /// Node props to add to the parser's node set.
+  props?: readonly NodePropSource[],
+  /// When provided, this will be used to parse the content of code
+  /// blocks. `info` is the string after the opening ` ``` ` marker,
+  /// or the empty string if there is no such info or this is an
+  /// indented code block. If there is a parser available for the
+  /// code, it should return a function that can construct the
+  /// [partse](#lezer.PartialParse).
+  codeParser?: (info: string) => null | InnerParser
+  /// The parser used to parse HTML tags (both block and inline).
+  htmlParser?: InnerParser,
+  defineNodes?: readonly (string | NodeSpec)[],
+  parseBlock?: readonly BlockParser[],
+  parseInline?: readonly InlineParser[]
+}
+
+export type MarkdownConfigElement = MarkdownConfig | readonly MarkdownConfigElement[]
 
 export class MarkdownParser {
   /// @internal
@@ -816,22 +837,8 @@ export class MarkdownParser {
   }
 
   /// Reconfigure the parser.
-  configure(config: {
-    /// Node props to add to the parser's node set.
-    props?: readonly NodePropSource[],
-    /// When provided, this will be used to parse the content of code
-    /// blocks. `info` is the string after the opening ` ``` ` marker,
-    /// or the empty string if there is no such info or this is an
-    /// indented code block. If there is a parser available for the
-    /// code, it should return a function that can construct the
-    /// [partse](#lezer.PartialParse).
-    codeParser?: (info: string) => null | InnerParser
-    /// The parser used to parse HTML tags (both block and inline).
-    htmlParser?: InnerParser,
-    defineNodes?: readonly (string | NodeSpec)[],
-    parseBlock?: {[name: string]: BlockParser},
-    parseInline?: {[name: string]: InlineParser}
-  }) {
+  configure(spec: MarkdownConfigElement) {
+    let config = resolveConfig(spec)
     let {nodeSet, blockParsers, leafBlockParsers, blockNames, endLeafBlock,
          skipContextMarkup, inlineParsers, inlineNames} = this
 
@@ -859,13 +866,12 @@ export class MarkdownParser {
       leafBlockParsers = leafBlockParsers.slice()
       blockNames = blockNames.slice()
       endLeafBlock = endLeafBlock.slice()
-      for (let name of Object.keys(config.parseBlock)) {
-        let spec = config.parseBlock[name]
+      for (let spec of config.parseBlock) {
         let pos = spec.before ? findName(blockNames, spec.before)
           : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
         ;(blockParsers as any).splice(pos, 0, spec.parse)
         ;(leafBlockParsers as any).splice(pos, 0, spec.leaf)
-        ;(blockNames as any).splice(pos, 0, name)
+        ;(blockNames as any).splice(pos, 0, spec.name)
         if (spec.endLeaf) (endLeafBlock as any).push(spec.endLeaf)
       }
     }
@@ -873,12 +879,11 @@ export class MarkdownParser {
     if (config.parseInline) {
       inlineParsers = inlineParsers.slice()
       inlineNames = inlineNames.slice()
-      for (let name of Object.keys(config.parseInline)) {
-        let spec = config.parseInline[name]
+      for (let spec of config.parseInline) {
         let pos = spec.before ? findName(inlineNames, spec.before)
           : spec.after ? findName(inlineNames, spec.after) + 1 : inlineNames.length - 1
         ;(inlineParsers as any).splice(pos, 0, spec.parse)
-        ;(inlineNames as any).splice(pos, 0, name)
+        ;(inlineNames as any).splice(pos, 0, spec.name)
       }
     }
 
@@ -896,6 +901,21 @@ export class MarkdownParser {
     if (found == null) throw new RangeError(`Unknown node type '${name}'`)
     return found
   }
+}
+
+function resolveConfig(spec: MarkdownConfigElement): MarkdownConfig {
+  if (!Array.isArray(spec)) return spec as MarkdownConfig
+  let conf = resolveConfig(spec[0])
+  if (spec.length == 1) return conf
+  let rest = resolveConfig(spec.slice(1))
+  let conc: <T>(a: readonly T[] | undefined, b: readonly T[] | undefined) => readonly T[] =
+    (a, b) => (a || none).concat(b || none)
+  return {props: conc(conf.props, rest.props),
+          codeParser: rest.codeParser || conf.codeParser,
+          htmlParser: rest.htmlParser || conf.htmlParser,
+          defineNodes: conc(conf.defineNodes, rest.defineNodes),
+          parseBlock: conc(conf.parseBlock, rest.parseBlock),
+          parseInline: conc(conf.parseInline, rest.parseInline)}
 }
 
 function findName(names: readonly string[], name: string) {
@@ -1068,7 +1088,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   emphasis(cx, next, start) {
     if (next != 95 && next != 42) return -1
     let pos = start + 1
-    while (pos < cx.end && cx.char(pos) == next) pos++
+    while (cx.char(pos) == next) pos++
     let before = cx.slice(start - 1, start), after = cx.slice(pos, pos + 1)
     let pBefore = Punctuation.test(before), pAfter = Punctuation.test(after)
     let sBefore = /\s|^$/.test(before), sAfter = /\s|^$/.test(after)
@@ -1085,7 +1105,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
       return cx.append(elt(Type.HardBreak, start, start + 2))
     if (next == 32) {
       let pos = start + 1
-      while (pos < cx.end && cx.char(pos) == 32) pos++
+      while (cx.char(pos) == 32) pos++
       if (cx.char(pos) == 10 && pos >= start + 2)
         return cx.append(elt(Type.HardBreak, start, pos + 1))
     }
@@ -1097,7 +1117,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   imageOpen(cx, next, start) {
-    return next == 33 /* '!' */ && start < cx.end - 1 && cx.char(start + 1) == 91 /* '[' */
+    return next == 33 /* '!' */ && cx.char(start + 1) == 91 /* '[' */
       ? cx.append(new InlineDelimiter(ImageStart, start, start + 2, Mark.Open)) : -1
   },
 
@@ -1131,7 +1151,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
 }
 
 function finishLink(cx: InlineContext, content: Element[], type: Type, start: number, startPos: number) {
-  let {text} = cx, next = startPos < cx.end ? cx.char(startPos) : -1, endPos = startPos
+  let {text} = cx, next = cx.char(startPos), endPos = startPos
   content.unshift(elt(Type.LinkMark, start, start + (type == Type.Image ? 2 : 1)))
   content.push(elt(Type.LinkMark, startPos - 1, startPos))
   if (next == 40 /* '(' */) {
@@ -1225,13 +1245,18 @@ class InlineContext {
 
   constructor(readonly parser: MarkdownParser, readonly text: string, readonly offset: number) {}
 
-  char(pos: number) { return this.text.charCodeAt(pos - this.offset) }
+  char(pos: number) { return pos >= this.end ? -1 : this.text.charCodeAt(pos - this.offset) }
   get end() { return this.offset + this.text.length }
   slice(from: number, to: number) { return this.text.slice(from - this.offset, to - this.offset) }
 
   append(elt: Element | InlineDelimiter) {
     this.parts.push(elt)
     return elt.to
+  }
+
+  addDelimiter(type: DelimiterType, from: number, to: number, open: boolean, close: boolean) {
+    this.parts.push(new InlineDelimiter(type, from, to, (open ? Mark.Open : 0) | (close ? Mark.Close : 0)))
+    return to
   }
 
   resolveMarkers(from: number) {
