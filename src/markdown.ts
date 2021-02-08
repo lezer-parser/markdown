@@ -977,11 +977,11 @@ function elt(type: Type, from: number, to: number, children?: readonly (Element 
 
 const enum Mark { Open = 1, Close = 2 }
 
-class InlineMarker {
-  constructor(readonly type: Type,
+class InlineDelimiter {
+  constructor(readonly type: string,
               readonly from: number,
               readonly to: number,
-              public value: number) {}
+              public side: Mark) {}
 }
 
 const Escapable = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
@@ -1055,7 +1055,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter)
     let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore)
     let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter)
-    return cx.append(new InlineMarker(Type.Emphasis, start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
+    return cx.append(new InlineDelimiter("Emphasis", start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
   },
 
   hardBreak(cx, next, start) {
@@ -1071,12 +1071,12 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
   },
 
   linkOpen(cx, next, start) {
-    return next == 91 /* '[' */ ? cx.append(new InlineMarker(Type.Link, start, start + 1, 1)) : -1
+    return next == 91 /* '[' */ ? cx.append(new InlineDelimiter("LinkOpen", start, start + 1, Mark.Open)) : -1
   },
 
   imageOpen(cx, next, start) {
     return next == 33 /* '!' */ && start < cx.end - 1 && cx.char(start + 1) == 91 /* '[' */
-      ? cx.append(new InlineMarker(Type.Image, start, start + 2, 1)) : -1
+      ? cx.append(new InlineDelimiter("ImageOpen", start, start + 2, Mark.Open)) : -1
   },
 
   linkEnd(cx, next, start) {
@@ -1084,10 +1084,10 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     // Scanning back to the next link/image start marker
     for (let i = cx.parts.length - 1; i >= 0; i--) {
       let part = cx.parts[i]
-      if (part instanceof InlineMarker && (part.type == Type.Link || part.type == Type.Image)) {
+      if (part instanceof InlineDelimiter && (part.type == "LinkOpen" || part.type == "ImageOpen")) {
         // If this one has been set invalid (because it would produce
         // a nested link) or there's no valid link here ignore both.
-        if (!part.value || cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.slice(start + 1, start + 2))) {
+        if (!part.side || cx.skipSpace(part.to) == start && !/[(\[]/.test(cx.slice(start + 1, start + 2))) {
           cx.parts[i] = null
           return -1
         }
@@ -1095,11 +1095,11 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         // this.parts with the link/image node.
         let content = cx.resolveMarkers(i + 1)
         cx.parts.length = i
-        let link = cx.parts[i] = finishLink(cx, content, part.type, part.from, start + 1)
+        let link = cx.parts[i] = finishLink(cx, content, part.type == "LinkOpen" ? Type.Link : Type.Image, part.from, start + 1)
         // Set any open-link markers before this link to invalid.
-        for (let j = 0; j < i; j++) {
+        if (part.type == "LinkOpen") for (let j = 0; j < i; j++) {
           let p = cx.parts[j]
-          if (part.type == Type.Link && p instanceof InlineMarker && p.type == Type.Link) p.value = 0
+          if (p instanceof InlineDelimiter && p.type == "LinkOpen") p.side = 0
         }
         return link.to
       }
@@ -1199,7 +1199,7 @@ function parseLinkLabel(text: string, start: number, offset: number, requireNonW
 }
 
 class InlineContext {
-  parts: (Element | InlineMarker | null)[] = []
+  parts: (Element | InlineDelimiter | null)[] = []
 
   constructor(readonly parser: MarkdownParser, readonly text: string, readonly offset: number) {}
 
@@ -1207,7 +1207,7 @@ class InlineContext {
   get end() { return this.offset + this.text.length }
   slice(from: number, to: number) { return this.text.slice(from - this.offset, to - this.offset) }
 
-  append(elt: Element | InlineMarker) {
+  append(elt: Element | InlineDelimiter) {
     this.parts.push(elt)
     return elt.to
   }
@@ -1215,16 +1215,16 @@ class InlineContext {
   resolveMarkers(from: number) {
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
-      if (!(close instanceof InlineMarker && close.type == Type.Emphasis && (close.value & Mark.Close))) continue
+      if (!(close instanceof InlineDelimiter && close.type == "Emphasis" && (close.side & Mark.Close))) continue
 
       let type = this.char(close.from), closeSize = close.to - close.from
-      let open: InlineMarker | undefined, openSize = 0, j = i - 1
+      let open: InlineDelimiter | undefined, openSize = 0, j = i - 1
       for (; j >= from; j--) {
-        let part = this.parts[j] as InlineMarker
-        if (!(part instanceof InlineMarker && (part.value & Mark.Open) && this.char(part.from) == type))
+        let part = this.parts[j] as InlineDelimiter
+        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && this.char(part.from) == type))
           continue
         openSize = part.to - part.from
-        if (!((close.value & Mark.Open) || (part.value & Mark.Close)) ||
+        if (!((close.side & Mark.Open) || (part.side & Mark.Close)) ||
             (openSize + closeSize) % 3 || (openSize % 3 == 0 && closeSize % 3 == 0)) {
           open = part
           break
@@ -1240,8 +1240,8 @@ class InlineContext {
       }
       content.push(elt(Type.EmphasisMark, close.from, end))
       let element = elt(size == 1 ? Type.Emphasis : Type.StrongEmphasis, open.to - size, close.from + size, content)
-      this.parts[j] = open.from == start ? null : new InlineMarker(open.type, open.from, start, open.value)
-      let keep = this.parts[i] = close.to == end ? null : new InlineMarker(close.type, end, close.to, close.value)
+      this.parts[j] = open.from == start ? null : new InlineDelimiter(open.type, open.from, start, open.side)
+      let keep = this.parts[i] = close.to == end ? null : new InlineDelimiter(close.type, end, close.to, close.side)
       if (keep) this.parts.splice(i, 0, element)
       else this.parts[i] = element
     }
