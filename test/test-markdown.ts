@@ -1,76 +1,13 @@
 import {parser} from ".."
 import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
+import {SpecParser} from "./spec"
 
-function type(name: string) {
-  return parser.nodeSet.types.find(t => t.name == name)!.id
-}
-
-const abbrev: {[abbr: string]: number} = {
-  CB: type("CodeBlock"),
-  FC: type("FencedCode"),
-  Q: type("Blockquote"),
-  HR: type("HorizontalRule"),
-  BL: type("BulletList"),
-  OL: type("OrderedList"),
-  LI: type("ListItem"),
-  AH: type("ATXHeading"),
-  SH: type("SetextHeading"),
-  HB: type("HTMLBlock"),
-  PI: type("ProcessingInstructionBlock"),
-  CMB: type("CommentBlock"),
-  LR: type("LinkReference"),
-  P: type("Paragraph"),
-  Esc: type("Escape"),
-  Ent: type("Entity"),
-  BR: type("HardBreak"),
-  Em: type("Emphasis"),
-  St: type("StrongEmphasis"),
-  Ln: type("Link"),
-  Im: type("Image"),
-  C: type("InlineCode"),
-  HT: type("HTMLTag"),
-  CM: type("Comment"),
-  Pi: type("ProcessingInstruction"),
-  h: type("HeaderMark"),
-  q: type("QuoteMark"),
-  l: type("ListMark"),
-  L: type("LinkMark"),
-  e: type("EmphasisMark"),
-  c: type("CodeMark"),
-  cI: type("CodeInfo"),
-  LT: type("LinkTitle"),
-  LL: type("LinkLabel")
-}
-
-function getType(name: string) {
-  return abbrev[name] || type(name)
-}
-
-function parseSpec(spec: string, specName: string) {
-  let doc = "", buffer = [], stack: number[] = []
-  for (let pos = 0; pos < spec.length; pos++) {
-    let ch = spec[pos]
-    if (ch == "{") {
-      let name = /^(\w+):/.exec(spec.slice(pos + 1)), tag = name && getType(name[1])
-      if (tag == null) throw new Error(`Invalid node opening mark at ${pos} in ${specName}`)
-      pos += name![0].length
-      stack.push(tag, doc.length, buffer.length)
-    } else if (ch == "}") {
-      if (!stack.length) throw new Error(`Mismatched node close mark at ${pos} in ${specName}`)
-      let bufStart = stack.pop()!, from = stack.pop()!, type = stack.pop()!
-      buffer.push(type, from, doc.length, 4 + buffer.length - bufStart)
-    } else {
-      doc += ch
-    }
-  }
-  if (stack.length) throw new Error(`Unclosed node in ${specName}`)
-  return {tree: Tree.build({buffer, nodeSet: parser.nodeSet, topID: type("Document"), length: doc.length}), doc}
-}
+const specParser = new SpecParser(parser)
 
 function test(name: string, spec: string) {
   it(name, () => {
-    let {tree, doc} = parseSpec(spec, name)
+    let {tree, doc} = specParser.parse(spec, name)
     let parse = parser.startParse(stringInput(doc)), result: Tree | null
     while (!(result = parse.advance())) {}
     compareTree(result, tree)
