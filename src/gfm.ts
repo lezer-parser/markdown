@@ -84,7 +84,7 @@ class TableParser implements LeafBlockParser {
   }
 
   emit(cx: BlockContext, leaf: LeafBlock) {
-    cx.addLeafNode(leaf, cx.elt("Table", leaf.start, leaf.start + leaf.content.length, this.rows as readonly Element[]))
+    cx.addLeafElement(leaf, cx.elt("Table", leaf.start, leaf.start + leaf.content.length, this.rows as readonly Element[]))
   }
 }
 
@@ -107,7 +107,7 @@ class TaskParser implements LeafBlockParser {
   nextLine() { return false }
 
   finish(cx: BlockContext, leaf: LeafBlock) {
-    cx.addLeafNode(leaf, cx.elt("Task", leaf.start, leaf.start + leaf.content.length, [
+    cx.addLeafElement(leaf, cx.elt("Task", leaf.start, leaf.start + leaf.content.length, [
       cx.elt("TaskMarker", leaf.start, leaf.start + 3),
       ...cx.parseInline(leaf.content.slice(3), leaf.start + 3)
     ]))

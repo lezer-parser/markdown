@@ -160,7 +160,7 @@ function skipForList(cx: CompositeBlock, p: BlockContext, line: Line) {
   if (line.indent >= line.baseIndent + 4) return false
   let size = (cx.type == Type.OrderedList ? isOrderedList : isBulletList)(line, p, false)
   return size > 0 &&
-    (cx.type != Type.BulletList || isHorizontalRule(line, cx, false) < 0) &&
+    (cx.type != Type.BulletList || isHorizontalRule(line, p, false) < 0) &&
     line.text.charCodeAt(line.pos + size - 1) == cx.value
 }
 
@@ -499,7 +499,7 @@ class LinkReferenceParser implements LeafBlockParser {
   }
 
   complete(p: BlockContext, leaf: LeafBlock, len: number) {
-    p.addLeafNode(leaf, elt(Type.LinkReference, this.start, this.start + len, this.elts))
+    p.addLeafElement(leaf, elt(Type.LinkReference, this.start, this.start + len, this.elts))
     return true
   }
 
@@ -558,7 +558,7 @@ class SetextHeadingParser implements LeafBlockParser {
     if (underline < 0) return false
     let underlineMark = elt(Type.HeaderMark, p.lineStart + line.pos, p.lineStart + underline)
     p.nextLine()
-    p.addLeafNode(leaf, elt(Type.SetextHeading, leaf.start, p.prevLineEnd(), [
+    p.addLeafElement(leaf, elt(Type.SetextHeading, leaf.start, p.prevLineEnd(), [
       ...p.parseInline(leaf.content, leaf.start),
       underlineMark
     ]))
@@ -723,7 +723,12 @@ export class BlockContext implements PartialParse {
     this.context.positions.push(from - this.context.from)
   }
 
-  addLeafNode(leaf: LeafBlock, elt: Element) {
+  addElement(elt: Element) {
+    this.context.children.push(elt.toTree(this.parser.nodeSet, -elt.from))
+    this.context.positions.push(elt.from - this.context.from)
+  }
+
+  addLeafElement(leaf: LeafBlock, elt: Element) {
     this.addNode(new Buffer(this)
       .writeElements(injectMarks(elt.children, leaf.marks), -elt.from)
       .finish(elt.type, elt.to - elt.from), elt.from)
@@ -1159,8 +1164,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         }
         // Finish the content and replace the entire range in
         // this.parts with the link/image node.
-        let content = cx.resolveMarkers(i + 1)
-        cx.parts.length = i
+        let content = cx.takeContent(i)
         let link = cx.parts[i] = finishLink(cx, content, part.type == LinkStart ? Type.Link : Type.Image, part.from, start + 1)
         // Set any open-link markers before this link to invalid.
         if (part.type == LinkStart) for (let j = 0; j < i; j++) {
@@ -1332,6 +1336,20 @@ export class InlineContext {
       if (part instanceof Element) result.push(part)
     }
     return result
+  }
+
+  findOpeningDelimiter(type: DelimiterType) {
+    for (let i = this.parts.length - 1; i >= 0; i--) {
+      let part = this.parts[i]
+      if (part instanceof InlineDelimiter && part.type == type) return i
+    }
+    return -1
+  }
+
+  takeContent(startIndex: number) {
+    let content = this.resolveMarkers(startIndex)
+    this.parts.length = startIndex
+    return content
   }
 
   skipSpace(from: number) { return skipSpace(this.text, from - this.offset) + this.offset }
