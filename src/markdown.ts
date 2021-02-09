@@ -74,38 +74,50 @@ enum Type {
   LinkLabel
 }
 
+/// Data structure used to accumulate a block's content during [leaf
+/// block parsing](#BlockParser.leaf).
 export class LeafBlock {
+  /// @internal
   marks: Element[] = []
+  /// @internal
   parsers: LeafBlockParser[] = []
 
+  /// @internal
   constructor(
+    /// The start position of the block.
     readonly start: number,
+    /// The block's text content.
     public content: string
   ) {}
 }
 
+/// Data structure used during block-level per-line parsing.
 export class Line {
-  // The line's text
+  /// The line's full text.
   text = ""
-  // The base indent provided by the contexts (handled so far)
+  /// The base indent provided by the composite contexts (that have
+  /// been handled so far).
   baseIndent = 0
-  // The position corresponding to the base indent
+  /// The string position corresponding to the base indent.
   basePos = 0
-  // The number of contexts handled
+  /// The number of contexts handled @internal
   depth = 0
-  // Any markers (i.e. block quote markers) parsed for the contexts.
+  /// Any markers (i.e. block quote markers) parsed for the contexts. @internal
   markers: Element[] = []
-  // The next non-whitespace character
+  /// The position of the next non-whitespace character beyond any
+  /// list, blockquote, or other composite block markers.
   pos = 0
-  // The column of the next non-whitespace character
+  /// The column of the next non-whitespace character.
   indent = 0
-  // The character code of the character after this.pos
+  /// The character code of the character after `pos`.
   next = -1
 
+  /// @internal
   forward() {
     if (this.basePos > this.pos) this.forwardInner()
   }
   
+  /// @internal
   forwardInner() {
     let newPos = this.skipSpace(this.basePos)
     this.indent = this.countIndent(newPos, this.pos, this.indent)
@@ -113,8 +125,12 @@ export class Line {
     this.next = newPos == this.text.length ? -1 : this.text.charCodeAt(newPos)
   }
 
+  /// Skip whitespace after the given position, return the position of
+  /// the next non-space character or the end of the line if there's
+  /// only space after `from`.
   skipSpace(from: number) { return skipSpace(this.text, from) }
 
+  /// @internal
   reset(text: string) {
     this.text = text
     this.baseIndent = this.basePos = this.pos = this.indent = 0
@@ -123,29 +139,45 @@ export class Line {
     while (this.markers.length) this.markers.pop()
   }
 
+  /// Move the line's base position forward to the given position.
+  /// This should only be called by composite [block
+  /// parsers](#BlockParser.parse) or [markup skipping
+  /// functions](#NodeSpec.composite).
   moveBase(to: number) {
     this.basePos = to
     this.baseIndent = this.countIndent(to, this.pos, this.indent)
   }
 
-  moveBaseIndent(indent: number) {
+  /// Move the line's base position forward to the given _column_.
+  moveBaseColumn(indent: number) {
     this.baseIndent = indent
-    this.basePos = this.findIndent(indent)
+    this.basePos = this.findColumn(indent)
   }
 
+  /// Store a composite-block-level marker. Should be called from
+  /// [markup skipping functions](#NodeSpec.composite) when they
+  /// consume any non-whitespace characters.
+  addMarker(elt: Element) {
+    this.markers.push(elt)
+  }
+
+  /// Find the column position at `to`, optionally starting at a given
+  /// position and column.
   countIndent(to: number, from = 0, indent = 0) {
     for (let i = from; i < to; i++)
       indent += this.text.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
     return indent
   }
 
-  findIndent(goal: number) {
+  /// Find the position corresponding to the given column.
+  findColumn(goal: number) {
     let i = 0
     for (let indent = 0; i < this.text.length && indent < goal; i++)
       indent += this.text.charCodeAt(i) == 9 ? 4 - indent % 4 : 1
     return i
   }
 
+  /// @internal
   scrub() {
     if (!this.baseIndent) return this.text
     let result = ""
@@ -174,7 +206,7 @@ const DefaultSkipMarkup: {[type: number]: (cx: CompositeBlock, p: BlockContext, 
   },
   [Type.ListItem](cx, _p, line) {
     if (line.indent < line.baseIndent + cx.value && line.next > -1) return false
-    line.moveBaseIndent(line.baseIndent + cx.value)
+    line.moveBaseColumn(line.baseIndent + cx.value)
     return true
   },
   [Type.OrderedList]: skipForList,
@@ -313,7 +345,7 @@ const DefaultBlockParsers: {[name: string]: ((p: BlockContext, line: Line) => Bl
   IndentedCode(p, line) {
     let base = line.baseIndent + 4
     if (line.indent < base) return false
-    let start = line.findIndent(base)
+    let start = line.findColumn(base)
     let from = p.lineStart + start, end = p.lineStart + line.text.length
     let marks: Element[] = [], pendingMarks: Element[] = []
     for (; p.nextLine();) {
@@ -409,7 +441,7 @@ const DefaultBlockParsers: {[name: string]: ((p: BlockContext, line: Line) => Bl
     let newBase = getListIndent(line, line.pos + 1)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
-    line.moveBaseIndent(newBase)
+    line.moveBaseColumn(newBase)
     return null
   },
 
@@ -421,7 +453,7 @@ const DefaultBlockParsers: {[name: string]: ((p: BlockContext, line: Line) => Bl
     let newBase = getListIndent(line, line.pos + size)
     p.startContext(Type.ListItem, line.basePos, newBase - line.baseIndent)
     p.addNode(Type.ListMark, p.lineStart + line.pos, p.lineStart + line.pos + size)
-    line.moveBaseIndent(newBase)
+    line.moveBaseColumn(newBase)
     return null
   },
 
@@ -594,20 +626,31 @@ class NestedParse {
   ) {}
 }
 
+/// Block-level parsing functions get access to this context object.
 export class BlockContext implements PartialParse {
+  /// @internal
   context: CompositeBlock
+  /// @internal
   contextStack: CompositeBlock[]
-  line = new Line()
+  private line = new Line()
   private atEnd = false
   private fragments: FragmentCursor | null
   private nested: NestedParse | null = null
 
+  /// The start of the current line.
   lineStart: number
 
-  constructor(readonly parser: MarkdownParser,
-              readonly input: Input,
-              startPos: number,
-              readonly parseContext: ParseContext) {
+  /// @internal
+  constructor(
+    /// The parser configuration used.
+    readonly parser: MarkdownParser,
+    /// @internal
+    readonly input: Input,
+    /// @internal
+    startPos: number,
+    /// @internal
+    readonly parseContext: ParseContext
+  ) {
     this.lineStart = startPos
     this.context = CompositeBlock.create(Type.Document, 0, this.lineStart, 0, 0)
     this.contextStack = [this.context]
@@ -615,10 +658,12 @@ export class BlockContext implements PartialParse {
     this.updateLine(input.lineAfter(this.lineStart))
   }
 
+  /// @internal
   get pos() {
     return this.nested ? this.nested.parser.pos : this.lineStart
   }
 
+  /// @internal
   advance() {
     if (this.nested) {
       let done = this.nested.parser.advance()
@@ -645,7 +690,7 @@ export class BlockContext implements PartialParse {
         let result = type(this, line)
         if (result != false) {
           if (result == true) return null
-          this.line.forward()
+          line.forward()
           continue start
         }
       }
@@ -686,6 +731,11 @@ export class BlockContext implements PartialParse {
     return true
   }
 
+  /// Move to the next input line. This should only be called by
+  /// (non-composite) [block parsers](#BlockParser.parse) that consume
+  /// the line directly, or leaf block parser
+  /// [`nextLine`](#LeafBlockParser.nextLine) methods when they
+  /// consume the current line (and return true).
   nextLine() {
     this.lineStart += this.line.text.length
     if (this.lineStart >= this.input.length) {
@@ -699,6 +749,7 @@ export class BlockContext implements PartialParse {
     }
   }
 
+  /// @internal
   updateLine(text: string) {
     let {line} = this
     line.reset(text)
@@ -710,34 +761,50 @@ export class BlockContext implements PartialParse {
     }
   }
 
+  /// The end position of the previous line.
   prevLineEnd() { return this.atEnd ? this.lineStart : this.lineStart - 1 }
 
+  /// @internal
   startContext(type: Type, start: number, value = 0) {
     this.context = CompositeBlock.create(type, value, this.lineStart + start, this.context.hash, this.lineStart + this.line.text.length)
     this.contextStack.push(this.context)
   }
 
+  /// Start a composite block. Should only be called from [block
+  /// parser functions](#BlockParser.parse) that return null.
+  startComposite(type: string, start: number, value = 0) {
+    this.startContext(this.parser.getNodeType(type), start, value)
+  }
+
+  /// @internal
   addNode(block: Type | Tree | TreeBuffer, from: number, to?: number) {
     if (typeof block == "number") block = new Tree(this.parser.nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
     this.context.children.push(block)
     this.context.positions.push(from - this.context.from)
   }
 
+  /// Add a block element. Can be called by [block
+  /// parsers](#BlockParser.parse).
   addElement(elt: Element) {
     this.context.children.push(elt.toTree(this.parser.nodeSet, -elt.from))
     this.context.positions.push(elt.from - this.context.from)
   }
 
+  /// Add a block element from a [leaf parser](#LeafBlockParser). This
+  /// makes sure any extra composite block markup (such as blockquote
+  /// markers) inside the block are also added to the syntax tree.
   addLeafElement(leaf: LeafBlock, elt: Element) {
     this.addNode(new Buffer(this)
       .writeElements(injectMarks(elt.children, leaf.marks), -elt.from)
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
 
+  /// @internal
   startNested(parse: NestedParse) {
     this.nested = parse
   }
 
+  /// @internal
   finishContext() {
     this.context = finishContext(this.contextStack, this.parser.nodeSet)
   }
@@ -747,6 +814,7 @@ export class BlockContext implements PartialParse {
     return this.context.toTree(this.parser.nodeSet, this.lineStart)
   }
 
+  /// @internal
   forceFinish() {
     let cx = this.contextStack.map(cx => cx.copy())
     if (this.nested) {
@@ -758,6 +826,7 @@ export class BlockContext implements PartialParse {
     return cx[0].toTree(this.parser.nodeSet, this.lineStart)
   }
 
+  /// @internal
   finishLeaf(leaf: LeafBlock) {
     for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return
     let inline = injectMarks(this.parseInline(leaf.content, leaf.start), leaf.marks)
@@ -766,6 +835,9 @@ export class BlockContext implements PartialParse {
       .finish(Type.Paragraph, leaf.content.length), leaf.start)
   }
 
+  /// Parse the given piece of inline text at the given offset,
+  /// returning an array of [`Element`](#Element) objects representing
+  /// the inline content.
   parseInline(text: string, offset: number) {
     let cx = new InlineContext(this.parser, text, offset)
     outer: for (let pos = offset; pos < cx.end;) {
@@ -779,6 +851,8 @@ export class BlockContext implements PartialParse {
     return cx.resolveMarkers(0)
   }
 
+  /// Create an [`Element`](#Element) object to represent some syntax
+  /// node.
   elt(type: string, from: number, to: number, children?: readonly Element[]) {
     return elt(this.parser.getNodeType(type), from, to, children)
   }
@@ -789,33 +863,121 @@ export type InnerParser = {
   startParse(input: Input, startPos: number, context: ParseContext): PartialParse
 }
 
+/// Used in the [configuration](#MarkdownConfig.defineNodes) to define
+/// new [syntax node
+/// types](https://lezer.codemirror.net/docs/ref/#tree.NodeType).
 export interface NodeSpec {
+  /// The node's name.
   name: string,
+  /// Should be set to true if this type represents a block node.
   block?: boolean,
-  composite?(p: BlockContext, value: number): boolean
+  /// If this is a composite block, this should hold a function that,
+  /// at the start of a new line where that block is active, checks
+  /// whether the composite block should continue (return value) and
+  /// optionally [adjusts](#Line.moveBase) the line's base position
+  /// and [registers](#Line.addMarker) nodes for any markers involved
+  /// in the block's syntax.
+  composite?(p: BlockContext, line: Line, value: number): boolean
 }
 
+/// Inline parsers are called for every character of parts of the
+/// document that are parsed as inline content.
 export interface InlineParser {
+  /// This parser's name, which can be used by other parsers to
+  /// [indicate](#InlineParser.before) a relative precedence.
   name: string,
+  /// The parse function. Gets the next character and its position as
+  /// arguments. Should return -1 if it doesn't handle the character,
+  /// or add some [element](#InlineContext.addElement) or
+  /// [delimiter](#InlineContext.addDelimiter) and return the end
+  /// position of the content it parsed if it can.
   parse(cx: InlineContext, next: number, pos: number): number,
+  /// When given, this parser will be installed directly before the
+  /// parser with the given name. The default configuration defines
+  /// inline parsers with names Escape, Entity, InlineCode, HTMLTag,
+  /// Emphasis, HardBreak, Link, and Image.
   before?: string,
+  /// When given, the parser will be installed directly _after_ the
+  /// parser with the given name.
   after?: string
 }  
 
+/// Block parsers handle block-level structure. There are three
+/// general types of block parsers:
+///
+/// - Composite block parsers, which handle things like lists and
+///   blockquotes. These define a [`parse`](#BlockParser.parse) method
+///   that [starts](#BlockContext.startComposite) a composite block
+///   and returns null when it recognizes its syntax.
+///
+/// - Eager leaf block parsers, used for things like code or HTML
+///   blocks. These can unambiguously recognize their content from its
+///   first line. They define a [`parse`](#BlockParser.parse) method
+///   that, if it recognizes the construct,
+///   [moves](#BlockContext.nextLine) the current line forward to the
+///   line beyond the end of the block,
+///   [add](#BlockContext.addElement) a syntax node for the block, and
+///   return true.
+///
+/// - Leaf block parsers that observe a paragraph-like construct as it
+///   comes in, and optionally decide to handle it at some point. This
+///   is used for "setext" (underlined) headings and link references.
+///   These define a [`leaf`](#BlockParser.leaf) method that checks
+///   the first line of the block and returns a
+///   [`LeafBlockParser`](#LeafBlockParser) object if it wants to
+///   observe that block.
 export interface BlockParser {
+  /// The name of the parser. Can be used by other block parsers to
+  /// [specify](#BlockParser.before) precedence.
   name: string,
+  /// The eager parse function, which can look at the block's first
+  /// line and return `false` to do nothing, `true` if it has parsed a
+  /// block, or `null` if it has started a composite block.
   parse?(p: BlockContext): BlockResult
+  /// A leaf parse function. If no [regular](#BlockParser.parse) parse
+  /// functions match for a given line, its content will be
+  /// accumulated for a paragraph-style block. This method can return
+  /// an [object](#LeafBlockParser) that overrides that style of
+  /// parsing in some situations.
   leaf?(p: BlockContext, leaf: LeafBlock): LeafBlockParser | null
+  /// Some constructs, such as code blocks or newly started
+  /// blockquotes, can interrupt paragraphs even without a blank line.
+  /// If your construct can do this, provide a predicate here that
+  /// recognizes lines that should end a paragraph (or other non-eager
+  /// [leaf block](#BlockParser.leaf)).
   endLeaf?(p: BlockContext, line: Line): boolean
+  /// When given, this parser will be installed directly before the
+  /// block parser with the given name. The default configuration
+  /// defines block parsers with names LinkReference, IndentedCode,
+  /// FencedCode, Blockquote, HorizontalRule, BulletList, OrderedList,
+  /// ATXHeading, HTMLBlock, and SetextHeading.
   before?: string,
+  /// When given, the parser will be installed directly _after_ the
+  /// parser with the given name.
   after?: string,
 }
 
+/// Objects that are used to [override](#BlockParser.leaf)
+/// paragraph-style blocks should conform to this interface.
 export interface LeafBlockParser {
+  /// Update the parser's state for the next line, and optionally
+  /// finish the block. This is not called for the first line (the
+  /// object is contructed at that line), but for any further lines.
+  /// When it returns `true`, the block is finished. It is okay for
+  /// the function to [consume](#BlockContext.nextLine) the current
+  /// line or any subsequent lines when returning true.
   nextLine(p: BlockContext, line: Line, leaf: LeafBlock): boolean
+  /// Called when the block is finished by external circumstances
+  /// (such as a blank line or the [start](#BlockParser.endLeaf) of
+  /// another construct). If this parser can handle the block up to
+  /// its current position, it should
+  /// [finish](#BlockContext.addLeafElement) the block and return
+  /// true.
   finish(p: BlockContext, leaf: LeafBlock): boolean
 }
 
+/// Objects of this type are used to
+/// [configure](#MarkdownParser.configure) the Markdown parser.
 export interface MarkdownConfig {
   /// Node props to add to the parser's node set.
   props?: readonly NodePropSource[],
@@ -824,32 +986,51 @@ export interface MarkdownConfig {
   /// or the empty string if there is no such info or this is an
   /// indented code block. If there is a parser available for the
   /// code, it should return a function that can construct the
-  /// [partse](#lezer.PartialParse).
+  /// [parse](https://lezer.codemirror.net/docs/ref/#tree.PartialParse).
   codeParser?: (info: string) => null | InnerParser
   /// The parser used to parse HTML tags (both block and inline).
   htmlParser?: InnerParser,
+  /// Define new [node types](#NodeSpec) for use in parser extensions.
   defineNodes?: readonly (string | NodeSpec)[],
+  /// Define additional [block parsing](#BlockParser) logic.
   parseBlock?: readonly BlockParser[],
+  /// Define new [inline parsing](#InlineParser) logic.
   parseInline?: readonly InlineParser[]
 }
 
+/// To make it possible to group extensions together into bigger
+/// extensions (such as the [Github-flavored Markdown](#GFM)
+/// extension), [reconfiguration](#MarkdownParser.configure) accepts
+/// nested arrays of [config](#MarkdownConfig) objects.
 export type MarkdownConfigElement = MarkdownConfig | readonly MarkdownConfigElement[]
 
+/// A Markdown parser configuration.
 export class MarkdownParser {
   /// @internal
   nodeTypes: {[name: string]: number} = Object.create(null)
 
   /// @internal
   constructor(
+    /// The parser's syntax [node
+    /// types](https://lezer.codemirror.net/docs/ref/#tree.NodeSet).
     readonly nodeSet: NodeSet,
+    /// @internal
     readonly codeParser: null | ((info: string) => null | InnerParser),
+    /// @internal
     readonly htmlParser: null | InnerParser,
+    /// @internal
     readonly blockParsers: readonly (((p: BlockContext, line: Line) => BlockResult) | undefined)[],
+    /// @internal
     readonly leafBlockParsers: readonly (((p: BlockContext, leaf: LeafBlock) => LeafBlockParser | null) | undefined)[],
+    /// @internal
     readonly blockNames: readonly string[],
+    /// @internal
     readonly endLeafBlock: readonly ((p: BlockContext, line: Line) => boolean)[],
+    /// @internal
     readonly skipContextMarkup: {readonly [type: number]: (cx: CompositeBlock, p: BlockContext, line: Line) => boolean},
+    /// @internal
     readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
+    /// @internal
     readonly inlineNames: readonly string[]
   ) {
     for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id
@@ -873,7 +1054,7 @@ export class MarkdownParser {
         let {name, block, composite}: NodeSpec = typeof s == "string" ? {name: s} : s
         if (nodeTypes.some(t => t.name == name)) throw new RangeError(`Duplicate definition of node ${name}`)
         if (composite) (skipContextMarkup as any)[nodeTypes.length] =
-          (cx: CompositeBlock, p: BlockContext) => composite!(p, cx.value)
+          (cx: CompositeBlock, p: BlockContext, line: Line) => composite!(p, line, cx.value)
         nodeTypes.push(NodeType.define({
           id: nodeTypes.length,
           name,
@@ -999,18 +1180,29 @@ class Buffer {
   }
 }  
 
+/// Elements are used to compose syntax nodes during parsing.
 export class Element {
-  constructor(readonly type: Type,
-              readonly from: number,
-              readonly to: number,
-              readonly children: readonly (Element | TreeElement)[] = none) {}
+  /// @internal
+  constructor(
+    /// The node's
+    /// [id](https://lezer.codemirror.net/docs/ref/#tree.NodeType.id).
+    readonly type: Type,
+    /// The start of the node, as an offset from the start of the document.
+    readonly from: number,
+    /// The end of the node.
+    readonly to: number,
+    /// The node's child nodes.
+    readonly children: readonly (Element | TreeElement)[] = none
+  ) {}
 
+  /// @internal
   writeTo(buf: Buffer, offset: number) {
     let startOff = buf.content.length
     buf.writeElements(this.children, offset)
     buf.content.push(this.type, this.from + offset, this.to + offset, buf.content.length + 4 - startOff)
   }
 
+  /// @internal
   toTree(nodeSet: NodeSet, offset: number): Tree | TreeBuffer {
     return new Tree(nodeSet.types[this.type],
                     this.children.length ? this.children.map(ch => ch.toTree(nodeSet, this.from)) : none,
@@ -1038,8 +1230,24 @@ function elt(type: Type, from: number, to: number, children?: readonly (Element 
 
 const enum Mark { Open = 1, Close = 2 }
 
+/// Delimiters are used during inline parsing to store the positions
+/// of things that _might_ be delimiters, if another matching
+/// delimiter is found. They are identified by objects with these
+/// properties.
 export interface DelimiterType {
+  /// If this is given, the delimiter should be matched automatically
+  /// when a piece of inline content is finished. Such delimiters will
+  /// be matched with delimiters of the same type according to their
+  /// [open and close](#InlineContext.addDelimiter) properties. When a
+  /// match is found, the content between the delimiters is wrapped in
+  /// a node whose name is given by the value of this property.
+  ///
+  /// When this isn't given, you need to match the delimiter eagerly
+  /// using the [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter)
+  /// and [`takeContent`](#InlineContext.takeContent) methods.
   resolve?: string,
+  /// If the delimiter itself should, when matched, create a syntax
+  /// node, set this to the name of the syntax node.
   mark?: string
 }
 
@@ -1268,28 +1476,53 @@ function parseLinkLabel(text: string, start: number, offset: number, requireNonW
   return null
 }
 
+/// Inline parsing functions get access to this context, and use it to
+/// read the content and emit syntax nodes.
 export class InlineContext {
+  /// @internal
   parts: (Element | InlineDelimiter | null)[] = []
 
-  constructor(readonly parser: MarkdownParser, readonly text: string, readonly offset: number) {}
+  /// @internal
+  constructor(
+    /// The parser that is being used.
+    readonly parser: MarkdownParser,
+    /// The text of this inline section.
+    readonly text: string,
+    /// The starting offset of the section in the document.
+    readonly offset: number
+  ) {}
 
+  /// Get the character code at the given (document-relative)
+  /// position.
   char(pos: number) { return pos >= this.end ? -1 : this.text.charCodeAt(pos - this.offset) }
+
+  /// The position of the end of this inline section.
   get end() { return this.offset + this.text.length }
+
+  /// Get a substring of this inline section. Again uses
+  /// document-relative positions.
   slice(from: number, to: number) { return this.text.slice(from - this.offset, to - this.offset) }
 
+  /// @internal
   append(elt: Element | InlineDelimiter) {
     this.parts.push(elt)
     return elt.to
   }
 
+  /// Add a [delimiter](#DelimiterType) at this given position. `open`
+  /// and `close` indicate whether this delimiter is opening, closing,
+  /// or both. Returns the end of the delimiter, for convenient
+  /// returning from [parse functions](#InlineParser.parse).
   addDelimiter(type: DelimiterType, from: number, to: number, open: boolean, close: boolean) {
     return this.append(new InlineDelimiter(type, from, to, (open ? Mark.Open : 0) | (close ? Mark.Close : 0)))
   }
 
+  /// Add an inline element. Returns the end of the element.
   addElement(elt: Element) {
     return this.append(elt)
   }
 
+  /// @internal
   resolveMarkers(from: number) {
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
@@ -1338,22 +1571,34 @@ export class InlineContext {
     return result
   }
 
+  /// Find an opening delimiter of the given type. Returns `null` if
+  /// no delimiter is found, or an index that can be passed to
+  /// [`takeContent`](#InlineContext.takeContent) otherwise.
   findOpeningDelimiter(type: DelimiterType) {
     for (let i = this.parts.length - 1; i >= 0; i--) {
       let part = this.parts[i]
       if (part instanceof InlineDelimiter && part.type == type) return i
     }
-    return -1
+    return null
   }
 
+  /// Remove all inline elements and delimiters starting from the
+  /// given index (which you should get from
+  /// [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter),
+  /// resolve delimiters inside of them, and return them as an array
+  /// of elements.
   takeContent(startIndex: number) {
     let content = this.resolveMarkers(startIndex)
     this.parts.length = startIndex
     return content
   }
 
+  /// Skip space after the given (document) position, returning either
+  /// the position of the next non-space character or the end of the
+  /// section.
   skipSpace(from: number) { return skipSpace(this.text, from - this.offset) + this.offset }
 
+  /// Create an [`Element`](#Element) for a syntax node.
   elt(type: string, from: number, to: number, children?: readonly Element[]) {
     return elt(this.parser.getNodeType(type), from, to, children)
   }
@@ -1472,6 +1717,7 @@ class FragmentCursor {
   }
 }
 
+/// The default CommonMark parser.
 export const parser = new MarkdownParser(
   new NodeSet(nodeTypes),
   null,
