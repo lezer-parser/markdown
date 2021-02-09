@@ -1186,12 +1186,12 @@ export class Element {
   constructor(
     /// The node's
     /// [id](https://lezer.codemirror.net/docs/ref/#tree.NodeType.id).
-    readonly type: Type,
+    readonly type: number,
     /// The start of the node, as an offset from the start of the document.
     readonly from: number,
     /// The end of the node.
     readonly to: number,
-    /// The node's child nodes.
+    /// The node's child nodes @internal
     readonly children: readonly (Element | TreeElement)[] = none
   ) {}
 
