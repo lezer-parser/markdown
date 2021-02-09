@@ -1031,7 +1031,7 @@ let Punctuation = /[!"#$%&'()*+,\-.\/:;<=>?@\[\\\]^_`{|}~\xA1\u2010-\u2027]/
 try { Punctuation = /[\p{Pc}|\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}]/u } catch (_) {}
 
 const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: number) => number} = {
-  escape(cx, next, start) {
+  Escape(cx, next, start) {
     if (next != 92 /* '\\' */ || start == cx.end - 1) return -1
     let escaped = cx.char(start + 1)
     for (let i = 0; i < Escapable.length; i++) if (Escapable.charCodeAt(i) == escaped)
@@ -1039,13 +1039,13 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     return -1
   },
 
-  entity(cx, next, start) {
+  Entity(cx, next, start) {
     if (next != 38 /* '&' */) return -1
     let m = /^(?:#\d+|#x[a-f\d]+|\w+);/i.exec(cx.slice(start + 1, start + 31))
     return m ? cx.append(elt(Type.Entity, start, start + 1 + m[0].length)) : -1
   },
 
-  code(cx, next, start) {
+  InlineCode(cx, next, start) {
     if (next != 96 /* '`' */ || start && cx.char(start - 1) == 96) return -1
     let pos = start + 1
     while (pos < cx.end && cx.char(pos) == 96) pos++
@@ -1065,7 +1065,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     return -1
   },
 
-  htmlTagOrURL(cx, next, start) {
+  HTMLTag(cx, next, start) { // or URL
     if (next != 60 /* '<' */ || start == cx.end - 1) return -1
     let after = cx.slice(start + 1, cx.end)
     let url = /^(?:[a-z][-\w+.]+:[^\s>]+|[a-z\d.!#$%&'*+/=?^_`{|}~-]+@[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)*)>/i.exec(after)
@@ -1085,7 +1085,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length, children))
   },
 
-  emphasis(cx, next, start) {
+  Emphasis(cx, next, start) {
     if (next != 95 && next != 42) return -1
     let pos = start + 1
     while (cx.char(pos) == next) pos++
@@ -1100,7 +1100,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
                                          (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
   },
 
-  hardBreak(cx, next, start) {
+  HardBreak(cx, next, start) {
     if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
       return cx.append(elt(Type.HardBreak, start, start + 2))
     if (next == 32) {
@@ -1112,16 +1112,16 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     return -1
   },
 
-  linkOpen(cx, next, start) {
+  Link(cx, next, start) {
     return next == 91 /* '[' */ ? cx.append(new InlineDelimiter(LinkStart, start, start + 1, Mark.Open)) : -1
   },
 
-  imageOpen(cx, next, start) {
+  Image(cx, next, start) {
     return next == 33 /* '!' */ && cx.char(start + 1) == 91 /* '[' */
       ? cx.append(new InlineDelimiter(ImageStart, start, start + 2, Mark.Open)) : -1
   },
 
-  linkEnd(cx, next, start) {
+  LinkEnd(cx, next, start) {
     if (next != 93 /* ']' */) return -1
     // Scanning back to the next link/image start marker
     for (let i = cx.parts.length - 1; i >= 0; i--) {

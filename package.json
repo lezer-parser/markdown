@@ -9,7 +9,7 @@
     "require": "./dist/index.cjs"
   },
   "module": "dist/index.es.js",
-  "types": "dist/markdown.d.ts",
+  "types": "dist/index.d.ts",
   "author": "Marijn Haverbeke <marijnh@gmail.com>",
   "license": "MIT",
   "devDependencies": {

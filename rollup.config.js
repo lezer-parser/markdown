@@ -1,7 +1,7 @@
 import typescript from "rollup-plugin-typescript2"
 
 export default {
-  input: "./src/markdown.ts",
+  input: "./src/index.ts",
   output: [{
     format: "cjs",
     file: "./dist/index.cjs",
