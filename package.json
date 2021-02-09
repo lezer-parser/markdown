@@ -19,7 +19,9 @@
     "rollup": "^2.27.1",
     "rollup-plugin-typescript2": "^0.27.2",
     "ts-node": "^8.0.3",
-    "typescript": "^3.7.2"
+    "typescript": "^3.7.2",
+    "getdocs-ts": "^0.1.0",
+    "builddocs": "^1.0.0"
   },
   "dependencies": {
     "lezer-html": "^0.13.0",
@@ -32,6 +34,7 @@
   "scripts": {
     "watch": "rollup -w -c rollup.config.js",
     "prepare": "rollup -c rollup.config.js",
-    "test": "mocha -r ts-node/register/transpile-only test/test-*.ts"
+    "test": "mocha -r ts-node/register/transpile-only test/test-*.ts",
+    "build-readme": "node bin/build-readme.cjs"
   }
 }
