@@ -103,4 +103,30 @@ export const Table: MarkdownConfig = {
   }]
 }
 
-export const GFM = [Table, Strikethrough]
+class TaskParser implements LeafBlockParser {
+  nextLine() { return false }
+
+  finish(cx: BlockContext, leaf: LeafBlock) {
+    cx.addLeafNode(leaf, cx.elt("Task", leaf.start, leaf.start + leaf.content.length, [
+      cx.elt("TaskMarker", leaf.start, leaf.start + 3),
+      ...cx.parseInline(leaf.content.slice(3), leaf.start + 3)
+    ]))
+    return true
+  }
+}
+
+export const TaskList: MarkdownConfig = {
+  defineNodes: [
+    {name: "Task", block: true},
+    "TaskMarker"
+  ],
+  parseBlock: [{
+    name: "TaskList",
+    leaf(cx, leaf) {
+      return /^\[[ xX]\]/.test(leaf.content) && cx.parser.nodeSet.types[cx.context.type].name == "ListItem" ? new TaskParser : null
+    },
+    after: "SetextHeading"
+  }]
+}
+
+export const GFM = [Table, TaskList, Strikethrough]

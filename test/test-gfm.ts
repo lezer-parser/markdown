@@ -13,7 +13,9 @@ const specParser = new SpecParser(gfmParser, {
   TH: "TableHeader",
   TR: "TableRow",
   TC: "TableCell",
-  tb: "TableDelimiter"
+  tb: "TableDelimiter",
+  T: "Task",
+  t: "TaskMarker"
 })
 
 function test(name: string, spec: string) {
@@ -78,6 +80,27 @@ describe("GFM", () => {
 {q:>}
 {q:>} {P:Okay}}`)
 
+  test("Task list (example 279)", `
+{BL:{LI:{l:-} {T:{t:[ ]} foo}}
+{LI:{l:-} {T:{t:[x]} bar}}}`)
+
+  test("Task list (example 280)", `
+{BL:{LI:{l:-} {T:{t:[x]} foo}
+  {BL:{LI:{l:-} {T:{t:[ ]} bar}}
+  {LI:{l:-} {T:{t:[x]} baz}}}}
+{LI:{l:-} {T:{t:[ ]} bim}}}`)
+
+  test("Task list (in ordered list)", `
+{OL:{LI:{l:1.} {T:{t:[X]} Okay}}}`)
+
+  test("Task list (versus table)", `
+{BL:{LI:{l:-} {TB:{TH:{TC:[ ] foo} {tb:|} {TC:bar}}
+  {tb:--- | ---}}}}`)
+
+  test("Task list (versus setext header)", `
+{OL:{LI:{l:1.} {SH:{Ln:{L:[}X{L:]}} foo
+   {h:===}}}}`)
+
   test("Strikethrough (example 491)", `
 {P:{Th:{tm:~~}Hi{tm:~~}} Hello, world!}`)
 
@@ -96,5 +119,4 @@ describe("GFM", () => {
 
   test("Strikethrough (escaped)", `
 {P:A {Esc:\\~}~b~~}`)
-
 })
