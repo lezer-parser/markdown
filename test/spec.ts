@@ -40,10 +40,10 @@ const abbrev: {[abbr: string]: string} = {
 }
 
 export class SpecParser {
-  constructor(readonly parser: MarkdownParser) {}
+  constructor(readonly parser: MarkdownParser, readonly localAbbrev?: {[name: string]: string}) {}
 
   type(name: string) {
-    name = abbrev[name] || name
+    name = (this.localAbbrev && this.localAbbrev[name]) || abbrev[name] || name
     return this.parser.nodeSet.types.find(t => t.name == name)?.id
   }
 
