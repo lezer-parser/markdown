@@ -841,7 +841,7 @@ export class BlockContext implements PartialParse {
     let cx = new InlineContext(this.parser, text, offset)
     outer: for (let pos = offset; pos < cx.end;) {
       let next = cx.char(pos)
-      for (let token of this.parser.inlineParsers) {
+      for (let token of this.parser.inlineParsers) if (token) {
         let result = token(cx, next, pos)
         if (result >= 0) { pos = result; continue outer }
       }
@@ -996,7 +996,9 @@ export interface MarkdownConfig {
   /// Define additional [block parsing](#BlockParser) logic.
   parseBlock?: readonly BlockParser[],
   /// Define new [inline parsing](#InlineParser) logic.
-  parseInline?: readonly InlineParser[]
+  parseInline?: readonly InlineParser[],
+  /// Remove the named parsers from the configuration.
+  remove?: readonly string[]
 }
 
 /// To make it possible to group extensions together into bigger
@@ -1030,7 +1032,7 @@ export class MarkdownParser {
     /// @internal
     readonly skipContextMarkup: {readonly [type: number]: (bl: CompositeBlock, cx: BlockContext, line: Line) => boolean},
     /// @internal
-    readonly inlineParsers: readonly ((cx: InlineContext, next: number, pos: number) => number)[],
+    readonly inlineParsers: readonly (((cx: InlineContext, next: number, pos: number) => number) | undefined)[],
     /// @internal
     readonly inlineNames: readonly string[]
   ) {
@@ -1045,15 +1047,17 @@ export class MarkdownParser {
   /// Reconfigure the parser.
   configure(spec: MarkdownConfigElement) {
     let config = resolveConfig(spec)
-    let {nodeSet, blockParsers, leafBlockParsers, blockNames, endLeafBlock,
-         skipContextMarkup, inlineParsers, inlineNames} = this
+    let {nodeSet, skipContextMarkup} = this
+    let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
+        blockNames = this.blockNames.slice(), inlineParsers = this.inlineParsers.slice(),
+        inlineNames = this.inlineNames.slice(), endLeafBlock = this.endLeafBlock.slice()
 
     if (nonEmpty(config.defineNodes)) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
       let nodeTypes = nodeSet.types.slice()
       for (let s of config.defineNodes) {
         let {name, block, composite}: NodeSpec = typeof s == "string" ? {name: s} : s
-        if (nodeTypes.some(t => t.name == name)) throw new RangeError(`Duplicate definition of node ${name}`)
+        if (nodeTypes.some(t => t.name == name)) continue
         if (composite) (skipContextMarkup as any)[nodeTypes.length] =
           (bl: CompositeBlock, cx: BlockContext, line: Line) => composite!(cx, line, bl.value)
         nodeTypes.push(NodeType.define({
@@ -1068,29 +1072,42 @@ export class MarkdownParser {
 
     if (nonEmpty(config.props)) nodeSet = nodeSet.extend(...config.props)
 
+    if (nonEmpty(config.remove)) {
+      for (let rm of config.remove) {
+        let block = this.blockNames.indexOf(rm), inline = this.inlineNames.indexOf(rm)
+        if (block > -1) blockParsers[block] = leafBlockParsers[block] = undefined
+        if (inline > -1) inlineParsers[inline] = undefined
+      }
+    }
+
     if (nonEmpty(config.parseBlock)) {
-      blockParsers = blockParsers.slice()
-      leafBlockParsers = leafBlockParsers.slice()
-      blockNames = blockNames.slice()
-      endLeafBlock = endLeafBlock.slice()
       for (let spec of config.parseBlock) {
-        let pos = spec.before ? findName(blockNames, spec.before)
-          : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
-        ;(blockParsers as any).splice(pos, 0, spec.parse)
-        ;(leafBlockParsers as any).splice(pos, 0, spec.leaf)
-        ;(blockNames as any).splice(pos, 0, spec.name)
-        if (spec.endLeaf) (endLeafBlock as any).push(spec.endLeaf)
+        let found = blockNames.indexOf(spec.name)
+        if (found > -1) {
+          blockParsers[found] = spec.parse
+          leafBlockParsers[found] = spec.leaf
+        } else {
+          let pos = spec.before ? findName(blockNames, spec.before)
+            : spec.after ? findName(blockNames, spec.after) + 1 : blockNames.length - 1
+          blockParsers.splice(pos, 0, spec.parse)
+          leafBlockParsers.splice(pos, 0, spec.leaf)
+          blockNames.splice(pos, 0, spec.name)
+        }
+        if (spec.endLeaf) endLeafBlock.push(spec.endLeaf)
       }
     }
 
     if (nonEmpty(config.parseInline)) {
-      inlineParsers = inlineParsers.slice()
-      inlineNames = inlineNames.slice()
       for (let spec of config.parseInline) {
-        let pos = spec.before ? findName(inlineNames, spec.before)
-          : spec.after ? findName(inlineNames, spec.after) + 1 : inlineNames.length - 1
-        ;(inlineParsers as any).splice(pos, 0, spec.parse)
-        ;(inlineNames as any).splice(pos, 0, spec.name)
+        let found = inlineNames.indexOf(spec.name)
+        if (found > -1) {
+          inlineParsers[found] = spec.parse
+        } else {
+          let pos = spec.before ? findName(inlineNames, spec.before)
+            : spec.after ? findName(inlineNames, spec.after) + 1 : inlineNames.length - 1
+          inlineParsers.splice(pos, 0, spec.parse)
+          inlineNames.splice(pos, 0, spec.name)
+        }
       }
     }
 
@@ -1126,7 +1143,8 @@ function resolveConfig(spec: MarkdownConfigElement): MarkdownConfig {
           htmlParser: rest.htmlParser || conf.htmlParser,
           defineNodes: conc(conf.defineNodes, rest.defineNodes),
           parseBlock: conc(conf.parseBlock, rest.parseBlock),
-          parseInline: conc(conf.parseInline, rest.parseInline)}
+          parseInline: conc(conf.parseInline, rest.parseInline),
+          remove: conc(conf.remove, rest.remove)}
 }
 
 function findName(names: readonly string[], name: string) {

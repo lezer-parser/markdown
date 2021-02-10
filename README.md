@@ -2,13 +2,13 @@
 
 # lezer-markdown
 
-This is an incremental Markdown
-([CommonMark](https://commonmark.org/), in fact) parser that
-integrates well with the [Lezer](https://lezer.codemirror.net/) parser
-system. It does not in fact use the Lezer runtime (that runs LR
-parsers, and Markdown can't really be parsed that way), but it
-produces Lezer-style compact syntax trees and consumes fragments of
-such trees for its incremental parsing.
+This is an incremental Markdown ([CommonMark](https://commonmark.org/)
+with support for extension) parser that integrates well with the
+[Lezer](https://lezer.codemirror.net/) parser system. It does not in
+fact use the Lezer runtime (that runs LR parsers, and Markdown can't
+really be parsed that way), but it produces Lezer-style compact syntax
+trees and consumes fragments of such trees for its incremental
+parsing.
 
 Note that this only _parses_ the document, producing a data structure
 that represents its syntactic form, and doesn't help with outputting
@@ -91,6 +91,10 @@ code, it should return a function that can construct the
   <code><strong><a href="#user-content-markdownconfig.parseinline">parseInline</a></strong>&#8288;?: readonly <a href="#user-content-inlineparser">InlineParser</a>[]</code></dt>
 
 <dd><p>Define new <a href="#user-content-inlineparser">inline parsing</a> logic.</p>
+</dd><dt id="user-content-markdownconfig.remove">
+  <code><strong><a href="#user-content-markdownconfig.remove">remove</a></strong>&#8288;?: readonly <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>[]</code></dt>
+
+<dd><p>Remove the named parsers from the configuration.</p>
 </dd></dl>
 
 </dd>

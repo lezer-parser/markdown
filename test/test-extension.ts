@@ -23,10 +23,10 @@ const specParser = new SpecParser(parser, {
   ji: "Emoji"
 })
 
-function test(name: string, spec: string) {
+function test(name: string, spec: string, p = parser) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    let parse = parser.startParse(stringInput(doc)), result: Tree | null
+    let parse = p.startParse(stringInput(doc)), result: Tree | null
     while (!(result = parse.advance())) {}
     compareTree(result, tree)
   })
@@ -148,5 +148,12 @@ describe("Extension", () => {
 
   test("Emoji (format)", `
 {P:Hello :smi le: :1.00: ::}`)
-})
 
+  test("Disable syntax", `
+{BL:{LI:{l:-} {P:List still {Em:{e:*}works{e:*}}}}}
+
+{P:> No quote, no ^sup^}
+
+{P:No setext either
+===}`, parser.configure({remove: ["Superscript", "Blockquote", "SetextHeading"]}))
+})

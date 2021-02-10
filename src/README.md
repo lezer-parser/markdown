@@ -2,13 +2,13 @@
 
 # lezer-markdown
 
-This is an incremental Markdown
-([CommonMark](https://commonmark.org/), in fact) parser that
-integrates well with the [Lezer](https://lezer.codemirror.net/) parser
-system. It does not in fact use the Lezer runtime (that runs LR
-parsers, and Markdown can't really be parsed that way), but it
-produces Lezer-style compact syntax trees and consumes fragments of
-such trees for its incremental parsing.
+This is an incremental Markdown ([CommonMark](https://commonmark.org/)
+with support for extension) parser that integrates well with the
+[Lezer](https://lezer.codemirror.net/) parser system. It does not in
+fact use the Lezer runtime (that runs LR parsers, and Markdown can't
+really be parsed that way), but it produces Lezer-style compact syntax
+trees and consumes fragments of such trees for its incremental
+parsing.
 
 Note that this only _parses_ the document, producing a data structure
 that represents its syntactic form, and doesn't help with outputting
