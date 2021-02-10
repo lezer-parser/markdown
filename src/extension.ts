@@ -1,4 +1,5 @@
-import {MarkdownParser, BlockContext, MarkdownConfig, LeafBlockParser, LeafBlock, Line, Element} from "./markdown"
+import {MarkdownParser, InlineContext, BlockContext, MarkdownConfig,
+        LeafBlockParser, LeafBlock, Line, Element, space} from "./markdown"
 
 const StrikethroughDelim = {resolve: "Strikethrough", mark: "StrikethroughMark"}
 
@@ -148,3 +149,41 @@ export const TaskList: MarkdownConfig = {
 /// Extension bundle containing [`Table`](#Table),
 /// [`TaskList`](#TaskList) and [`Strikethrough`](#Strikethrough).
 export const GFM = [Table, TaskList, Strikethrough]
+
+function parseSubSuper(ch: number, node: string, mark: string) {
+  return (cx: InlineContext, next: number, pos: number) => {
+    if (next != ch || cx.char(pos + 1) == ch) return -1
+    let elts = [cx.elt(mark, pos, pos + 1)]
+    for (let i = pos + 1; i < cx.end; i++) {
+      let next = cx.char(i)
+      if (next == ch)
+        return cx.addElement(cx.elt(node, pos, i + 1, elts.concat(cx.elt(mark, i, i + 1))))
+      if (next == 92 /* '\\' */)
+        elts.push(cx.elt("Escape", i, i++ + 2))
+      if (space(next)) break
+    }
+    return -1
+  }
+}
+
+/// Extension providing
+/// [Pandoc-style](https://pandoc.org/MANUAL.html#superscripts-and-subscripts)
+/// superscript using `^` markers.
+export const Superscript: MarkdownConfig = {
+  defineNodes: ["Superscript", "SuperscriptMark"],
+  parseInline: [{
+    name: "Superscript",
+    parse: parseSubSuper(94 /* '^' */, "Superscript", "SuperscriptMark")
+  }]
+}
+
+/// Extension providing
+/// [Pandoc-style](https://pandoc.org/MANUAL.html#superscripts-and-subscripts)
+/// subscript using `~` markers.
+export const Subscript: MarkdownConfig = {
+  defineNodes: ["Subscript", "SubscriptMark"],
+  parseInline: [{
+    name: "Subscript",
+    parse: parseSubSuper(126 /* '~' */, "Subscript", "SubscriptMark")
+  }]
+}

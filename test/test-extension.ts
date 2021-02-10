@@ -1,11 +1,11 @@
-import {parser, GFM} from ".."
+import {parser as cmParser, GFM, Subscript, Superscript} from ".."
 import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"
 
-const gfmParser = parser.configure(GFM)
+const parser = cmParser.configure([GFM, Subscript, Superscript])
 
-const specParser = new SpecParser(gfmParser, {
+const specParser = new SpecParser(parser, {
   __proto__: null as any,
   Th: "Strikethrough",
   tm: "StrikethroughMark",
@@ -15,19 +15,23 @@ const specParser = new SpecParser(gfmParser, {
   TC: "TableCell",
   tb: "TableDelimiter",
   T: "Task",
-  t: "TaskMarker"
+  t: "TaskMarker",
+  Sub: "Subscript",
+  sub: "SubscriptMark",
+  Sup: "Superscript",
+  sup: "SuperscriptMark"
 })
 
 function test(name: string, spec: string) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    let parse = gfmParser.startParse(stringInput(doc)), result: Tree | null
+    let parse = parser.startParse(stringInput(doc)), result: Tree | null
     while (!(result = parse.advance())) {}
     compareTree(result, tree)
   })
 }
 
-describe("GFM", () => {
+describe("Extension", () => {
   test("Tables (example 198)", `
 {TB:{TH:{tb:|} {TC:foo} {tb:|} {TC:bar} {tb:|}}
 {tb:| --- | --- |}
@@ -118,5 +122,24 @@ describe("GFM", () => {
 {P:One {Th:{tm:~~}two **three{tm:~~}} four**}`)
 
   test("Strikethrough (escaped)", `
-{P:A {Esc:\\~}~b~~}`)
+{P:A {Esc:\\~}~b c~~}`)
+
+  test("Subscript", `
+{P:One {Sub:{sub:~}two{sub:~}} {Em:{e:*}one {Sub:{sub:~}two{sub:~}}{e:*}}}`)
+
+  test("Subscript (no spaces)", `
+{P:One ~two three~}`)
+
+  test("Subscript (escapes)", `
+{P:One {Sub:{sub:~}two{Esc:\\ }th{Esc:\\~}ree{sub:~}}}`)
+
+  test("Superscript", `
+{P:One {Sup:{sup:^}two{sup:^}} {Em:{e:*}one {Sup:{sup:^}two{sup:^}}{e:*}}}`)
+
+  test("Superscript (no spaces)", `
+{P:One ^two three^}`)
+
+  test("Superscript (escapes)", `
+{P:One {Sup:{sup:^}two{Esc:\\ }th{Esc:\\^}ree{sup:^}}}`)
 })
+

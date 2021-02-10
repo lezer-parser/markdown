@@ -214,7 +214,7 @@ const DefaultSkipMarkup: {[type: number]: (cx: CompositeBlock, p: BlockContext, 
   [Type.Document]() { return true }
 }
 
-function space(ch: number) { return ch == 32 || ch == 9 || ch == 10 || ch == 13 }
+export function space(ch: number) { return ch == 32 || ch == 9 || ch == 10 || ch == 13 }
 
 function skipSpace(line: string, i = 0) {
   while (i < line.length && space(line.charCodeAt(i))) i++
