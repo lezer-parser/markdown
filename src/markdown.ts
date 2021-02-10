@@ -626,7 +626,7 @@ class NestedParse {
 }
 
 /// Block-level parsing functions get access to this context object.
-export class BlockContext implements PartialParse {
+export class BlockContext {
   /// @internal
   block: CompositeBlock
   /// @internal
@@ -1047,6 +1047,7 @@ export class MarkdownParser {
   /// Reconfigure the parser.
   configure(spec: MarkdownExtension) {
     let config = resolveConfig(spec)
+    if (!config) return this
     let {nodeSet, skipContextMarkup} = this
     let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
         blockNames = this.blockNames.slice(), inlineParsers = this.inlineParsers.slice(),
@@ -1131,11 +1132,13 @@ function nonEmpty<T>(a: undefined | readonly T[]): a is readonly T[] {
   return a != null && a.length > 0
 }
 
-function resolveConfig(spec: MarkdownExtension): MarkdownConfig {
+function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
   if (!Array.isArray(spec)) return spec as MarkdownConfig
+  if (spec.length == 0) return null
   let conf = resolveConfig(spec[0])
   if (spec.length == 1) return conf
   let rest = resolveConfig(spec.slice(1))
+  if (!rest || !conf) return conf || rest
   let conc: <T>(a: readonly T[] | undefined, b: readonly T[] | undefined) => readonly T[] =
     (a, b) => (a || none).concat(b || none)
   return {props: conc(conf.props, rest.props),
