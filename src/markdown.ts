@@ -1005,7 +1005,7 @@ export interface MarkdownConfig {
 /// extensions (such as the [Github-flavored Markdown](#GFM)
 /// extension), [reconfiguration](#MarkdownParser.configure) accepts
 /// nested arrays of [config](#MarkdownConfig) objects.
-export type MarkdownConfigElement = MarkdownConfig | readonly MarkdownConfigElement[]
+export type MarkdownExtension = MarkdownConfig | readonly MarkdownExtension[]
 
 /// A Markdown parser configuration.
 export class MarkdownParser {
@@ -1045,7 +1045,7 @@ export class MarkdownParser {
   }
 
   /// Reconfigure the parser.
-  configure(spec: MarkdownConfigElement) {
+  configure(spec: MarkdownExtension) {
     let config = resolveConfig(spec)
     let {nodeSet, skipContextMarkup} = this
     let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
@@ -1131,7 +1131,7 @@ function nonEmpty<T>(a: undefined | readonly T[]): a is readonly T[] {
   return a != null && a.length > 0
 }
 
-function resolveConfig(spec: MarkdownConfigElement): MarkdownConfig {
+function resolveConfig(spec: MarkdownExtension): MarkdownConfig {
   if (!Array.isArray(spec)) return spec as MarkdownConfig
   let conf = resolveConfig(spec[0])
   if (spec.length == 1) return conf

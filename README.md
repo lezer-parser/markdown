@@ -46,7 +46,7 @@ types</a>.</p>
 
 <dd><p>Start a parse on the given input.</p>
 </dd><dt id="user-content-markdownparser.configure">
-  <code><strong><a href="#user-content-markdownparser.configure">configure</a></strong>(<a id="user-content-markdownparser.configure^spec" href="#user-content-markdownparser.configure^spec">spec</a>: <a href="#user-content-markdownconfigelement">MarkdownConfigElement</a>) → <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
+  <code><strong><a href="#user-content-markdownparser.configure">configure</a></strong>(<a id="user-content-markdownparser.configure^spec" href="#user-content-markdownparser.configure^spec">spec</a>: <a href="#user-content-markdownextension">MarkdownExtension</a>) → <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
 <dd><p>Reconfigure the parser.</p>
 </dd></dl>
@@ -100,10 +100,10 @@ code, it should return a function that can construct the
 </dd>
 </dl>
 <dl>
-<dt id="user-content-markdownconfigelement">
+<dt id="user-content-markdownextension">
   type
   <code>
-    <strong><a href="#user-content-markdownconfigelement">MarkdownConfigElement</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownconfigelement">MarkdownConfigElement</a>[]</code>
+    <strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
 </dt>
 
 <dd><p>To make it possible to group extensions together into bigger

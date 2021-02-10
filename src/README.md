@@ -28,7 +28,7 @@ The code is licensed under an MIT license.
 
 @MarkdownConfig
 
-@MarkdownConfigElement
+@MarkdownExtension
 
 @InnerParser
 
