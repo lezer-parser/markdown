@@ -2,6 +2,9 @@ import {MarkdownParser, BlockContext, MarkdownConfig, LeafBlockParser, LeafBlock
 
 const StrikethroughDelim = {resolve: "Strikethrough", mark: "StrikethroughMark"}
 
+/// An extension that implements
+/// [GFM-style](https://github.github.com/gfm/#strikethrough-extension-)
+/// Strikethrough syntax using `~~` delimiters.
 export const Strikethrough: MarkdownConfig = {
   defineNodes: ["Strikethrough", "StrikethroughMark"],
   parseInline: [{
@@ -88,6 +91,15 @@ class TableParser implements LeafBlockParser {
   }
 }
 
+/// This extension provides
+/// [GFM-style](https://github.github.com/gfm/#tables-extension-)
+/// tables, using syntax like this:
+///
+/// ```
+/// | head 1 | head 2 |
+/// | ---    | ---    |
+/// | cell 1 | cell 2 |
+/// ```
 export const Table: MarkdownConfig = {
   defineNodes: [
     {name: "Table", block: true},
@@ -115,6 +127,10 @@ class TaskParser implements LeafBlockParser {
   }
 }
 
+/// Extension providing
+/// [GFM-style](https://github.github.com/gfm/#task-list-items-extension-)
+/// task list items, where list items can be prefixed with `[ ]` or
+/// `[x]` to add a checkbox.
 export const TaskList: MarkdownConfig = {
   defineNodes: [
     {name: "Task", block: true},
@@ -129,4 +145,6 @@ export const TaskList: MarkdownConfig = {
   }]
 }
 
+/// Extension bundle containing [`Table`](#Table),
+/// [`TaskList`](#TaskList) and [`Strikethrough`](#Strikethrough).
 export const GFM = [Table, TaskList, Strikethrough]
