@@ -895,7 +895,9 @@ export interface InlineParser {
   /// When given, this parser will be installed directly before the
   /// parser with the given name. The default configuration defines
   /// inline parsers with names Escape, Entity, InlineCode, HTMLTag,
-  /// Emphasis, HardBreak, Link, and Image.
+  /// Emphasis, HardBreak, Link, and Image. When no `before` or
+  /// `after` property is given, the parser is added to the end of the
+  /// list.
   before?: string,
   /// When given, the parser will be installed directly _after_ the
   /// parser with the given name.

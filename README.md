@@ -129,25 +129,69 @@ nested arrays of <a href="#user-content-markdownconfig">config</a> objects.</p>
 <dt id="user-content-gfm">
   <code><strong><a href="#user-content-gfm">GFM</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a>[]</code></dt>
 
-<dd></dd>
+<dd><p>Extension bundle containing <a href="#user-content-table"><code>Table</code></a>,
+<a href="#user-content-tasklist"><code>TaskList</code></a> and <a href="#user-content-strikethrough"><code>Strikethrough</code></a>.</p>
+</dd>
 </dl>
 <dl>
 <dt id="user-content-table">
   <code><strong><a href="#user-content-table">Table</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
 
-<dd></dd>
+<dd><p>This extension provides
+<a href="https://github.github.com/gfm/#tables-extension-">GFM-style</a>
+tables, using syntax like this:</p>
+<pre><code>| head 1 | head 2 |
+| ---    | ---    |
+| cell 1 | cell 2 |
+</code></pre>
+</dd>
 </dl>
 <dl>
 <dt id="user-content-tasklist">
   <code><strong><a href="#user-content-tasklist">TaskList</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
 
-<dd></dd>
+<dd><p>Extension providing
+<a href="https://github.github.com/gfm/#task-list-items-extension-">GFM-style</a>
+task list items, where list items can be prefixed with <code>[ ]</code> or
+<code>[x]</code> to add a checkbox.</p>
+</dd>
 </dl>
 <dl>
 <dt id="user-content-strikethrough">
   <code><strong><a href="#user-content-strikethrough">Strikethrough</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
 
-<dd></dd>
+<dd><p>An extension that implements
+<a href="https://github.github.com/gfm/#strikethrough-extension-">GFM-style</a>
+Strikethrough syntax using <code>~~</code> delimiters.</p>
+</dd>
+</dl>
+
+### Other extensions
+<dl>
+<dt id="user-content-subscript">
+  <code><strong><a href="#user-content-subscript">Subscript</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
+
+<dd><p>Extension providing
+<a href="https://pandoc.org/MANUAL.html#superscripts-and-subscripts">Pandoc-style</a>
+subscript using <code>~</code> markers.</p>
+</dd>
+</dl>
+<dl>
+<dt id="user-content-superscript">
+  <code><strong><a href="#user-content-superscript">Superscript</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
+
+<dd><p>Extension providing
+<a href="https://pandoc.org/MANUAL.html#superscripts-and-subscripts">Pandoc-style</a>
+superscript using <code>^</code> markers.</p>
+</dd>
+</dl>
+<dl>
+<dt id="user-content-emoji">
+  <code><strong><a href="#user-content-emoji">Emoji</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
+
+<dd><p>Extension that parses two colons with only letters, underscores,
+and numbers between them as <code>Emoji</code> nodes.</p>
+</dd>
 </dl>
 
 ### Extension
@@ -548,7 +592,9 @@ position of the content it parsed if it can.</p>
 <dd><p>When given, this parser will be installed directly before the
 parser with the given name. The default configuration defines
 inline parsers with names Escape, Entity, InlineCode, HTMLTag,
-Emphasis, HardBreak, Link, and Image.</p>
+Emphasis, HardBreak, Link, and Image. When no <code>before</code> or
+<code>after</code> property is given, the parser is added to the end of the
+list.</p>
 </dd><dt id="user-content-inlineparser.after">
   <code><strong><a href="#user-content-inlineparser.after">after</a></strong>&#8288;?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a></code></dt>
 

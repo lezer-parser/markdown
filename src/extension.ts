@@ -187,3 +187,17 @@ export const Subscript: MarkdownConfig = {
     parse: parseSubSuper(126 /* '~' */, "Subscript", "SubscriptMark")
   }]
 }
+
+/// Extension that parses two colons with only letters, underscores,
+/// and numbers between them as `Emoji` nodes.
+export const Emoji: MarkdownConfig = {
+  defineNodes: ["Emoji"],
+  parseInline: [{
+    name: "Emoji",
+    parse(cx, next, pos) {
+      let match: RegExpMatchArray | null
+      if (next != 58 /* ':' */ || !(match = /^[a-zA-Z_0-9]+:/.exec(cx.slice(pos + 1, cx.end)))) return -1
+      return cx.addElement(cx.elt("Emoji", pos, pos + 1 + match[0].length))
+    }
+  }]
+}

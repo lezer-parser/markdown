@@ -42,6 +42,14 @@ The code is licensed under an MIT license.
 
 @Strikethrough
 
+### Other extensions
+
+@Subscript
+
+@Superscript
+
+@Emoji
+
 ### Extension
 
 The parser can, to a certain extent, be extended to handle additional

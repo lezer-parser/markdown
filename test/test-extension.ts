@@ -1,9 +1,9 @@
-import {parser as cmParser, GFM, Subscript, Superscript} from ".."
+import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from ".."
 import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"
 
-const parser = cmParser.configure([GFM, Subscript, Superscript])
+const parser = cmParser.configure([GFM, Subscript, Superscript, Emoji])
 
 const specParser = new SpecParser(parser, {
   __proto__: null as any,
@@ -19,7 +19,8 @@ const specParser = new SpecParser(parser, {
   Sub: "Subscript",
   sub: "SubscriptMark",
   Sup: "Superscript",
-  sup: "SuperscriptMark"
+  sup: "SuperscriptMark",
+  ji: "Emoji"
 })
 
 function test(name: string, spec: string) {
@@ -141,5 +142,11 @@ describe("Extension", () => {
 
   test("Superscript (escapes)", `
 {P:One {Sup:{sup:^}two{Esc:\\ }th{Esc:\\^}ree{sup:^}}}`)
+
+  test("Emoji", `
+{P:Hello {ji::smile:} {ji::100:}}`)
+
+  test("Emoji (format)", `
+{P:Hello :smi le: :1.00: ::}`)
 })
 
