@@ -217,7 +217,7 @@ types</a>.</p>
 
 <dd><p>Should be set to true if this type represents a block node.</p>
 </dd><dt id="user-content-nodespec.composite">
-  <code><strong><a href="#user-content-nodespec.composite">composite</a></strong>&#8288;?: fn(<a id="user-content-nodespec.composite^p" href="#user-content-nodespec.composite^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-nodespec.composite^line" href="#user-content-nodespec.composite^line">line</a>: <a href="#user-content-line">Line</a>, <a id="user-content-nodespec.composite^value" href="#user-content-nodespec.composite^value">value</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+  <code><strong><a href="#user-content-nodespec.composite">composite</a></strong>&#8288;?: fn(<a id="user-content-nodespec.composite^cx" href="#user-content-nodespec.composite^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-nodespec.composite^line" href="#user-content-nodespec.composite^line">line</a>: <a href="#user-content-line">Line</a>, <a id="user-content-nodespec.composite^value" href="#user-content-nodespec.composite^value">value</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 
 <dd><p>If this is a composite block, this should hold a function that,
 at the start of a new line where that block is active, checks
@@ -330,13 +330,13 @@ observe that block.</p>
 <dd><p>The name of the parser. Can be used by other block parsers to
 <a href="#user-content-blockparser.before">specify</a> precedence.</p>
 </dd><dt id="user-content-blockparser.parse">
-  <code><strong><a href="#user-content-blockparser.parse">parse</a></strong>&#8288;?: fn(<a id="user-content-blockparser.parse^p" href="#user-content-blockparser.parse^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
+  <code><strong><a href="#user-content-blockparser.parse">parse</a></strong>&#8288;?: fn(<a id="user-content-blockparser.parse^cx" href="#user-content-blockparser.parse^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
 <dd><p>The eager parse function, which can look at the block's first
 line and return <code>false</code> to do nothing, <code>true</code> if it has parsed a
 block, or <code>null</code> if it has started a composite block.</p>
 </dd><dt id="user-content-blockparser.leaf">
-  <code><strong><a href="#user-content-blockparser.leaf">leaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.leaf^p" href="#user-content-blockparser.leaf^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.leaf^leaf" href="#user-content-blockparser.leaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="#user-content-leafblockparser">LeafBlockParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
+  <code><strong><a href="#user-content-blockparser.leaf">leaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.leaf^cx" href="#user-content-blockparser.leaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.leaf^leaf" href="#user-content-blockparser.leaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="#user-content-leafblockparser">LeafBlockParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
 <dd><p>A leaf parse function. If no <a href="#user-content-blockparser.parse">regular</a> parse
 functions match for a given line, its content will be
@@ -344,7 +344,7 @@ accumulated for a paragraph-style block. This method can return
 an <a href="#user-content-leafblockparser">object</a> that overrides that style of
 parsing in some situations.</p>
 </dd><dt id="user-content-blockparser.endleaf">
-  <code><strong><a href="#user-content-blockparser.endleaf">endLeaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.endleaf^p" href="#user-content-blockparser.endleaf^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.endleaf^line" href="#user-content-blockparser.endleaf^line">line</a>: <a href="#user-content-line">Line</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+  <code><strong><a href="#user-content-blockparser.endleaf">endLeaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.endleaf^cx" href="#user-content-blockparser.endleaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.endleaf^line" href="#user-content-blockparser.endleaf^line">line</a>: <a href="#user-content-line">Line</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 
 <dd><p>Some constructs, such as code blocks or newly started
 blockquotes, can interrupt paragraphs even without a blank line.
@@ -378,7 +378,7 @@ parser with the given name.</p>
 <dd><p>Objects that are used to <a href="#user-content-blockparser.leaf">override</a>
 paragraph-style blocks should conform to this interface.</p>
 <dl><dt id="user-content-leafblockparser.nextline">
-  <code><strong><a href="#user-content-leafblockparser.nextline">nextLine</a></strong>(<a id="user-content-leafblockparser.nextline^p" href="#user-content-leafblockparser.nextline^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-leafblockparser.nextline^line" href="#user-content-leafblockparser.nextline^line">line</a>: <a href="#user-content-line">Line</a>, <a id="user-content-leafblockparser.nextline^leaf" href="#user-content-leafblockparser.nextline^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+  <code><strong><a href="#user-content-leafblockparser.nextline">nextLine</a></strong>(<a id="user-content-leafblockparser.nextline^cx" href="#user-content-leafblockparser.nextline^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-leafblockparser.nextline^line" href="#user-content-leafblockparser.nextline^line">line</a>: <a href="#user-content-line">Line</a>, <a id="user-content-leafblockparser.nextline^leaf" href="#user-content-leafblockparser.nextline^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 
 <dd><p>Update the parser's state for the next line, and optionally
 finish the block. This is not called for the first line (the
@@ -387,7 +387,7 @@ When it returns <code>true</code>, the block is finished. It is okay for
 the function to <a href="#user-content-blockcontext.nextline">consume</a> the current
 line or any subsequent lines when returning true.</p>
 </dd><dt id="user-content-leafblockparser.finish">
-  <code><strong><a href="#user-content-leafblockparser.finish">finish</a></strong>(<a id="user-content-leafblockparser.finish^p" href="#user-content-leafblockparser.finish^p">p</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-leafblockparser.finish^leaf" href="#user-content-leafblockparser.finish^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+  <code><strong><a href="#user-content-leafblockparser.finish">finish</a></strong>(<a id="user-content-leafblockparser.finish^cx" href="#user-content-leafblockparser.finish^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-leafblockparser.finish^leaf" href="#user-content-leafblockparser.finish^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 
 <dd><p>Called when the block is finished by external circumstances
 (such as a blank line or the <a href="#user-content-blockparser.endleaf">start</a> of
