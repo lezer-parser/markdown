@@ -85,6 +85,11 @@ describe("Extension", () => {
 {q:>}
 {q:>} {P:Okay}}`)
 
+  test("Tables (empty header)", `
+{TB:{TH:{tb:|} {tb:|} {tb:|}}
+{tb:| :-: | :-: |}
+{TR:{tb:|} {TC:One} {tb:|} {TC:Two} {tb:|}}}`)
+
   test("Task list (example 279)", `
 {BL:{LI:{l:-} {T:{t:[ ]} foo}}
 {LI:{l:-} {T:{t:[x]} bar}}}`)

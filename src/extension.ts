@@ -1,4 +1,4 @@
-import {MarkdownParser, InlineContext, BlockContext, MarkdownConfig,
+import {InlineContext, BlockContext, MarkdownConfig,
         LeafBlockParser, LeafBlock, Line, Element, space} from "./markdown"
 
 const StrikethroughDelim = {resolve: "Strikethrough", mark: "StrikethroughMark"}
@@ -18,22 +18,22 @@ export const Strikethrough: MarkdownConfig = {
   }]
 }
 
-function countCells(p: MarkdownParser, elts: readonly Element[]) {
-  return elts.reduce((c, e) => c + (p.nodeSet.types[e.type].name == "TableCell" ? 1 : 0), 0)
-}
-
-function parseRow(cx: BlockContext, line: string, offset: number, startI = 0) {
-  let elts = [], cellStart = -1, cellEnd = -1, esc = false
+function parseRow(cx: BlockContext, line: string, startI = 0, elts?: Element[], offset = 0) {
+  let count = 0, first = true, cellStart = -1, cellEnd = -1, esc = false
   let parseCell = () => {
-    elts.push(cx.elt("TableCell", offset + cellStart, offset + cellEnd,
+    elts!.push(cx.elt("TableCell", offset + cellStart, offset + cellEnd,
                      cx.parseInline(line.slice(cellStart, cellEnd), offset + cellStart)))
   }
 
   for (let i = startI; i < line.length; i++) {
     let next = line.charCodeAt(i)
     if (next == 124 /* '|' */ && !esc) {
-      if (cellStart > -1) parseCell()
-      elts.push(cx.elt("TableDelimiter", i + offset, i + offset + 1))
+      if (!first || cellStart > -1) count++
+      first = false
+      if (elts) {
+        if (cellStart > -1) parseCell()
+        elts.push(cx.elt("TableDelimiter", i + offset, i + offset + 1))
+      }
       cellStart = cellEnd = -1
     } else if (esc || next != 32 && next != 9) {
       if (cellStart < 0) cellStart = i
@@ -41,8 +41,11 @@ function parseRow(cx: BlockContext, line: string, offset: number, startI = 0) {
     }
     esc = !esc && next == 92
   }
-  if (cellStart > -1) parseCell()
-  return elts
+  if (cellStart > -1) {
+    count++
+    if (elts) parseCell()
+  }
+  return count
 }
 
 function hasPipe(str: string, start: number) {
@@ -66,15 +69,15 @@ class TableParser implements LeafBlockParser {
       let lineText
       if ((line.next == 45 || line.next == 58 || line.next == 124 /* '-:|' */) &&
           /^\|?(\s*:?-+:?\s*\|)+(\s*:?-+:?\s*)?$/.test(lineText = line.text.slice(line.pos))) {
-        let first = parseRow(cx, leaf.content, leaf.start)
-        let delim = parseRow(cx, lineText, cx.lineStart + line.pos, line.pos)
-        if (countCells(cx.parser, first) == countCells(cx.parser, delim))
-          this.rows = [cx.elt("TableHeader", leaf.start, leaf.start + leaf.content.length, first),
+        let firstRow: Element[] = [], firstCount = parseRow(cx, leaf.content, 0, firstRow, leaf.start)
+        if (firstCount == parseRow(cx, lineText, line.pos))
+          this.rows = [cx.elt("TableHeader", leaf.start, leaf.start + leaf.content.length, firstRow),
                        cx.elt("TableDelimiter", cx.lineStart + line.pos, cx.lineStart + line.text.length)]
       }
     } else if (this.rows) { // Line after the second
-      this.rows.push(cx.elt("TableRow", cx.lineStart + line.pos, cx.lineStart + line.text.length,
-                            parseRow(cx, line.text, cx.lineStart, line.pos)))
+      let content: Element[] = []
+      parseRow(cx, line.text, line.pos, content, cx.lineStart)
+      this.rows.push(cx.elt("TableRow", cx.lineStart + line.pos, cx.lineStart + line.text.length, content))
     }
     return false
   }
