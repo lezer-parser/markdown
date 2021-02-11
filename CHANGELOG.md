@@ -1,3 +1,9 @@
+## 0.14.1 (2021-02-11)
+
+### Bug fixes
+
+Fix table parsing when header cells are empty.
+
 ## 0.14.0 (2021-02-10)
 
 ### New features
