@@ -932,9 +932,10 @@ export interface BlockParser {
   /// [specify](#BlockParser.before) precedence.
   name: string,
   /// The eager parse function, which can look at the block's first
-  /// line and return `false` to do nothing, `true` if it has parsed a
-  /// block, or `null` if it has started a composite block.
-  parse?(cx: BlockContext): BlockResult
+  /// line and return `false` to do nothing, `true` if it has parsed
+  /// (and [moved past](#BlockContext.nextLine) a block, or `null` if
+  /// it has started a composite block.
+  parse?(cx: BlockContext, line: Line): BlockResult
   /// A leaf parse function. If no [regular](#BlockParser.parse) parse
   /// functions match for a given line, its content will be
   /// accumulated for a paragraph-style block. This method can return
