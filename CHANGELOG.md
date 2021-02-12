@@ -1,3 +1,11 @@
+## 0.14.2 (2021-02-12)
+
+### Bug fixes
+
+`BlockParser.parse`'s exported type was missing an argument.
+
+Fix a bug that would cause incorrect offsets for children nested two deep in an element passed to `BlockContext.addElement`.
+
 ## 0.14.1 (2021-02-11)
 
 ### Bug fixes
