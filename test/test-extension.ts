@@ -1,4 +1,4 @@
-import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from ".."
+import {parser as cmParser, GFM, Subscript, Superscript, Emoji, MarkdownConfig, BlockContext, Line} from ".."
 import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"

@@ -370,7 +370,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
       cx.startNested(new NestedParse(from, nest.startParse(cx.input.clip(end), from, cx.parseContext),
                                     tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
     else
-      cx.addNode(new Buffer(cx).writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
+      cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return true
   },
 
@@ -408,10 +408,10 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (nest) {
       cx.startNested(new NestedParse(from, nest.startParse(cx.input.clip(codeEnd), codeStart, cx.parseContext), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
-        return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet, -from)
+        return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
       }))
     } else {
-      cx.addNode(new Buffer(cx).writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
+      cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
     }
     return true
   },
@@ -464,7 +464,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     let endOfSpace = skipSpaceBack(line.text, line.text.length, off), after = endOfSpace
     while (after > off && line.text.charCodeAt(after - 1) == line.next) after--
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
-    let buf = new Buffer(cx)
+    let buf = cx.buffer
       .write(Type.HeaderMark, 0, size - 1)
       .writeElements(cx.parseInline(line.text.slice(off + size, after), from + size), -from)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
@@ -490,7 +490,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
       cx.startNested(new NestedParse(from, cx.parser.htmlParser.startParse(cx.input.clip(to), from, cx.parseContext),
                                     tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from)))
     } else {
-      cx.addNode(new Buffer(cx).writeElements(marks, -from).finish(nodeType, to - from), from)
+      cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
     }
     return true
   },
@@ -785,7 +785,7 @@ export class BlockContext {
   /// Add a block element. Can be called by [block
   /// parsers](#BlockParser.parse).
   addElement(elt: Element) {
-    this.block.children.push(elt.toTree(this.parser.nodeSet, -elt.from))
+    this.block.children.push(elt.toTree(this.parser.nodeSet))
     this.block.positions.push(elt.from - this.block.from)
   }
 
@@ -793,7 +793,7 @@ export class BlockContext {
   /// makes sure any extra composite block markup (such as blockquote
   /// markers) inside the block are also added to the syntax tree.
   addLeafElement(leaf: LeafBlock, elt: Element) {
-    this.addNode(new Buffer(this)
+    this.addNode(this.buffer
       .writeElements(injectMarks(elt.children, leaf.marks), -elt.from)
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
@@ -829,7 +829,7 @@ export class BlockContext {
   finishLeaf(leaf: LeafBlock) {
     for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return
     let inline = injectMarks(this.parseInline(leaf.content, leaf.start), leaf.marks)
-    this.addNode(new Buffer(this)
+    this.addNode(this.buffer
       .writeElements(inline, -leaf.start)
       .finish(Type.Paragraph, leaf.content.length), leaf.start)
   }
@@ -855,6 +855,9 @@ export class BlockContext {
   elt(type: string, from: number, to: number, children?: readonly Element[]) {
     return elt(this.parser.getNodeType(type), from, to, children)
   }
+
+  /// @internal
+  get buffer() { return new Buffer(this.parser.nodeSet) }
 }
 
 /// The type that nested parsers should conform to.
@@ -1178,9 +1181,8 @@ const none: readonly any[] = []
 
 class Buffer {
   content: number[] = []
-  nodeSet: NodeSet
   nodes: (Tree | TreeBuffer)[] = []
-  constructor(cx: BlockContext) { this.nodeSet = cx.parser.nodeSet }
+  constructor(readonly nodeSet: NodeSet) {}
 
   write(type: Type, from: number, to: number, children = 0) {
     this.content.push(type, from, to, 4 + children * 4)
@@ -1226,11 +1228,8 @@ export class Element {
   }
 
   /// @internal
-  toTree(nodeSet: NodeSet, offset: number): Tree | TreeBuffer {
-    return new Tree(nodeSet.types[this.type],
-                    this.children.length ? this.children.map(ch => ch.toTree(nodeSet, this.from)) : none,
-                    this.children.length ? this.children.map(ch => ch.from + offset) : none,
-                    this.to - this.from)
+  toTree(nodeSet: NodeSet): Tree | TreeBuffer {
+    return new Buffer(nodeSet).writeElements(this.children, -this.from).finish(this.type, this.to - this.from)
   }
 }
 
