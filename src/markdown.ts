@@ -40,8 +40,14 @@ enum Type {
   BulletList,
   OrderedList,
   ListItem,
-  ATXHeading,
-  SetextHeading,
+  ATXHeading1,
+  ATXHeading2,
+  ATXHeading3,
+  ATXHeading4,
+  ATXHeading5,
+  ATXHeading6,
+  SetextHeading1,
+  SetextHeading2,
   HTMLBlock,
   LinkReference,
   Paragraph,
@@ -286,7 +292,7 @@ function isAtxHeading(line: Line) {
   while (pos < line.text.length && line.text.charCodeAt(pos) == 35) pos++
   if (pos < line.text.length && line.text.charCodeAt(pos) != 32) return -1
   let size = pos - line.pos
-  return size > 6 ? -1 : size + 1
+  return size > 6 ? -1 : size
 }
 
 function isSetextUnderline(line: Line) {
@@ -465,10 +471,10 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     while (after > off && line.text.charCodeAt(after - 1) == line.next) after--
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
     let buf = cx.buffer
-      .write(Type.HeaderMark, 0, size - 1)
-      .writeElements(cx.parseInline(line.text.slice(off + size, after), from + size), -from)
+      .write(Type.HeaderMark, 0, size)
+      .writeElements(cx.parseInline(line.text.slice(off + size + 1, after), from + size + 1), -from)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
-    let node = buf.finish(Type.ATXHeading, line.text.length - off)
+    let node = buf.finish(Type.ATXHeading1 - 1 + size, line.text.length - off)
     cx.nextLine()
     cx.addNode(node, from)
     return true
@@ -587,10 +593,11 @@ function lineEnd(text: string, pos: number) {
 class SetextHeadingParser implements LeafBlockParser {
   nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
     let underline = line.depth < cx.stack.length ? -1 : isSetextUnderline(line)
+    let next = line.next
     if (underline < 0) return false
     let underlineMark = elt(Type.HeaderMark, cx.lineStart + line.pos, cx.lineStart + underline)
     cx.nextLine()
-    cx.addLeafElement(leaf, elt(Type.SetextHeading, leaf.start, cx.prevLineEnd(), [
+    cx.addLeafElement(leaf, elt(next == 61 ? Type.SetextHeading1 : Type.SetextHeading2, leaf.start, cx.prevLineEnd(), [
       ...cx.parseInline(leaf.content, leaf.start),
       underlineMark
     ]))
@@ -1065,11 +1072,13 @@ export class MarkdownParser {
         if (nodeTypes.some(t => t.name == name)) continue
         if (composite) (skipContextMarkup as any)[nodeTypes.length] =
           (bl: CompositeBlock, cx: BlockContext, line: Line) => composite!(cx, line, bl.value)
+        let id = nodeTypes.length
+        let group = composite ? ["Block", "BlockContext"] : !block ? undefined
+          : id >= Type.ATXHeading1 && id <= Type.SetextHeading2 ? ["Block", "LeafBlock", "Heading"] : ["Block", "LeafBlock"]
         nodeTypes.push(NodeType.define({
-          id: nodeTypes.length,
+          id,
           name,
-          props: composite ? [[NodeProp.group, ["Block", "BlockContext"]]]
-            : block ? [[NodeProp.group, ["Block", "LeafBlock"]]] : undefined
+          props: group && [[NodeProp.group, group]]
         }))
       }
       nodeSet = new NodeSet(nodeTypes)

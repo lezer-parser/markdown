@@ -1,4 +1,4 @@
-import {parser as cmParser, GFM, Subscript, Superscript, Emoji, MarkdownConfig, BlockContext, Line} from ".."
+import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from ".."
 import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"
@@ -108,7 +108,7 @@ describe("Extension", () => {
   {tb:--- | ---}}}}`)
 
   test("Task list (versus setext header)", `
-{OL:{LI:{l:1.} {SH:{Ln:{L:[}X{L:]}} foo
+{OL:{LI:{l:1.} {SH1:{Ln:{L:[}X{L:]}} foo
    {h:===}}}}`)
 
   test("Strikethrough (example 491)", `

@@ -159,7 +159,7 @@ __}
 `)
 
   test("Thematic breaks (example 29)", `
-{SH:Foo
+{SH2:Foo
 {h:---}}
 {P:bar}
 `)
@@ -176,12 +176,12 @@ __}
 `)
 
   test("ATX headings (example 32)", `
-{AH:{h:#} foo}
-{AH:{h:##} foo}
-{AH:{h:###} foo}
-{AH:{h:####} foo}
-{AH:{h:#####} foo}
-{AH:{h:######} foo}
+{H1:{h:#} foo}
+{H2:{h:##} foo}
+{H3:{h:###} foo}
+{H4:{h:####} foo}
+{H5:{h:#####} foo}
+{H6:{h:######} foo}
 `)
 
   test("ATX headings (example 33)", `
@@ -199,17 +199,17 @@ __}
 `)
 
   test("ATX headings (example 36)", `
-{AH:{h:#} foo {Em:{e:*}bar{e:*}} {Esc:\\*}baz{Esc:\\*}}
+{H1:{h:#} foo {Em:{e:*}bar{e:*}} {Esc:\\*}baz{Esc:\\*}}
 `)
 
   test("ATX headings (example 37)", `
-{AH:{h:#}                  foo                     }
+{H1:{h:#}                  foo                     }
 `)
 
   test("ATX headings (example 38)", `
- {AH:{h:###} foo}
-  {AH:{h:##} foo}
-   {AH:{h:#} foo}
+ {H3:{h:###} foo}
+  {H2:{h:##} foo}
+   {H1:{h:#} foo}
 `)
 
   test("ATX headings (example 39)", `
@@ -222,87 +222,87 @@ __}
 `)
 
   test("ATX headings (example 41)", `
-{AH:{h:##} foo {h:##}}
-  {AH:{h:###}   bar    {h:###}}
+{H2:{h:##} foo {h:##}}
+  {H3:{h:###}   bar    {h:###}}
 `)
 
   test("ATX headings (example 42)", `
-{AH:{h:#} foo {h:##################################}}
-{AH:{h:#####} foo {h:##}}
+{H1:{h:#} foo {h:##################################}}
+{H5:{h:#####} foo {h:##}}
 `)
 
   test("ATX headings (example 43)", `
-{AH:{h:###} foo {h:###}     }
+{H3:{h:###} foo {h:###}     }
 `)
 
   test("ATX headings (example 44)", `
-{AH:{h:###} foo ### b}
+{H3:{h:###} foo ### b}
 `)
 
   test("ATX headings (example 45)", `
-{AH:{h:#} foo#}
+{H1:{h:#} foo#}
 `)
 
   test("ATX headings (example 46)", `
-{AH:{h:###} foo {Esc:\\#}##}
-{AH:{h:##} foo #{Esc:\\#}#}
-{AH:{h:#} foo {Esc:\\#}}
+{H3:{h:###} foo {Esc:\\#}##}
+{H2:{h:##} foo #{Esc:\\#}#}
+{H1:{h:#} foo {Esc:\\#}}
 `)
 
   test("ATX headings (example 47)", `
 {HR:****}
-{AH:{h:##} foo}
+{H2:{h:##} foo}
 {HR:****}
 `)
 
   test("ATX headings (example 48)", `
 {P:Foo bar}
-{AH:{h:#} baz}
+{H1:{h:#} baz}
 {P:Bar foo}
 `)
 
   test("ATX headings (example 49)", `
-{AH:{h:##} }
-{AH:{h:#}}
-{AH:{h:###} {h:###}}
+{H2:{h:##} }
+{H1:{h:#}}
+{H3:{h:###} {h:###}}
 `)
 
   test("Setext headings (example 50)", `
-{SH:Foo {Em:{e:*}bar{e:*}}
+{SH1:Foo {Em:{e:*}bar{e:*}}
 {h:=========}}
 
-{SH:Foo {Em:{e:*}bar{e:*}}
+{SH2:Foo {Em:{e:*}bar{e:*}}
 {h:---------}}
 `)
 
   test("Setext headings (example 51)", `
-{SH:Foo {Em:{e:*}bar
+{SH1:Foo {Em:{e:*}bar
 baz{e:*}}
 {h:====}}
 `)
 
   test("Setext headings (example 52)", `
-  {SH:Foo {Em:{e:*}bar
+  {SH1:Foo {Em:{e:*}bar
 baz{e:*}}	
 {h:====}}
 `)
 
   test("Setext headings (example 53)", `
-{SH:Foo
+{SH2:Foo
 {h:-------------------------}}
 
-{SH:Foo
+{SH1:Foo
 {h:=}}
 `)
 
   test("Setext headings (example 54)", `
-   {SH:Foo
+   {SH2:Foo
 {h:---}}
 
-  {SH:Foo
+  {SH2:Foo
 {h:-----}}
 
-  {SH:Foo
+  {SH1:Foo
   {h:===}}
 `)
 
@@ -315,7 +315,7 @@ baz{e:*}}
 `)
 
   test("Setext headings (example 56)", `
-{SH:Foo
+{SH2:Foo
    {h:----}      }
 `)
 
@@ -333,21 +333,21 @@ baz{e:*}}
 `)
 
   test("Setext headings (example 59)", `
-{SH:Foo  
+{SH2:Foo  
 {h:-----}}
 `)
 
   test("Setext headings (example 60)", `
-{SH:Foo\\
+{SH2:Foo\\
 {h:----}}
 `)
 
   test("Setext headings (example 61)", `
-{SH:\`Foo
+{SH2:\`Foo
 {h:----}}
 {P:\`}
 
-{SH:<a title="a lot
+{SH2:<a title="a lot
 {h:---}}
 {P:of dashes"/>}
 `)
@@ -369,16 +369,16 @@ bar
 `)
 
   test("Setext headings (example 65)", `
-{SH:Foo
+{SH2:Foo
 Bar
 {h:---}}
 `)
 
   test("Setext headings (example 66)", `
 {HR:---}
-{SH:Foo
+{SH2:Foo
 {h:---}}
-{SH:Bar
+{SH2:Bar
 {h:---}}
 {P:Baz}
 `)
@@ -409,14 +409,14 @@ Bar
 `)
 
   test("Setext headings (example 72)", `
-{SH:{Esc:\\>} foo
+{SH2:{Esc:\\>} foo
 {h:------}}
 `)
 
   test("Setext headings (example 73)", `
 {P:Foo}
 
-{SH:bar
+{SH2:bar
 {h:---}}
 {P:baz}
 `)
@@ -496,9 +496,9 @@ baz}
 `)
 
   test("Indented code blocks (example 85)", `
-{AH:{h:#} Heading}
+{H1:{h:#} Heading}
     {CB:foo}
-{SH:Heading
+{SH2:Heading
 {h:------}}
     {CB:foo}
 {HR:----}
@@ -664,12 +664,12 @@ bar
 `)
 
   test("Fenced code blocks (example 111)", `
-{SH:foo
+{SH2:foo
 {h:---}}
 {FC:{c:~~~}
 bar
 {c:~~~}}
-{AH:{h:#} baz}
+{H1:{h:#} baz}
 `)
 
   test("Fenced code blocks (example 112)", `
@@ -1162,14 +1162,14 @@ foo
 `)
 
   test("Link reference definitions (example 183)", `
-{AH:{h:#} {Ln:{L:[}Foo{L:]}}}
+{H1:{h:#} {Ln:{L:[}Foo{L:]}}}
 {LR:{LL:[foo]}{L::} {URL:/url}}
 {Q:{q:>} {P:bar}}
 `)
 
   test("Link reference definitions (example 184)", `
 {LR:{LL:[foo]}{L::} {URL:/url}}
-{SH:bar
+{SH1:bar
 {h:===}}
 {P:{Ln:{L:[}foo{L:]}}}
 `)
@@ -1254,25 +1254,25 @@ bbb}
 {P:aaa}
   
 
-{AH:{h:#} aaa}
+{H1:{h:#} aaa}
 
   
 `)
 
   test("Block quotes (example 198)", `
-{Q:{q:>} {AH:{h:#} Foo}
+{Q:{q:>} {H1:{h:#} Foo}
 {q:>} {P:bar
 {q:>} baz}}
 `)
 
   test("Block quotes (example 199)", `
-{Q:{q:>}{AH:{h:#} Foo}
+{Q:{q:>}{H1:{h:#} Foo}
 {q:>}{P:bar
 {q:>} baz}}
 `)
 
   test("Block quotes (example 200)", `
-   {Q:{q:>} {AH:{h:#} Foo}
+   {Q:{q:>} {H1:{h:#} Foo}
    {q:>} {P:bar
  {q:>} baz}}
 `)
@@ -1284,7 +1284,7 @@ bbb}
 `)
 
   test("Block quotes (example 202)", `
-{Q:{q:>} {AH:{h:#} Foo}
+{Q:{q:>} {H1:{h:#} Foo}
 {q:>} {P:bar
 baz}}
 `)
@@ -1706,8 +1706,8 @@ continued here.}}}}}
 `)
 
   test("List items (example 270)", `
-{BL:{LI:{l:-} {AH:{h:#} Foo}}
-{LI:{l:-} {SH:Bar
+{BL:{LI:{l:-} {H1:{h:#} Foo}}
+{LI:{l:-} {SH2:Bar
   {h:---}}
   {P:baz}}}
 `)
@@ -3511,11 +3511,11 @@ bar">}}
 `)
 
   test("Hard line breaks (example 643)", `
-{AH:{h:###} foo\\}
+{H3:{h:###} foo\\}
 `)
 
   test("Hard line breaks (example 644)", `
-{AH:{h:###} foo  }
+{H3:{h:###} foo  }
 `)
 
   test("Soft line breaks (example 645)", `
