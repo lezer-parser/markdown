@@ -22,7 +22,7 @@ function parseRow(cx: BlockContext, line: string, startI = 0, elts?: Element[], 
   let count = 0, first = true, cellStart = -1, cellEnd = -1, esc = false
   let parseCell = () => {
     elts!.push(cx.elt("TableCell", offset + cellStart, offset + cellEnd,
-                     cx.parseInline(line.slice(cellStart, cellEnd), offset + cellStart)))
+                     cx.parser.parseInline(line.slice(cellStart, cellEnd), offset + cellStart)))
   }
 
   for (let i = startI; i < line.length; i++) {
@@ -125,7 +125,7 @@ class TaskParser implements LeafBlockParser {
   finish(cx: BlockContext, leaf: LeafBlock) {
     cx.addLeafElement(leaf, cx.elt("Task", leaf.start, leaf.start + leaf.content.length, [
       cx.elt("TaskMarker", leaf.start, leaf.start + 3),
-      ...cx.parseInline(leaf.content.slice(3), leaf.start + 3)
+      ...cx.parser.parseInline(leaf.content.slice(3), leaf.start + 3)
     ]))
     return true
   }

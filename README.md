@@ -49,6 +49,12 @@ types</a>.</p>
   <code><strong><a href="#user-content-markdownparser.configure">configure</a></strong>(<a id="user-content-markdownparser.configure^spec" href="#user-content-markdownparser.configure^spec">spec</a>: <a href="#user-content-markdownextension">MarkdownExtension</a>) → <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
 <dd><p>Reconfigure the parser.</p>
+</dd><dt id="user-content-markdownparser.parseinline">
+  <code><strong><a href="#user-content-markdownparser.parseinline">parseInline</a></strong>(<a id="user-content-markdownparser.parseinline^text" href="#user-content-markdownparser.parseinline^text">text</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-markdownparser.parseinline^offset" href="#user-content-markdownparser.parseinline^offset">offset</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a>[]</code></dt>
+
+<dd><p>Parse the given piece of inline text at the given offset,
+returning an array of <a href="#user-content-element"><code>Element</code></a> objects representing
+the inline content.</p>
 </dd></dl>
 
 </dd>
@@ -277,14 +283,14 @@ parsers</a>.</p>
 <dd><p>Add a block element from a <a href="#user-content-leafblockparser">leaf parser</a>. This
 makes sure any extra composite block markup (such as blockquote
 markers) inside the block are also added to the syntax tree.</p>
-</dd><dt id="user-content-blockcontext.parseinline">
-  <code><strong><a href="#user-content-blockcontext.parseinline">parseInline</a></strong>(<a id="user-content-blockcontext.parseinline^text" href="#user-content-blockcontext.parseinline^text">text</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-blockcontext.parseinline^offset" href="#user-content-blockcontext.parseinline^offset">offset</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a>[]</code></dt>
+</dd><dt id="user-content-blockcontext.startnested">
+  <code><strong><a href="#user-content-blockcontext.startnested">startNested</a></strong>(<a id="user-content-blockcontext.startnested^from" href="#user-content-blockcontext.startnested^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.startnested^parse" href="#user-content-blockcontext.startnested^parse">parse</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">PartialParse</a>, <a id="user-content-blockcontext.startnested^finish" href="#user-content-blockcontext.startnested^finish">finish</a>: fn(<a id="user-content-blockcontext.startnested^finish^tree" href="#user-content-blockcontext.startnested^finish^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a>) → <a href="#user-content-element">Element</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>)</code></dt>
 
-<dd><p>Parse the given piece of inline text at the given offset,
-returning an array of <a href="#user-content-element"><code>Element</code></a> objects representing
-the inline content.</p>
+<dd><p>Start a nested parse at the given position. When it finishes,
+the <code>finish</code> callback is called with the resulting tree, and
+should return the finished node for the block element.</p>
 </dd><dt id="user-content-blockcontext.elt">
-  <code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^type" href="#user-content-blockcontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-blockcontext.elt^from" href="#user-content-blockcontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^to" href="#user-content-blockcontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^children" href="#user-content-blockcontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code></dt>
+  <code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^type" href="#user-content-blockcontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-blockcontext.elt^from" href="#user-content-blockcontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^to" href="#user-content-blockcontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^children" href="#user-content-blockcontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^tree" href="#user-content-blockcontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>, <a id="user-content-blockcontext.elt^at" href="#user-content-blockcontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
 
 <dd><p>Create an <a href="#user-content-element"><code>Element</code></a> object to represent some syntax
 node.</p>
@@ -334,11 +340,12 @@ observe that block.</p>
 <dd><p>The name of the parser. Can be used by other block parsers to
 <a href="#user-content-blockparser.before">specify</a> precedence.</p>
 </dd><dt id="user-content-blockparser.parse">
-  <code><strong><a href="#user-content-blockparser.parse">parse</a></strong>&#8288;?: fn(<a id="user-content-blockparser.parse^cx" href="#user-content-blockparser.parse^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
+  <code><strong><a href="#user-content-blockparser.parse">parse</a></strong>&#8288;?: fn(<a id="user-content-blockparser.parse^cx" href="#user-content-blockparser.parse^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.parse^line" href="#user-content-blockparser.parse^line">line</a>: <a href="#user-content-line">Line</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
 <dd><p>The eager parse function, which can look at the block's first
-line and return <code>false</code> to do nothing, <code>true</code> if it has parsed a
-block, or <code>null</code> if it has started a composite block.</p>
+line and return <code>false</code> to do nothing, <code>true</code> if it has parsed
+(and <a href="#user-content-blockcontext.nextline">moved past</a> a block, or <code>null</code> if
+it has started a composite block.</p>
 </dd><dt id="user-content-blockparser.leaf">
   <code><strong><a href="#user-content-blockparser.leaf">leaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.leaf^cx" href="#user-content-blockparser.leaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.leaf^leaf" href="#user-content-blockparser.leaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="#user-content-leafblockparser">LeafBlockParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
@@ -561,7 +568,7 @@ of elements.</p>
 the position of the next non-space character or the end of the
 section.</p>
 </dd><dt id="user-content-inlinecontext.elt">
-  <code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^type" href="#user-content-inlinecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-inlinecontext.elt^from" href="#user-content-inlinecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^to" href="#user-content-inlinecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^children" href="#user-content-inlinecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code></dt>
+  <code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^type" href="#user-content-inlinecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-inlinecontext.elt^from" href="#user-content-inlinecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^to" href="#user-content-inlinecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^children" href="#user-content-inlinecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^tree" href="#user-content-inlinecontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>, <a id="user-content-inlinecontext.elt^at" href="#user-content-inlinecontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
 
 <dd><p>Create an <a href="#user-content-element"><code>Element</code></a> for a syntax node.</p>
 </dd></dl>

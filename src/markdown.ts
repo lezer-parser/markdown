@@ -373,8 +373,8 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
 
     let nest = !marks.length && cx.parser.codeParser && cx.parser.codeParser("")
     if (nest)
-      cx.startNested(new NestedParse(from, nest.startParse(cx.input.clip(end), from, cx.parseContext),
-                                    tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], end - from)))
+      cx.startNested(from, nest.startParse(cx.input.clip(end), from, cx.parseContext),
+                     tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], end - from))
     else
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, end - from), from)
     return true
@@ -412,10 +412,10 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     // (Don't try to nest if there are blockquote marks in the region.)
     let nest = marks.length == ownMarks && cx.parser.codeParser && cx.parser.codeParser(info)
     if (nest) {
-      cx.startNested(new NestedParse(from, nest.startParse(cx.input.clip(codeEnd), codeStart, cx.parseContext), tree => {
+      cx.startNested(from, nest.startParse(cx.input.clip(codeEnd), codeStart, cx.parseContext), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
         return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
-      }))
+      })
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
     }
@@ -472,7 +472,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (after == endOfSpace || after == off || !space(line.text.charCodeAt(after - 1))) after = line.text.length
     let buf = cx.buffer
       .write(Type.HeaderMark, 0, size)
-      .writeElements(cx.parseInline(line.text.slice(off + size + 1, after), from + size + 1), -from)
+      .writeElements(cx.parser.parseInline(line.text.slice(off + size + 1, after), from + size + 1), -from)
     if (after < line.text.length) buf.write(Type.HeaderMark, after - off, endOfSpace - off)
     let node = buf.finish(Type.ATXHeading1 - 1 + size, line.text.length - off)
     cx.nextLine()
@@ -493,8 +493,8 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
     let to = cx.prevLineEnd()
     if (!marks.length && nodeType == Type.HTMLBlock && cx.parser.htmlParser) {
-      cx.startNested(new NestedParse(from, cx.parser.htmlParser.startParse(cx.input.clip(to), from, cx.parseContext),
-                                    tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from)))
+      cx.startNested(from, cx.parser.htmlParser.startParse(cx.input.clip(to), from, cx.parseContext),
+                     tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from))
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
     }
@@ -598,7 +598,7 @@ class SetextHeadingParser implements LeafBlockParser {
     let underlineMark = elt(Type.HeaderMark, cx.lineStart + line.pos, cx.lineStart + underline)
     cx.nextLine()
     cx.addLeafElement(leaf, elt(next == 61 ? Type.SetextHeading1 : Type.SetextHeading2, leaf.start, cx.prevLineEnd(), [
-      ...cx.parseInline(leaf.content, leaf.start),
+      ...cx.parser.parseInline(leaf.content, leaf.start),
       underlineMark
     ]))
     return true
@@ -627,13 +627,13 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 class NestedParse {
   constructor(
     readonly from: number,
-    readonly parser: PartialParse,
-    readonly finish: (tree: Tree) => Tree | TreeBuffer
+    readonly parse: PartialParse,
+    readonly finish: (tree: Tree) => Tree | TreeBuffer | Element
   ) {}
 }
 
 /// Block-level parsing functions get access to this context object.
-export class BlockContext {
+export class BlockContext implements PartialParse {
   /// @internal
   block: CompositeBlock
   /// @internal
@@ -664,17 +664,17 @@ export class BlockContext {
     this.updateLine(input.lineAfter(this.lineStart))
   }
 
-  /// @internal
   get pos() {
-    return this.nested ? this.nested.parser.pos : this.lineStart
+    return this.nested ? this.nested.parse.pos : this.lineStart
   }
 
-  /// @internal
   advance() {
     if (this.nested) {
-      let done = this.nested.parser.advance()
+      let done = this.nested.parse.advance()
       if (done) {
-        this.addNode(this.nested.finish(done), this.nested.from)
+        let node = this.nested.finish(done)
+        if (node instanceof Element) node = node.toTree(this.parser.nodeSet)
+        this.addNode(node, this.nested.from)
         this.nested = null
       }
       return null
@@ -805,9 +805,11 @@ export class BlockContext {
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
 
-  /// @internal
-  startNested(parse: NestedParse) {
-    this.nested = parse
+  /// Start a nested parse at the given position. When it finishes,
+  /// the `finish` callback is called with the resulting tree, and
+  /// should return the finished node for the block element.
+  startNested(from: number, parse: PartialParse, finish: (tree: Tree) => Tree | TreeBuffer | Element) {
+    this.nested = new NestedParse(from, parse, finish)
   }
 
   /// @internal
@@ -820,12 +822,11 @@ export class BlockContext {
     return this.block.toTree(this.parser.nodeSet, this.lineStart)
   }
 
-  /// @internal
   forceFinish() {
     let cx = this.stack.map(cx => cx.copy())
     if (this.nested) {
       let inner = cx[cx.length - 1]
-      inner.children.push(this.nested.parser.forceFinish())
+      inner.children.push(this.nested.parse.forceFinish())
       inner.positions.push(this.nested.from - inner.from)
     }
     while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
@@ -835,32 +836,19 @@ export class BlockContext {
   /// @internal
   finishLeaf(leaf: LeafBlock) {
     for (let parser of leaf.parsers) if (parser.finish(this, leaf)) return
-    let inline = injectMarks(this.parseInline(leaf.content, leaf.start), leaf.marks)
+    let inline = injectMarks(this.parser.parseInline(leaf.content, leaf.start), leaf.marks)
     this.addNode(this.buffer
       .writeElements(inline, -leaf.start)
       .finish(Type.Paragraph, leaf.content.length), leaf.start)
   }
 
-  /// Parse the given piece of inline text at the given offset,
-  /// returning an array of [`Element`](#Element) objects representing
-  /// the inline content.
-  parseInline(text: string, offset: number) {
-    let cx = new InlineContext(this.parser, text, offset)
-    outer: for (let pos = offset; pos < cx.end;) {
-      let next = cx.char(pos)
-      for (let token of this.parser.inlineParsers) if (token) {
-        let result = token(cx, next, pos)
-        if (result >= 0) { pos = result; continue outer }
-      }
-      pos++
-    }
-    return cx.resolveMarkers(0)
-  }
-
   /// Create an [`Element`](#Element) object to represent some syntax
   /// node.
-  elt(type: string, from: number, to: number, children?: readonly Element[]) {
-    return elt(this.parser.getNodeType(type), from, to, children)
+  elt(type: string, from: number, to: number, children?: readonly Element[]): Element
+  elt(tree: Tree | TreeBuffer, at: number): Element
+  elt(type: string | Tree | TreeBuffer, from: number, to?: number, children?: readonly Element[]): Element {
+    if (typeof type == "string") return elt(this.parser.getNodeType(type), from, to!, children)
+    return new TreeElement(type, from)
   }
 
   /// @internal
@@ -1139,6 +1127,22 @@ export class MarkdownParser {
     if (found == null) throw new RangeError(`Unknown node type '${name}'`)
     return found
   }
+
+  /// Parse the given piece of inline text at the given offset,
+  /// returning an array of [`Element`](#Element) objects representing
+  /// the inline content.
+  parseInline(text: string, offset: number) {
+    let cx = new InlineContext(this, text, offset)
+    outer: for (let pos = offset; pos < cx.end;) {
+      let next = cx.char(pos)
+      for (let token of this.inlineParsers) if (token) {
+        let result = token(cx, next, pos)
+        if (result >= 0) { pos = result; continue outer }
+      }
+      pos++
+    }
+    return cx.resolveMarkers(0)
+  }
 }
 
 function nonEmpty<T>(a: undefined | readonly T[]): a is readonly T[] {
@@ -1246,6 +1250,10 @@ class TreeElement {
   constructor(readonly tree: Tree | TreeBuffer, readonly from: number) {}
 
   get to() { return this.from + this.tree.length }
+
+  get type() { return this.tree.type.id }
+
+  get children() { return none }
 
   writeTo(buf: Buffer, offset: number) {
     buf.nodes.push(this.tree)
@@ -1630,8 +1638,11 @@ export class InlineContext {
   skipSpace(from: number) { return skipSpace(this.text, from - this.offset) + this.offset }
 
   /// Create an [`Element`](#Element) for a syntax node.
-  elt(type: string, from: number, to: number, children?: readonly Element[]) {
-    return elt(this.parser.getNodeType(type), from, to, children)
+  elt(type: string, from: number, to: number, children?: readonly Element[]): Element
+  elt(tree: Tree | TreeBuffer, at: number): Element
+  elt(type: string | Tree | TreeBuffer, from: number, to?: number, children?: readonly Element[]): Element {
+    if (typeof type == "string") return elt(this.parser.getNodeType(type), from, to!, children)
+    return new TreeElement(type, from)
   }
 }
 
