@@ -1,3 +1,17 @@
+## 0.14.3 (2021-02-22)
+
+### Breaking changes
+
+`parseInline` has been moved to `MarkdownParser` so that it can also be called from an inline context.
+
+### New features
+
+Heading nodes now have different types based on their level.
+
+The `elt` helper method can now be called with a `Tree` to wrap the result of a nested parse in an element.
+
+The `startNested` method is now exported.
+
 ## 0.14.2 (2021-02-12)
 
 ### Bug fixes
