@@ -411,7 +411,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
     let nest = marks.length == ownMarks && cx.parser.codeParser && cx.parser.codeParser(info)
-    if (nest) {
+    if (nest && codeStart < codeEnd) {
       cx.startNested(from, nest.startParse(cx.input.clip(codeEnd), codeStart, cx.parseContext), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
         return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
