@@ -414,7 +414,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (nest && codeStart < codeEnd) {
       cx.startNested(from, nest.startParse(cx.input.clip(codeEnd), codeStart, cx.parseContext), tree => {
         marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
-        return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
+        return elt(Type.FencedCode, from, to, marks)
       })
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
@@ -628,7 +628,7 @@ class NestedParse {
   constructor(
     readonly from: number,
     readonly parse: PartialParse,
-    readonly finish: (tree: Tree) => Tree | TreeBuffer | Element
+    readonly finish: (tree: Tree) => Tree | Element
   ) {}
 }
 
@@ -673,7 +673,7 @@ export class BlockContext implements PartialParse {
       let done = this.nested.parse.advance()
       if (done) {
         let node = this.nested.finish(done)
-        if (node instanceof Element) node = node.toTree(this.parser.nodeSet)
+        if (node instanceof Element) node = node.toTree(this.parser.nodeSet) as Tree
         this.addNode(node, this.nested.from)
         this.nested = null
       }
@@ -808,7 +808,7 @@ export class BlockContext implements PartialParse {
   /// Start a nested parse at the given position. When it finishes,
   /// the `finish` callback is called with the resulting tree, and
   /// should return the finished node for the block element.
-  startNested(from: number, parse: PartialParse, finish: (tree: Tree) => Tree | TreeBuffer | Element) {
+  startNested(from: number, parse: PartialParse, finish: (tree: Tree) => Tree | Element) {
     this.nested = new NestedParse(from, parse, finish)
   }
 
@@ -823,14 +823,20 @@ export class BlockContext implements PartialParse {
   }
 
   forceFinish() {
-    let cx = this.stack.map(cx => cx.copy())
+    let cx = this.stack.map(cx => cx.copy()), pos = this.lineStart
     if (this.nested) {
       let inner = cx[cx.length - 1]
-      inner.children.push(this.nested.parse.forceFinish())
-      inner.positions.push(this.nested.from - inner.from)
+      let result = this.nested.finish(this.nested.parse.forceFinish())
+      if (result instanceof Element) result = result.toTree(this.parser.nodeSet) as Tree
+      let len = pos - this.nested.from
+      if (result.length > len)
+        result = new Tree(result.type, result.children.filter((_, i) => (result as Tree).positions[i] <= len),
+                          result.positions.filter(p => p <= len), len)
+      inner.children.push(result)
+      inner.positions.push(this.nested.from)
     }
     while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
-    return cx[0].toTree(this.parser.nodeSet, this.lineStart)
+    return cx[0].toTree(this.parser.nodeSet, pos)
   }
 
   /// @internal
