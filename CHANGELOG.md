@@ -1,3 +1,11 @@
+## 0.14.4 (2021-03-09)
+
+### Bug fixes
+
+Fix a bug where an unterminated nested code block could call a nested parser with a start position beyond the end of the document.
+
+Fix a bug where the parser could return an invalid tree when `forceFinish` was called during a nested parse.
+
 ## 0.14.3 (2021-02-22)
 
 ### Breaking changes
