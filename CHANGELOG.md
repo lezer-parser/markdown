@@ -1,3 +1,9 @@
+## 0.14.5 (2021-05-12)
+
+### Bug fixes
+
+Fix an issue were continued paragraph lines starting with tabs could cause the parser to create a tree with invalid node positions.
+
 ## 0.14.4 (2021-03-09)
 
 ### Bug fixes
