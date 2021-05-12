@@ -187,7 +187,7 @@ export class Line {
   scrub() {
     if (!this.baseIndent) return this.text
     let result = ""
-    for (let i = 0; i < this.baseIndent; i++) result += " "
+    for (let i = 0; i < this.basePos; i++) result += " "
     return result + this.text.slice(this.basePos)
   }
 }
