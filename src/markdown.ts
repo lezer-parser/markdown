@@ -101,10 +101,6 @@ export class LeafBlock {
 export class Line {
   /// The line's full text.
   text = ""
-  /// @internal
-  gaps: readonly InputGap[] | null = null
-  /// @internal
-  end = 0
   /// The base indent provided by the composite contexts (that have
   /// been handled so far).
   baseIndent = 0
@@ -141,10 +137,8 @@ export class Line {
   skipSpace(from: number) { return skipSpace(this.text, from) }
 
   /// @internal
-  reset(text: string, gaps: readonly InputGap[] | null, end: number) {
+  reset(text: string) {
     this.text = text
-    this.gaps = gaps
-    this.end = end
     this.baseIndent = this.basePos = this.pos = this.indent = 0
     this.forwardInner()
     this.depth = 1
@@ -652,7 +646,10 @@ export class BlockContext implements PartialParse {
 
   /// The start of the current line.
   lineStart: number
-  readonly end: number
+  /// The absolute (non-gap-adjusted) position of the line @internal
+  absoluteLineStart: number
+  /// @internal
+  absoluteLineEnd: number
 
   readonly input: Input
 
@@ -665,12 +662,11 @@ export class BlockContext implements PartialParse {
   ) {
     this.input = spec.input
     this.gaps = spec.gaps
-    this.lineStart = spec.from
-    this.end = spec.to
+    this.lineStart = this.absoluteLineStart = this.absoluteLineEnd = spec.from
     this.block = CompositeBlock.create(Type.Document, 0, this.lineStart, 0, 0)
     this.stack = [this.block]
     this.fragments = spec.fragments.length ? new FragmentCursor(spec.fragments, spec.input) : null
-    this.updateLine()
+    this.readLine()
   }
 
   get pos() {
@@ -735,13 +731,17 @@ export class BlockContext implements PartialParse {
         !this.fragments!.matches(this.block.hash)) return false
     let taken = this.fragments!.takeNodes(this)
     if (!taken) return false
-    this.lineStart += taken
-    if (this.lineStart < this.spec.to) {
+    let withoutGaps = taken, end = this.absoluteLineStart + taken
+    if (this.gaps) for (let gap of this.gaps) if (gap.from >= this.lineStart && gap.to < end) withoutGaps -= gap.to - gap.from
+    this.lineStart += withoutGaps
+    this.absoluteLineStart += taken
+    if (this.absoluteLineStart < this.spec.to) {
       this.lineStart++
-      this.updateLine()
+      this.absoluteLineStart++
+      this.readLine()
     } else {
       this.atEnd = true
-      this.updateLine()
+      this.readLine()
     }
     return true
   }
@@ -752,31 +752,32 @@ export class BlockContext implements PartialParse {
   /// [`nextLine`](#LeafBlockParser.nextLine) methods when they
   /// consume the current line (and return true).
   nextLine() {
-    this.lineStart = this.line.end
-    if (this.lineStart >= this.spec.to) {
+    this.lineStart += this.line.text.length
+    if (this.absoluteLineEnd >= this.spec.to) {
+      this.absoluteLineStart = this.absoluteLineEnd
       this.atEnd = true
-      this.updateLine()
+      this.readLine()
       return false
     } else {
       this.lineStart++
-      this.updateLine()
+      this.absoluteLineStart = this.absoluteLineEnd + 1
+      this.readLine()
       return true
     }
   }
 
   /// @internal
-  updateLine() {
-    let {line} = this, gaps = null, text, end = this.lineStart
+  readLine() {
+    let {line} = this, text, end = this.absoluteLineStart
     if (this.atEnd) {
       text = ""
     } else {
-      text = this.lineChunkAt(this.lineStart)
+      text = this.lineChunkAt(end)
       end += text.length
       if (this.gaps) {
         for (let gap of this.gaps) {
           if (gap.from > end) break
           if (gap.to >= this.lineStart) {
-            ;(gaps || (gaps = [])).push(gap)
             let after = this.lineChunkAt(gap.to)
             end = gap.to + after.length
             text = text.slice(0, gap.from) + after
@@ -784,7 +785,8 @@ export class BlockContext implements PartialParse {
         }
       }
     }
-    line.reset(text, gaps, end)
+    this.absoluteLineEnd = end
+    line.reset(text)
     for (; line.depth < this.stack.length; line.depth++) {
       let cx = this.stack[line.depth], handler = this.parser.skipContextMarkup[cx.type]
       if (!handler) throw new Error("Unhandled block context " + Type[cx.type])
@@ -794,13 +796,14 @@ export class BlockContext implements PartialParse {
   }
 
   private lineChunkAt(pos: number) {
-    let next = this.input.chunk(this.lineStart)
+    let next = this.input.chunk(this.lineStart), text
     if (!this.input.lineChunks) {
       let eol = next.indexOf("\n")
-      return eol < 0 ? next : next.slice(0, eol)
+      text = eol < 0 ? next : next.slice(0, eol)
     } else {
-      return next == "\n" ? "" : next
+      text = next == "\n" ? "" : next
     }
+    return pos + text.length > this.spec.to ? text.slice(0, this.spec.to - pos) : text
   }
 
   /// The end position of the previous line.
@@ -1765,7 +1768,7 @@ class FragmentCursor {
 
   takeNodes(cx: BlockContext) {
     let cur = this.cursor!, off = this.fragment!.offset
-    let start = cx.lineStart, end = start, blockI = cx.block.children.length
+    let start = cx.absoluteLineStart, end = start, blockI = cx.block.children.length
     let prevEnd = end, prevI = blockI
     for (;;) {
       if (cur.to - off >= this.fragmentEnd) {
