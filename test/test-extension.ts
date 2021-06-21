@@ -1,5 +1,4 @@
 import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from ".."
-import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"
 
@@ -26,9 +25,7 @@ const specParser = new SpecParser(parser, {
 function test(name: string, spec: string, p = parser) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    let parse = p.startParse(stringInput(doc)), result: Tree | null
-    while (!(result = parse.advance())) {}
-    compareTree(result, tree)
+    compareTree(p.parse({input: doc}), tree)
   })
 }
 

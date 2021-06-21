@@ -1,20 +1,13 @@
 import {parser} from ".."
-import {Tree, stringInput} from "lezer-tree"
 import {compareTree} from "./compare-tree"
 import {SpecParser} from "./spec"
 
 const specParser = new SpecParser(parser)
 
-function parse(doc: string) {
-  let parse = parser.startParse(stringInput(doc)), result: Tree | null
-  while (!(result = parse.advance())) {}
-  return result
-}
-
 function test(name: string, spec: string) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    compareTree(parse(doc), tree)
+    compareTree(parser.parse({input: doc}), tree)
   })
 }
 
@@ -3557,6 +3550,6 @@ describe("Custom Markdown tests", () => {
 
   it("Doesn't get confused by tabs indenting a list item", () => {
     let doc = ` - a\n\t\tb`
-    if (parse(doc).length > doc.length) throw new RangeError("Wrong tree length")
+    if (parser.parse({input: doc}).length > doc.length) throw new RangeError("Wrong tree length")
   })
 })
