@@ -383,10 +383,14 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
 
+    // FIXME pass gaps for marks
     let nest = !marks.length && cx.parser.codeParser && cx.parser.codeParser("")
     if (nest)
-      cx.startNested(from, nest.startParse({...cx.spec, from, to}),
-                     tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], to - from))
+      cx.startNested({
+        parser: nest,
+        from, to,
+        finish: tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], to - from)
+      })
     else
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, to - from), from)
     return true
@@ -424,9 +428,15 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     // (Don't try to nest if there are blockquote marks in the region.)
     let nest = marks.length == ownMarks && cx.parser.codeParser && cx.parser.codeParser(info)
     if (nest && codeStart < codeEnd) {
-      cx.startNested(from, nest.startParse({...cx.spec, from: codeStart, to: codeEnd}), tree => {
-        marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
-        return elt(Type.FencedCode, from, to, marks)
+      cx.startNested({
+        parser: nest,
+        from: codeStart,
+        to: codeEnd,
+        finish: tree => {
+          marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
+          return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
+        },
+        resultPos: from
       })
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
@@ -505,8 +515,11 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
     let to = cx.prevLineEnd()
     if (!marks.length && nodeType == Type.HTMLBlock && cx.parser.htmlParser) {
-      cx.startNested(from, cx.parser.htmlParser.startParse({...cx.spec, from, to}),
-                     tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from))
+      cx.startNested({
+        parser: cx.parser.htmlParser,
+        from, to,
+        finish: tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from)
+      })
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
     }
@@ -640,7 +653,7 @@ class NestedParse {
   constructor(
     readonly from: number,
     readonly parse: PartialParse,
-    readonly finish: (tree: Tree) => Tree | Element
+    readonly finish: (tree: Tree) => Tree
   ) {}
 }
 
@@ -689,9 +702,7 @@ export class BlockContext implements PartialParse {
     if (this.nested) {
       let done = this.nested.parse.advance()
       if (done) {
-        let node = this.nested.finish(done)
-        if (node instanceof Element) node = node.toTree(this.parser.nodeSet) as Tree
-        this.addNode(node, this.nested.from)
+        this.addNode(this.nested.finish(done), this.nested.from)
         this.nested = null
       }
       return null
@@ -856,11 +867,28 @@ export class BlockContext implements PartialParse {
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
 
-  /// Start a nested parse at the given position. When it finishes,
-  /// the `finish` callback is called with the resulting tree, and
-  /// should return the finished node for the block element.
-  startNested(from: number, parse: PartialParse, finish: (tree: Tree) => Tree | Element) {
-    this.nested = new NestedParse(from, parse, finish)
+  /// Start a nested parse at the given position.
+  startNested(config: {
+    /// The inner parser to use.
+    parser: AbstractParser,
+    /// The start position of the range to parse.
+    from: number,
+    /// The end position of the range to parse.
+    to: number,
+    /// A function that's called with the resulting tree, which should
+    /// return the finished node for the block element.
+    finish: (tree: Tree) => Tree,
+    /// The position at which to emit the final node, if different
+    /// from `from`.
+    resultPos?: number,
+    /// A set of gaps to pass through to the inner parser.
+    gaps?: readonly InputGap[]
+  }) {
+    let {parser, from, to, finish, resultPos = from} = config
+    // FIXME gaps
+    this.nested = new NestedParse(resultPos == null ? from : resultPos,
+                                  parser.startParse({...this.spec, from, to}),
+                                  finish)
   }
 
   /// @internal
