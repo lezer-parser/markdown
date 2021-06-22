@@ -7,6 +7,8 @@ class CompositeBlock {
     return new CompositeBlock(type, value, from, hash, end, [], [])
   }
 
+  private hashProp: [NodeProp<any>, any][]
+
   constructor(readonly type: number,
               // Used for indentation in list items, markup character in lists
               readonly value: number,
@@ -14,13 +16,23 @@ class CompositeBlock {
               readonly hash: number,
               public end: number,
               readonly children: (Tree | TreeBuffer)[],
-              readonly positions: number[]) {}
+              readonly positions: number[]) {
+    this.hashProp = [[NodeProp.contextHash, hash]]
+  }
+
+  addChild(child: Tree, pos: number) {
+    if (child.prop(NodeProp.contextHash) != this.hash)
+      child = new Tree(child.type, child.children, child.positions, child.length, this.hashProp)
+    this.children.push(child)
+    this.positions.push(pos)
+  }
 
   toTree(nodeSet: NodeSet, end = this.end) {
     let last = this.children.length - 1
     if (last >= 0) end = Math.max(end, this.positions[last] + this.children[last].length + this.from)
-    let tree = new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance(2048)
-    stampContext(tree.children, this.hash)
+    let tree = new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance({
+      makeTree: (children, positions, length) => new Tree(NodeType.none, children, positions, length, this.hashProp)
+    })
     return tree
   }
 
@@ -824,17 +836,15 @@ export class BlockContext implements PartialParse {
   }
 
   /// @internal
-  addNode(block: Type | Tree | TreeBuffer, from: number, to?: number) {
+  addNode(block: Type | Tree, from: number, to?: number) {
     if (typeof block == "number") block = new Tree(this.parser.nodeSet.types[block], none, none, (to ?? this.prevLineEnd()) - from)
-    this.block.children.push(block)
-    this.block.positions.push(from - this.block.from)
+    this.block.addChild(block, from - this.block.from)
   }
 
   /// Add a block element. Can be called by [block
   /// parsers](#BlockParser.parse).
   addElement(elt: Element) {
-    this.block.children.push(elt.toTree(this.parser.nodeSet))
-    this.block.positions.push(elt.from - this.block.from)
+    this.block.addChild(elt.toTree(this.parser.nodeSet), elt.from - this.block.from)
   }
 
   /// Add a block element from a [leaf parser](#LeafBlockParser). This
@@ -873,8 +883,7 @@ export class BlockContext implements PartialParse {
       if (result.length > len)
         result = new Tree(result.type, result.children.filter((_, i) => (result as Tree).positions[i] <= len),
                           result.positions.filter(p => p <= len), len)
-      inner.children.push(result)
-      inner.positions.push(this.nested.from)
+      inner.addChild(result, this.nested.from)
     }
     while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
     return this.addGaps(cx[0].toTree(this.parser.nodeSet, pos))
@@ -1263,8 +1272,7 @@ for (let i = 1, name; name = Type[i]; i++) {
 function finishContext(stack: CompositeBlock[], nodeSet: NodeSet): CompositeBlock {
   let cx = stack.pop()!
   let top = stack[stack.length - 1]
-  top.children.push(cx.toTree(nodeSet))
-  top.positions.push(cx.from - top.from)
+  top.addChild(cx.toTree(nodeSet), cx.from - top.from)
   return top
 }
 
@@ -1319,7 +1327,7 @@ export class Element {
   }
 
   /// @internal
-  toTree(nodeSet: NodeSet): Tree | TreeBuffer {
+  toTree(nodeSet: NodeSet): Tree {
     return new Buffer(nodeSet).writeElements(this.children, -this.from).finish(this.type, this.to - this.from)
   }
 }
@@ -1338,7 +1346,7 @@ class TreeElement {
     buf.content.push(buf.nodes.length - 1, this.from + offset, this.to + offset, -1)
   }
 
-  toTree(): Tree | TreeBuffer { return this.tree }
+  toTree(): Tree { return this.tree }
 }
 
 function elt(type: Type, from: number, to: number, children?: readonly (Element | TreeElement)[]) {
@@ -1741,16 +1749,6 @@ function injectMarks(elements: readonly (Element | TreeElement)[], marks: Elemen
   return elts
 }
 
-// FIXME use a node prop
-const ContextHash = new WeakMap<Tree | TreeBuffer, number>()
-
-function stampContext(nodes: readonly (Tree | TreeBuffer)[], hash: number) {
-  for (let n of nodes) {
-    ContextHash.set(n, hash)
-    if (n instanceof Tree && n.type.isAnonymous) stampContext(n.children, hash)
-  }
-}
-
 // These are blocks that can span blank lines, and should thus only be
 // reused if their next sibling is also being reused.
 const NotLast = [Type.CodeBlock, Type.ListItem, Type.OrderedList, Type.BulletList]
@@ -1802,7 +1800,7 @@ class FragmentCursor {
 
   matches(hash: number) {
     let tree = this.cursor!.tree
-    return tree && ContextHash.get(tree) == hash
+    return tree && tree.prop(NodeProp.contextHash) == hash
   }
 
   takeNodes(cx: BlockContext) {
