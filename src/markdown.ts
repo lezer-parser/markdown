@@ -383,13 +383,13 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
 
-    // FIXME pass gaps for marks
-    let nest = !marks.length && cx.parser.codeParser && cx.parser.codeParser("")
+    let nest = cx.parser.codeParser && cx.parser.codeParser("")
     if (nest)
       cx.startNested({
         parser: nest,
         from, to,
-        finish: tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], to - from)
+        finish: tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], to - from),
+        marks
       })
     else
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, to - from), from)
@@ -401,45 +401,48 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (fenceEnd < 0) return false
     let from = cx.lineStart + line.pos, ch = line.next, len = fenceEnd - line.pos
     let infoFrom = line.skipSpace(fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
-    let marks: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)], info = ""
+    let marksBefore: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)], info = ""
     if (infoFrom < infoTo) {
-      marks.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
+      marksBefore.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
       info = line.text.slice(infoFrom, infoTo)
     }
-    let ownMarks = marks.length, startMarks = ownMarks
+    let marksInside = [], marksAfter: Element[] = []
     let codeStart = cx.lineStart + line.text.length + 1, codeEnd = -1
 
     for (; cx.nextLine();) {
       if (line.depth < cx.stack.length) break
-      for (let m of line.markers) marks.push(m)
       let i = line.pos
       if (line.indent - line.baseIndent < 4)
         while (i < line.text.length && line.text.charCodeAt(i) == ch) i++
       if (i - line.pos >= len && line.skipSpace(i) == line.text.length) {
-        marks.push(elt(Type.CodeMark, cx.lineStart + line.pos, cx.lineStart + i))
-        ownMarks++
+        for (let m of line.markers) marksAfter.push(m)
+        marksAfter.push(elt(Type.CodeMark, cx.lineStart + line.pos, cx.lineStart + i))
         codeEnd = cx.lineStart - 1
         cx.nextLine()
         break
+      } else {
+        for (let m of line.markers) marksInside.push(m)
       }
     }
     let to = cx.prevLineEnd()
     if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
-    let nest = marks.length == ownMarks && cx.parser.codeParser && cx.parser.codeParser(info)
+    let nest = cx.parser.codeParser && cx.parser.codeParser(info)
     if (nest && codeStart < codeEnd) {
       cx.startNested({
         parser: nest,
         from: codeStart,
         to: codeEnd,
         finish: tree => {
-          marks.splice(startMarks, 0, new TreeElement(tree, codeStart))
+          let marks = marksBefore.concat(new TreeElement(tree, codeStart)).concat(marksAfter)
           return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
         },
-        resultPos: from
+        resultPos: from,
+        marks: marksInside
       })
     } else {
-      cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.FencedCode, cx.prevLineEnd() - from), from)
+      cx.addNode(cx.buffer.writeElements(marksBefore.concat(marksInside, marksAfter), -from)
+        .finish(Type.FencedCode, cx.prevLineEnd() - from), from)
     }
     return true
   },
@@ -514,11 +517,12 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (trailing) cx.nextLine()
     let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
     let to = cx.prevLineEnd()
-    if (!marks.length && nodeType == Type.HTMLBlock && cx.parser.htmlParser) {
+    if (nodeType == Type.HTMLBlock && cx.parser.htmlParser) {
       cx.startNested({
         parser: cx.parser.htmlParser,
         from, to,
-        finish: tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from)
+        finish: tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from),
+        marks
       })
     } else {
       cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
@@ -884,13 +888,17 @@ export class BlockContext implements PartialParse {
     /// The position at which to emit the final node, if different
     /// from `from`.
     resultPos?: number,
-    /// A set of gaps to pass through to the inner parser.
-    gaps?: readonly InputGap[]
+    /// A set of marks inside the range that should be skipped by the
+    /// inner parser.
+    marks?: readonly Element[],
   }) {
-    let {parser, from, to, finish, resultPos = from} = config
-    // FIXME gaps
+    let {parser, from, to, finish, resultPos = from, marks} = config
+    let absFrom = this.mapToAbsolute(from), absTo = this.mapToAbsolute(to)
+    let gaps = InputGap.inner(absFrom, absTo, this.gaps, marks && marks.map(m => {
+      return new InputGap(this.mapToAbsolute(m.from), this.mapToAbsolute(m.to), m.toTree(this.parser.nodeSet))
+    }))
     this.nested = new NestedParse(resultPos == null ? from : resultPos,
-                                  parser.startParse({...this.spec, from: this.mapToAbsolute(from), to: this.mapToAbsolute(to)}),
+                                  parser.startParse({...this.spec, gaps, from: absFrom, to: absTo}),
                                   finish)
   }
 

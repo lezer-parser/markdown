@@ -8,7 +8,7 @@ function nest(info: string) {
   return new class extends AbstractParser {
     startParse(spec: ParseSpec) {
       let {from = 0, to = spec.input.length} = spec
-      let mount = (spec.gaps || []).filter(g => g.from > from && g.to < to && g.mount)
+      let mount = (spec.gaps || []).filter(g => g.from >= from && g.to <= to && g.mount)
       let children = mount.map(m => m.mount!), positions = mount.map(m => m.from - from)
       return {
         pos: from,
@@ -57,14 +57,15 @@ This is code
 `}).toString(), "Document(FencedCode(CodeMark,CodeInfo,CodeMark))")
   })
 
-  it("Doesn't nest when there are quote marks in the block", () => {
+  it("Passes through quote marks to fenced inner parses", () => {
     ist(nestParser.parse({input: `
 > Hello
 >
-> ~~~ okay
+> ~~~
 > Code!
 > ~~~
-`}).toString(), "Document(Blockquote(QuoteMark,Paragraph,QuoteMark,QuoteMark,FencedCode(CodeMark,CodeInfo,QuoteMark,QuoteMark,CodeMark)))")
+`}).toString(),
+        "Document(Blockquote(QuoteMark,Paragraph,QuoteMark,QuoteMark,FencedCode(CodeMark,Anon(QuoteMark),QuoteMark,CodeMark)))")
   })
 
   it("Can parse the content of indented code blocks", () => {
@@ -78,7 +79,7 @@ Done.
 `}).toString(), "Document(Paragraph,CodeBlock(Anon),Paragraph)")
   })
 
-  it("Won't try to parse indented code with quote marks in it", () => {
+  it("Passes through quote marks to indented nested parses", () => {
     ist(nestParser.parse({input: `
 Hello
 
@@ -86,7 +87,7 @@ Hello
 >     Code
 >
 > Done.
-`}).toString(), "Document(Paragraph,Blockquote(QuoteMark,CodeBlock(QuoteMark),QuoteMark,QuoteMark,Paragraph))")
+`}).toString(), "Document(Paragraph,Blockquote(QuoteMark,CodeBlock(Anon(QuoteMark)),QuoteMark,QuoteMark,Paragraph))")
   })
 
   function nodeIs(node: SyntaxNode | null, name: string, from: number, to: number) {
