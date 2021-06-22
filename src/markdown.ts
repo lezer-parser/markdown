@@ -668,6 +668,8 @@ export class BlockContext implements PartialParse {
   private fragments: FragmentCursor | null
   private gaps: readonly InputGap[] | undefined
   private nested: NestedParse | null = null
+  /// @internal
+  dontInject: Set<Tree> = new Set
 
   /// The start of the current line.
   lineStart: number
@@ -702,6 +704,7 @@ export class BlockContext implements PartialParse {
     if (this.nested) {
       let done = this.nested.parse.advance()
       if (done) {
+        this.dontInject.add(done)
         this.addNode(this.nested.finish(done), this.nested.from)
         this.nested = null
       }
@@ -887,8 +890,16 @@ export class BlockContext implements PartialParse {
     let {parser, from, to, finish, resultPos = from} = config
     // FIXME gaps
     this.nested = new NestedParse(resultPos == null ? from : resultPos,
-                                  parser.startParse({...this.spec, from, to}),
+                                  parser.startParse({...this.spec, from: this.mapToAbsolute(from), to: this.mapToAbsolute(to)}),
                                   finish)
+  }
+
+  private mapToAbsolute(pos: number) {
+    if (this.gaps) for (let gap of this.gaps) {
+      if (gap.from >= pos) break
+      pos += gap.to - gap.from
+    }
+    return pos
   }
 
   /// @internal
@@ -918,7 +929,7 @@ export class BlockContext implements PartialParse {
   }
 
   private addGaps(tree: Tree) {
-    return this.gaps ? injectGaps(this.gaps, 0, tree.topNode, this.spec.from) : tree
+    return this.gaps ? injectGaps(this.gaps, 0, tree.topNode, this.spec.from, this.dontInject) : tree
   }
 
   /// @internal
@@ -943,7 +954,8 @@ export class BlockContext implements PartialParse {
   get buffer() { return new Buffer(this.parser.nodeSet) }
 }
 
-function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, offset: number): Tree {
+function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, offset: number, dont: Set<Tree>): Tree {
+  if (dont.has(tree.tree!)) return tree.tree!
   let next: InputGap | null = gaps[gapI]
   let children = [], positions = [], start = tree.from + offset
   function movePastNext(upto: number, mount: boolean, inclusive: boolean) {
@@ -960,10 +972,10 @@ function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, o
     }
   }
   for (let ch = tree.firstChild; ch; ch = ch.nextSibling) {
-    let from = ch.from + offset, node
     movePastNext(ch.from + offset, true, true)
+    let from = ch.from + offset, node
     if (next && ch.to + offset > next.from) {
-      node = injectGaps(gaps, gapI, ch, offset)
+      node = injectGaps(gaps, gapI, ch, offset, dont)
       movePastNext(ch.to + offset, false, false)
     } else {
       node = ch.toTree()
@@ -1840,6 +1852,7 @@ class FragmentCursor {
         if (cur.type.isAnonymous && cur.firstChild()) continue
         break
       }
+      cx.dontInject.add(cur.tree!)
       cx.addNode(cur.tree!, cur.from - off)
       // Taken content must always end in a block, because incremental
       // parsing happens on block boundaries. Never stop directly

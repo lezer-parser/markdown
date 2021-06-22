@@ -8,14 +8,16 @@ function nest(info: string) {
   return new class extends AbstractParser {
     startParse(spec: ParseSpec) {
       let {from = 0, to = spec.input.length} = spec
+      let mount = (spec.gaps || []).filter(g => g.from > from && g.to < to && g.mount)
+      let children = mount.map(m => m.mount!), positions = mount.map(m => m.from - from)
       return {
         pos: from,
         advance() {
           this.pos = to
-          return new Tree(type, [], [], to - from)
+          return new Tree(type, children, positions, to - from)
         },
         forceFinish() {
-          return new Tree(type, [], [], 0)
+          return new Tree(type, children, positions, 0)
         }
       }
     }
@@ -95,6 +97,7 @@ Hello
   }
 
   let gapType = NodeType.define({name: "Xs", id: 1})
+  function gap(from: number, to: number) { return new InputGap(from, to, new Tree(gapType, [], [], to - from)) }
 
   it("Allows gaps in the input", () => {
     let doc = `
@@ -106,10 +109,7 @@ XXXXX paragraph.
 `
     let tree = parser.parse({
       input: doc,
-      gaps: [
-        new InputGap(11, 36, new Tree(gapType, [], [], 25)),
-        new InputGap(59, 64, new Tree(gapType, [], [], 5))
-      ]
+      gaps: [gap(11, 36), gap(59, 64)]
     })
     ist(tree.toString(),
         "Document(Paragraph(Xs),BulletList(ListItem(ListMark,Paragraph(Emphasis(EmphasisMark,Xs,EmphasisMark)))))")
@@ -126,11 +126,7 @@ XXXXX paragraph.
   it("Can handle multiple gaps in a single node", () => {
     let tree = parser.parse({
       input: "One XXX two XXX three XXX four",
-      gaps: [
-        new InputGap(4, 7, new Tree(gapType, [], [], 3)),
-        new InputGap(12, 15, new Tree(gapType, [], [], 3)),
-        new InputGap(22, 25, new Tree(gapType, [], [], 3))
-      ]
+      gaps: [gap(4, 7), gap(12, 15), gap(22, 25)]
     })
     ist(tree.toString(), "Document(Paragraph(Xs,Xs,Xs))")
     ist(tree.length, 30)
@@ -144,13 +140,30 @@ XXXXX paragraph.
   it("Places gap nodes in their outermost parent", () => {
     let tree = parser.parse({
       input: "One XXX*XXXtwoXXX*XXX three",
-      gaps: [
-        new InputGap(4, 7, new Tree(gapType, [], [], 3)),
-        new InputGap(8, 11, new Tree(gapType, [], [], 3)),
-        new InputGap(14, 17, new Tree(gapType, [], [], 3)),
-        new InputGap(18, 21, new Tree(gapType, [], [], 3))
-      ]
+      gaps: [gap(4, 7), gap(8, 11), gap(14, 17), gap(18, 21)]
     })
     ist(tree.toString(), "Document(Paragraph(Xs,Emphasis(EmphasisMark,Xs,Xs,EmphasisMark),Xs))")
+  })
+
+  it("Can handle gaps before nested trees", () => {
+    let tree = nestParser.parse({
+      input: "XXX\n```\nreturn\n```",
+      gaps: [gap(0, 3)]
+    })
+    ist(tree.toString(), "Document(Xs,FencedCode(CodeMark,Anon,CodeMark))")
+    let code = tree.topNode.lastChild!
+    nodeIs(code, "FencedCode", 4, 18)
+    nodeIs(code.childAfter(8)!, "Anon", 8, 14)
+  })
+
+  it("Properly forwards gaps inside nested ranges", () => {
+    let tree = nestParser.parse({
+      input: "```\nretXXXurn\n```",
+      gaps: [gap(7, 10)]
+    })
+    ist(tree.toString(), "Document(FencedCode(CodeMark,Anon(Xs),CodeMark))")
+    nodeIs(tree.topNode.firstChild, "FencedCode", 0, 17)
+    nodeIs(tree.resolve(4, 1), "Anon", 4, 13)
+    nodeIs(tree.resolve(7, 1), "Xs", 7, 10)
   })
 })
