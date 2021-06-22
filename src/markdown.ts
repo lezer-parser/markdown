@@ -1,5 +1,5 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor,
-        Input, AbstractParser, PartialParse, InputGap, ParseSpec, FullParseSpec} from "lezer-tree"
+        Input, AbstractParser, PartialParse, InputGap, ParseSpec, FullParseSpec, SyntaxNode} from "lezer-tree"
 
 class CompositeBlock {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -775,12 +775,14 @@ export class BlockContext implements PartialParse {
       text = this.lineChunkAt(end)
       end += text.length
       if (this.gaps) {
+        let textOffset = this.absoluteLineStart
         for (let gap of this.gaps) {
           if (gap.from > end) break
-          if (gap.to >= this.lineStart) {
+          if (gap.to >= this.absoluteLineStart) {
             let after = this.lineChunkAt(gap.to)
             end = gap.to + after.length
-            text = text.slice(0, gap.from) + after
+            text = text.slice(0, gap.from - textOffset) + after
+            textOffset = end - text.length
           }
         }
       }
@@ -796,7 +798,7 @@ export class BlockContext implements PartialParse {
   }
 
   private lineChunkAt(pos: number) {
-    let next = this.input.chunk(this.lineStart), text
+    let next = this.input.chunk(pos), text
     if (!this.input.lineChunks) {
       let eol = next.indexOf("\n")
       text = eol < 0 ? next : next.slice(0, eol)
@@ -858,7 +860,7 @@ export class BlockContext implements PartialParse {
 
   private finish() {
     while (this.stack.length > 1) this.finishContext()
-    return this.block.toTree(this.parser.nodeSet, this.lineStart)
+    return this.addGaps(this.block.toTree(this.parser.nodeSet, this.lineStart))
   }
 
   forceFinish() {
@@ -875,7 +877,11 @@ export class BlockContext implements PartialParse {
       inner.positions.push(this.nested.from)
     }
     while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
-    return cx[0].toTree(this.parser.nodeSet, pos)
+    return this.addGaps(cx[0].toTree(this.parser.nodeSet, pos))
+  }
+
+  private addGaps(tree: Tree) {
+    return this.gaps ? injectGaps(this.gaps, 0, tree.topNode, this.spec.from) : tree
   }
 
   /// @internal
@@ -898,6 +904,38 @@ export class BlockContext implements PartialParse {
 
   /// @internal
   get buffer() { return new Buffer(this.parser.nodeSet) }
+}
+
+function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, offset: number): Tree {
+  let next: InputGap | null = gaps[gapI]
+  let children = [], positions = [], start = tree.from + offset
+  function movePastNext(upto: number, mount: boolean, inclusive: boolean) {
+    while (next && (inclusive ? upto >= next.from : upto > next.from)) {
+      if (mount && next.mount) {
+        children.push(next.mount)
+        positions.push(next.from - start)
+      }
+      let size = next.to - next.from
+      offset += size
+      upto += size
+      gapI++
+      next = gapI == gaps.length ? null : gaps[gapI]
+    }
+  }
+  for (let ch = tree.firstChild; ch; ch = ch.nextSibling) {
+    let from = ch.from + offset, node
+    movePastNext(ch.from + offset, true, true)
+    if (next && ch.to + offset > next.from) {
+      node = injectGaps(gaps, gapI, ch, offset)
+      movePastNext(ch.to + offset, false, false)
+    } else {
+      node = ch.toTree()
+    }
+    children.push(node)
+    positions.push(from - start)
+  }
+  movePastNext(tree.to + offset, true, false)
+  return new Tree(tree.type, children, positions, tree.to + offset - start, tree.tree ? tree.tree.propValues : undefined)
 }
 
 /// Used in the [configuration](#MarkdownConfig.defineNodes) to define
@@ -1703,6 +1741,7 @@ function injectMarks(elements: readonly (Element | TreeElement)[], marks: Elemen
   return elts
 }
 
+// FIXME use a node prop
 const ContextHash = new WeakMap<Tree | TreeBuffer, number>()
 
 function stampContext(nodes: readonly (Tree | TreeBuffer)[], hash: number) {
