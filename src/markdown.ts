@@ -757,7 +757,7 @@ export class BlockContext implements PartialParse {
   }
 
   private reuseFragment(start: number) {
-    if (!this.fragments!.moveTo(this.lineStart + start, this.lineStart) ||
+    if (!this.fragments!.moveTo(this.absoluteLineStart + start, this.absoluteLineStart) ||
         !this.fragments!.matches(this.block.hash)) return false
     let taken = this.fragments!.takeNodes(this)
     if (!taken) return false
@@ -1826,8 +1826,6 @@ class FragmentCursor {
     if (!this.fragment || this.fragment.from > (pos ? pos - 1 : 0)) return false
     if (this.fragmentEnd < 0) {
       let end = this.fragment.to
-      // FIXME this could be rather inefficient
-      // FIXME also needs to take gaps into account?
       while (end > 0 && this.input.read(end - 1, end) != "\n") end--
       this.fragmentEnd = end ? end - 1 : 0
     }
