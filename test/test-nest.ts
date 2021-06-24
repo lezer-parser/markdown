@@ -1,4 +1,4 @@
-import {NodeType, Tree, AbstractParser, ParseSpec, InputGap} from "lezer-tree"
+import {NodeType, Tree, AbstractParser, ParseSpec, InputGap, SyntaxNode} from "lezer-tree"
 import ist from "ist"
 import {parser} from ".."
 
@@ -11,13 +11,12 @@ function nest(info: string) {
       let mount = (spec.gaps || []).filter(g => g.from >= from && g.to <= to && g.mount)
       let children = mount.map(m => m.mount!), positions = mount.map(m => m.from - from)
       return {
-        pos: from,
+        parsedPos: from,
+        stoppedAt: null,
+        stopAt() {},
         advance() {
-          this.pos = to
+          this.parsedPos = to
           return new Tree(type, children, positions, to - from)
-        },
-        forceFinish() {
-          return new Tree(type, children, positions, 0)
         }
       }
     }
@@ -92,9 +91,9 @@ Hello
 
   function nodeIs(node: SyntaxNode | null, name: string, from: number, to: number) {
     ist(node)
-    ist(node.name, name)
-    ist(node.from, from)
-    ist(node.to, to)
+    ist(node!.name, name)
+    ist(node!.from, from)
+    ist(node!.to, to)
   }
 
   let gapType = NodeType.define({name: "Xs", id: 1})

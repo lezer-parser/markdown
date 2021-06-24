@@ -182,10 +182,11 @@ Another paragraph that is long enough to create a fragment
 
 2. Oh no the list continues.
 `
-    let parse = parser.startParse({input: doc})
+    let parse = parser.startParse({input: doc}), tree
     parse.advance()
-    ist(parse.pos, doc.length, "<")
-    let tree = parse.forceFinish()
+    ist(parse.parsedPos, doc.length, "<")
+    parse.stopAt(parse.parsedPos)
+    while (!(tree = parse.advance())) {}
     let state = new State(doc, tree, TreeFragment.addTree(tree)).update([])
     ist(state.tree.topNode.lastChild!.from, 1)
   })

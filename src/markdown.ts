@@ -35,11 +35,6 @@ class CompositeBlock {
     })
     return tree
   }
-
-  copy() {
-    return new CompositeBlock(this.type, this.value, this.from, this.hash, this.end,
-                            this.children.slice(), this.positions.slice())
-  }
 }
 
 enum Type {
@@ -674,6 +669,7 @@ export class BlockContext implements PartialParse {
   private nested: NestedParse | null = null
   /// @internal
   dontInject: Set<Tree> = new Set
+  stoppedAt: number | null = null
 
   /// The start of the current line.
   lineStart: number
@@ -700,8 +696,8 @@ export class BlockContext implements PartialParse {
     this.readLine()
   }
 
-  get pos() {
-    return this.nested ? this.nested.parse.pos : this.lineStart
+  get parsedPos() {
+    return this.nested ? this.nested.parse.parsedPos : this.absoluteLineStart
   }
 
   advance() {
@@ -714,6 +710,9 @@ export class BlockContext implements PartialParse {
       }
       return null
     }
+
+    if (this.stoppedAt != null && this.absoluteLineStart > this.stoppedAt)
+      return this.finish()
 
     let {line} = this
     for (;;) {
@@ -754,6 +753,12 @@ export class BlockContext implements PartialParse {
     }
     this.finishLeaf(leaf)
     return null
+  }
+
+  stopAt(pos: number) {
+    if (this.stoppedAt != null && this.stoppedAt < pos) throw new RangeError("Can't move stoppedAt forward")
+    this.stoppedAt = pos
+    if (this.nested) this.nested.parse.stopAt(pos)
   }
 
   private reuseFragment(start: number) {
@@ -897,9 +902,9 @@ export class BlockContext implements PartialParse {
     let gaps = InputGap.inner(absFrom, absTo, this.gaps, marks && marks.map(m => {
       return new InputGap(this.mapToAbsolute(m.from), this.mapToAbsolute(m.to), m.toTree(this.parser.nodeSet))
     }))
-    this.nested = new NestedParse(resultPos == null ? from : resultPos,
-                                  parser.startParse({...this.spec, gaps, from: absFrom, to: absTo}),
-                                  finish)
+    let parse = parser.startParse({...this.spec, gaps, from: absFrom, to: absTo})
+    if (this.stoppedAt != null && this.stoppedAt < absTo) parse.stopAt(absTo)
+    this.nested = new NestedParse(resultPos == null ? from : resultPos, parse, finish)
   }
 
   private mapToAbsolute(pos: number) {
@@ -912,28 +917,15 @@ export class BlockContext implements PartialParse {
 
   /// @internal
   finishContext() {
-    this.block = finishContext(this.stack, this.parser.nodeSet)
+    let cx = this.stack.pop()!
+    let top = this.stack[this.stack.length - 1]
+    top.addChild(cx.toTree(this.parser.nodeSet), cx.from - top.from)
+    this.block = top
   }
 
   private finish() {
     while (this.stack.length > 1) this.finishContext()
     return this.addGaps(this.block.toTree(this.parser.nodeSet, this.lineStart))
-  }
-
-  forceFinish() {
-    let cx = this.stack.map(cx => cx.copy()), pos = this.lineStart
-    if (this.nested) {
-      let inner = cx[cx.length - 1]
-      let result = this.nested.finish(this.nested.parse.forceFinish())
-      if (result instanceof Element) result = result.toTree(this.parser.nodeSet) as Tree
-      let len = pos - this.nested.from
-      if (result.length > len)
-        result = new Tree(result.type, result.children.filter((_, i) => (result as Tree).positions[i] <= len),
-                          result.positions.filter(p => p <= len), len)
-      inner.addChild(result, this.nested.from)
-    }
-    while (cx.length > 1) finishContext(cx, this.parser.nodeSet)
-    return this.addGaps(cx[0].toTree(this.parser.nodeSet, pos))
   }
 
   private addGaps(tree: Tree) {
@@ -1315,13 +1307,6 @@ for (let i = 1, name; name = Type[i]; i++) {
     name,
     props: i >= Type.Escape ? [] : [[NodeProp.group, i in DefaultSkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]]
   })
-}
-
-function finishContext(stack: CompositeBlock[], nodeSet: NodeSet): CompositeBlock {
-  let cx = stack.pop()!
-  let top = stack[stack.length - 1]
-  top.addChild(cx.toTree(nodeSet), cx.from - top.from)
-  return top
 }
 
 const none: readonly any[] = []
