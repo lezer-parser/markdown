@@ -5,6 +5,7 @@
     "noUnusedLocals": true,
     "strict": true,
     "target": "es6",
+    "module": "es2015",
     "newLine": "lf",
     "stripInternal": true,
     "moduleResolution": "node"

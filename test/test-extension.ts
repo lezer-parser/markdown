@@ -1,6 +1,6 @@
-import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from ".."
-import {compareTree} from "./compare-tree"
-import {SpecParser} from "./spec"
+import {parser as cmParser, GFM, Subscript, Superscript, Emoji} from "../dist/index.js"
+import {compareTree} from "./compare-tree.js"
+import {SpecParser} from "./spec.js"
 
 const parser = cmParser.configure([GFM, Subscript, Superscript, Emoji])
 

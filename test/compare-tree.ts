@@ -1,4 +1,4 @@
-import {Tree} from "lezer-tree"
+import {Tree} from "@lezer/common"
 
 export function compareTree(a: Tree, b: Tree) {
   let curA = a.cursor(), curB = b.cursor()

@@ -1,6 +1,6 @@
-import {parser} from ".."
-import {compareTree} from "./compare-tree"
-import {SpecParser} from "./spec"
+import {parser} from "../dist/index.js"
+import {compareTree} from "./compare-tree.js"
+import {SpecParser} from "./spec.js"
 
 const specParser = new SpecParser(parser)
 

@@ -1,4 +1,4 @@
-import {Tree} from "lezer-tree"
+import {Tree} from "@lezer/common"
 import {MarkdownParser} from ".."
 
 const abbrev: {[abbr: string]: string} = {

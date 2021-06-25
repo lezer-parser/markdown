@@ -1,31 +1,30 @@
 {
-  "name": "lezer-markdown",
+  "name": "@lezer/markdown",
   "version": "0.14.5",
   "description": "Incremental Markdown parser that consumes and emits Lezer trees",
   "main": "dist/index.cjs",
   "type": "module",
   "exports": {
-    "import": "./dist/index.es.js",
+    "import": "./dist/index.js",
     "require": "./dist/index.cjs"
   },
-  "module": "dist/index.es.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Marijn Haverbeke <marijnh@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "ist": "^1.1.1",
-    "mocha": "^8.1.3",
+    "mocha": "^9.0.1",
     "lezer": "^0.13.0",
-    "rollup": "^2.27.1",
-    "rollup-plugin-typescript2": "^0.27.2",
-    "ts-node": "^8.0.3",
-    "typescript": "^3.7.2",
+    "rollup": "^2.52.2",
+    "rollup-plugin-typescript2": "^0.30.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.4",
     "getdocs-ts": "^0.1.0",
     "builddocs": "^1.0.0"
   },
   "dependencies": {
-    "lezer-html": "^0.13.0",
-    "lezer-tree": "^0.13.0"
+    "@lezer/common": "^0.13.0"
   },
   "repository": {
     "type" : "git",
@@ -34,7 +33,7 @@
   "scripts": {
     "watch": "rollup -w -c rollup.config.js",
     "prepare": "rollup -c rollup.config.js",
-    "test": "mocha -r ts-node/register/transpile-only test/test-*.ts",
+    "test": "mocha",
     "build-readme": "node bin/build-readme.cjs"
   }
 }

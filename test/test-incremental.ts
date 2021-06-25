@@ -1,7 +1,7 @@
-import {Tree, TreeFragment} from "lezer-tree"
+import {Tree, TreeFragment} from "@lezer/common"
 import ist from "ist"
-import {parser} from ".."
-import {compareTree} from "./compare-tree"
+import {parser} from "../dist/index.js"
+import {compareTree} from "./compare-tree.js"
 
 let doc1 = `
 Header

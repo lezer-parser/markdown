@@ -8,10 +8,10 @@ export default {
     externalLiveBindings: false
   }, {
     format: "es",
-    file: "./dist/index.es.js",
+    file: "./dist/index.js",
     externalLiveBindings: false
   }],
-  external: ["lezer-tree", "lezer", "lezer-html"],
+  external: ["@lezer/common", "@lezer/lr"],
   plugins: [
     typescript({
       check: false,

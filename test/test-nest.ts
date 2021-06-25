@@ -1,11 +1,11 @@
-import {NodeType, Tree, AbstractParser, ParseSpec, InputGap, SyntaxNode} from "lezer-tree"
+import {NodeType, Tree, Parser, ParseSpec, InputGap, SyntaxNode} from "@lezer/common"
 import ist from "ist"
-import {parser} from ".."
+import {parser} from "../dist/index.js"
 
 function nest(info: string) {
   if (info == "none") return null
   let type = NodeType.define({id: 1, name: info ? "Nest_" + info : "Anon", top: true})
-  return new class extends AbstractParser {
+  return new class extends Parser {
     startParse(spec: ParseSpec) {
       let {from = 0, to = spec.input.length} = spec
       let mount = (spec.gaps || []).filter(g => g.from >= from && g.to <= to && g.mount)

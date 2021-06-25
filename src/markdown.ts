@@ -1,5 +1,5 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor,
-        Input, AbstractParser, PartialParse, InputGap, ParseSpec, FullParseSpec, SyntaxNode} from "lezer-tree"
+        Input, Parser, PartialParse, InputGap, ParseSpec, FullParseSpec, SyntaxNode} from "@lezer/common"
 
 class CompositeBlock {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -882,7 +882,7 @@ export class BlockContext implements PartialParse {
   /// Start a nested parse at the given position.
   startNested(config: {
     /// The inner parser to use.
-    parser: AbstractParser,
+    parser: Parser,
     /// The start position of the range to parse.
     from: number,
     /// The end position of the range to parse.
@@ -1114,9 +1114,9 @@ export interface MarkdownConfig {
   /// indented code block. If there is a parser available for the
   /// code, it should return a function that can construct the
   /// [parse](https://lezer.codemirror.net/docs/ref/#tree.PartialParse).
-  codeParser?: (info: string) => null | AbstractParser
+  codeParser?: (info: string) => null | Parser
   /// The parser used to parse HTML tags (both block and inline).
-  htmlParser?: AbstractParser,
+  htmlParser?: Parser,
   /// Define new [node types](#NodeSpec) for use in parser extensions.
   defineNodes?: readonly (string | NodeSpec)[],
   /// Define additional [block parsing](#BlockParser) logic.
@@ -1134,7 +1134,7 @@ export interface MarkdownConfig {
 export type MarkdownExtension = MarkdownConfig | readonly MarkdownExtension[]
 
 /// A Markdown parser configuration.
-export class MarkdownParser extends AbstractParser {
+export class MarkdownParser extends Parser {
   /// @internal
   nodeTypes: {[name: string]: number} = Object.create(null)
 
@@ -1144,9 +1144,9 @@ export class MarkdownParser extends AbstractParser {
     /// types](https://lezer.codemirror.net/docs/ref/#tree.NodeSet).
     readonly nodeSet: NodeSet,
     /// @internal
-    readonly codeParser: null | ((info: string) => null | AbstractParser),
+    readonly codeParser: null | ((info: string) => null | Parser),
     /// @internal
-    readonly htmlParser: null | AbstractParser,
+    readonly htmlParser: null | Parser,
     /// @internal
     readonly blockParsers: readonly (((cx: BlockContext, line: Line) => BlockResult) | undefined)[],
     /// @internal
