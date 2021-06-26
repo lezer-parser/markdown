@@ -16,10 +16,10 @@ function buildReadme() {
     anchorPrefix: "",
     allowUnresolvedTypes: false,
     imports: [type => {
-      if (/\blezer[\/-]tree\b|\.\.[\\\/]tree\b/.test(type.typeSource))
-        return `https://lezer.codemirror.net/docs/ref/#tree.${type.type}`
-      if (/\blezer\b/.test(type.typeSource))
-        return `https://lezer.codemirror.net/docs/ref/#lezer.${type.type}`
+      if (/\bcommon\b/.test(type.typeSource))
+        return `https://lezer.codemirror.net/docs/ref/#common.${type.type}`
+      if (/\blr\b/.test(type.typeSource))
+        return `https://lezer.codemirror.net/docs/ref/#lr.${type.type}`
       if (type.type == "NodeSet") console.log(type.typeSource)
     }]
   }, gather({filename: join(root, "src", "index.ts"), basedir: join(root, "src"), }))

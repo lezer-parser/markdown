@@ -989,7 +989,7 @@ function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, o
 
 /// Used in the [configuration](#MarkdownConfig.defineNodes) to define
 /// new [syntax node
-/// types](https://lezer.codemirror.net/docs/ref/#tree.NodeType).
+/// types](https://lezer.codemirror.net/docs/ref/#common.NodeType).
 export interface NodeSpec {
   /// The node's name.
   name: string,
@@ -1113,7 +1113,7 @@ export interface MarkdownConfig {
   /// or the empty string if there is no such info or this is an
   /// indented code block. If there is a parser available for the
   /// code, it should return a function that can construct the
-  /// [parse](https://lezer.codemirror.net/docs/ref/#tree.PartialParse).
+  /// [parse](https://lezer.codemirror.net/docs/ref/#common.PartialParse).
   codeParser?: (info: string) => null | Parser
   /// The parser used to parse HTML tags (both block and inline).
   htmlParser?: Parser,
@@ -1141,7 +1141,7 @@ export class MarkdownParser extends Parser {
   /// @internal
   constructor(
     /// The parser's syntax [node
-    /// types](https://lezer.codemirror.net/docs/ref/#tree.NodeSet).
+    /// types](https://lezer.codemirror.net/docs/ref/#common.NodeSet).
     readonly nodeSet: NodeSet,
     /// @internal
     readonly codeParser: null | ((info: string) => null | Parser),
@@ -1342,7 +1342,7 @@ export class Element {
   /// @internal
   constructor(
     /// The node's
-    /// [id](https://lezer.codemirror.net/docs/ref/#tree.NodeType.id).
+    /// [id](https://lezer.codemirror.net/docs/ref/#common.NodeType.id).
     readonly type: number,
     /// The start of the node, as an offset from the start of the document.
     readonly from: number,
