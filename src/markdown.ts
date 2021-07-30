@@ -1,5 +1,5 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor,
-        Input, Parser, PartialParse, InputGap, ParseSpec, FullParseSpec, SyntaxNode} from "@lezer/common"
+        Input, Parser, PartialParse, SyntaxNode} from "@lezer/common"
 
 class CompositeBlock {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -378,16 +378,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     }
     if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
 
-    let nest = cx.parser.codeParser && cx.parser.codeParser("")
-    if (nest)
-      cx.startNested({
-        parser: nest,
-        from, to,
-        finish: tree => new Tree(cx.parser.nodeSet.types[Type.CodeBlock], [tree], [0], to - from),
-        marks
-      })
-    else
-      cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, to - from), from)
+    cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, to - from), from)
     return true
   },
 
@@ -396,13 +387,9 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (fenceEnd < 0) return false
     let from = cx.lineStart + line.pos, ch = line.next, len = fenceEnd - line.pos
     let infoFrom = line.skipSpace(fenceEnd), infoTo = skipSpaceBack(line.text, line.text.length, infoFrom)
-    let marksBefore: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)], info = ""
-    if (infoFrom < infoTo) {
-      marksBefore.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
-      info = line.text.slice(infoFrom, infoTo)
-    }
-    let marksInside = [], marksAfter: Element[] = []
-    let codeStart = cx.lineStart + line.text.length + 1, codeEnd = -1
+    let marks: (Element | TreeElement)[] = [elt(Type.CodeMark, from, from + len)]
+    if (infoFrom < infoTo)
+      marks.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
 
     for (; cx.nextLine();) {
       if (line.depth < cx.stack.length) break
@@ -410,35 +397,17 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
       if (line.indent - line.baseIndent < 4)
         while (i < line.text.length && line.text.charCodeAt(i) == ch) i++
       if (i - line.pos >= len && line.skipSpace(i) == line.text.length) {
-        for (let m of line.markers) marksAfter.push(m)
-        marksAfter.push(elt(Type.CodeMark, cx.lineStart + line.pos, cx.lineStart + i))
-        codeEnd = cx.lineStart - 1
+        for (let m of line.markers) marks.push(m)
+        marks.push(elt(Type.CodeMark, cx.lineStart + line.pos, cx.lineStart + i))
         cx.nextLine()
         break
       } else {
-        for (let m of line.markers) marksInside.push(m)
+        for (let m of line.markers) marks.push(m)
       }
     }
-    let to = cx.prevLineEnd()
-    if (codeEnd < 0) codeEnd = to
     // (Don't try to nest if there are blockquote marks in the region.)
-    let nest = cx.parser.codeParser && cx.parser.codeParser(info)
-    if (nest && codeStart < codeEnd) {
-      cx.startNested({
-        parser: nest,
-        from: codeStart,
-        to: codeEnd,
-        finish: tree => {
-          let marks = marksBefore.concat(new TreeElement(tree, codeStart)).concat(marksAfter)
-          return elt(Type.FencedCode, from, to, marks).toTree(cx.parser.nodeSet)
-        },
-        resultPos: from,
-        marks: marksInside
-      })
-    } else {
-      cx.addNode(cx.buffer.writeElements(marksBefore.concat(marksInside, marksAfter), -from)
-        .finish(Type.FencedCode, cx.prevLineEnd() - from), from)
-    }
+    cx.addNode(cx.buffer.writeElements(marks, -from)
+      .finish(Type.FencedCode, cx.prevLineEnd() - from), from)
     return true
   },
 
@@ -512,16 +481,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (trailing) cx.nextLine()
     let nodeType = end == CommentEnd ? Type.CommentBlock : end == ProcessingEnd ? Type.ProcessingInstructionBlock : Type.HTMLBlock
     let to = cx.prevLineEnd()
-    if (nodeType == Type.HTMLBlock && cx.parser.htmlParser) {
-      cx.startNested({
-        parser: cx.parser.htmlParser,
-        from, to,
-        finish: tree => new Tree(cx.parser.nodeSet.types[nodeType], [tree], [0], to - from),
-        marks
-      })
-    } else {
-      cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
-    }
+    cx.addNode(cx.buffer.writeElements(marks, -from).finish(nodeType, to - from), from)
     return true
   },
 
@@ -648,14 +608,6 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
   (p, line) => isHTMLBlock(line, p, true) >= 0
 ]
 
-class NestedParse {
-  constructor(
-    readonly from: number,
-    readonly parse: PartialParse,
-    readonly finish: (tree: Tree) => Tree
-  ) {}
-}
-
 /// Block-level parsing functions get access to this context object.
 export class BlockContext implements PartialParse {
   /// @internal
@@ -665,8 +617,7 @@ export class BlockContext implements PartialParse {
   private line = new Line()
   private atEnd = false
   private fragments: FragmentCursor | null
-  private gaps: readonly InputGap[] | undefined
-  private nested: NestedParse | null = null
+  private to: number
   /// @internal
   dontInject: Set<Tree> = new Set
   stoppedAt: number | null = null
@@ -675,42 +626,34 @@ export class BlockContext implements PartialParse {
   lineStart: number
   /// The absolute (non-gap-adjusted) position of the line @internal
   absoluteLineStart: number
+  /// The range index that absoluteLineStart points into @internal
+  rangeI = 0
   /// @internal
   absoluteLineEnd: number
-
-  readonly input: Input
 
   /// @internal
   constructor(
     /// The parser configuration used.
     readonly parser: MarkdownParser,
     /// @internal
-    readonly spec: FullParseSpec
+    readonly input: Input,
+    fragments: readonly TreeFragment[],
+    /// @internal
+    readonly ranges: readonly {from: number, to: number}[],
   ) {
-    this.input = spec.input
-    this.gaps = spec.gaps
-    this.lineStart = this.absoluteLineStart = this.absoluteLineEnd = spec.from
+    this.to = ranges[ranges.length - 1].to
+    this.lineStart = this.absoluteLineStart = this.absoluteLineEnd = ranges[0].from
     this.block = CompositeBlock.create(Type.Document, 0, this.lineStart, 0, 0)
     this.stack = [this.block]
-    this.fragments = spec.fragments.length ? new FragmentCursor(spec.fragments, spec.input) : null
+    this.fragments = fragments.length ? new FragmentCursor(fragments, input) : null
     this.readLine()
   }
 
   get parsedPos() {
-    return this.nested ? this.nested.parse.parsedPos : this.absoluteLineStart
+    return this.absoluteLineStart
   }
 
   advance() {
-    if (this.nested) {
-      let done = this.nested.parse.advance()
-      if (done) {
-        this.dontInject.add(done)
-        this.addNode(this.nested.finish(done), this.nested.from)
-        this.nested = null
-      }
-      return null
-    }
-
     if (this.stoppedAt != null && this.absoluteLineStart > this.stoppedAt)
       return this.finish()
 
@@ -758,7 +701,6 @@ export class BlockContext implements PartialParse {
   stopAt(pos: number) {
     if (this.stoppedAt != null && this.stoppedAt < pos) throw new RangeError("Can't move stoppedAt forward")
     this.stoppedAt = pos
-    if (this.nested) this.nested.parse.stopAt(pos)
   }
 
   private reuseFragment(start: number) {
@@ -767,10 +709,14 @@ export class BlockContext implements PartialParse {
     let taken = this.fragments!.takeNodes(this)
     if (!taken) return false
     let withoutGaps = taken, end = this.absoluteLineStart + taken
-    if (this.gaps) for (let gap of this.gaps) if (gap.from >= this.lineStart && gap.to < end) withoutGaps -= gap.to - gap.from
+    for (let i = 1; i < this.ranges.length; i++) {
+      let gapFrom = this.ranges[i - 1].to, gapTo = this.ranges[i].from
+      if (gapFrom >= this.lineStart && gapTo < end) withoutGaps -= gapTo - gapFrom
+    }
     this.lineStart += withoutGaps
     this.absoluteLineStart += taken
-    if (this.absoluteLineStart < this.spec.to) {
+    this.moveRangeI()
+    if (this.absoluteLineStart < this.to) {
       this.lineStart++
       this.absoluteLineStart++
       this.readLine()
@@ -788,7 +734,7 @@ export class BlockContext implements PartialParse {
   /// consume the current line (and return true).
   nextLine() {
     this.lineStart += this.line.text.length
-    if (this.absoluteLineEnd >= this.spec.to) {
+    if (this.absoluteLineEnd >= this.to) {
       this.absoluteLineStart = this.absoluteLineEnd
       this.atEnd = true
       this.readLine()
@@ -796,9 +742,15 @@ export class BlockContext implements PartialParse {
     } else {
       this.lineStart++
       this.absoluteLineStart = this.absoluteLineEnd + 1
+      this.moveRangeI()
       this.readLine()
       return true
     }
+  }
+
+  private moveRangeI() {
+    while (this.rangeI < this.ranges.length - 1 && this.absoluteLineStart >= this.ranges[this.rangeI].to)
+      this.rangeI++
   }
 
   /// @internal
@@ -809,16 +761,15 @@ export class BlockContext implements PartialParse {
     } else {
       text = this.lineChunkAt(end)
       end += text.length
-      if (this.gaps) {
-        let textOffset = this.absoluteLineStart
-        for (let gap of this.gaps) {
-          if (gap.from > end) break
-          if (gap.to >= this.absoluteLineStart) {
-            let after = this.lineChunkAt(gap.to)
-            end = gap.to + after.length
-            text = text.slice(0, gap.from - textOffset) + after
-            textOffset = end - text.length
-          }
+      if (this.ranges.length > 1) {
+        let textOffset = this.absoluteLineStart, rangeI = this.rangeI
+        while (this.ranges[rangeI].to < end) {
+          rangeI++
+          let nextFrom = this.ranges[rangeI].from
+          let after = this.lineChunkAt(nextFrom)
+          end = nextFrom + after.length
+          text = text.slice(0, this.ranges[rangeI - 1].to - textOffset) + after
+          textOffset = end - text.length
         }
       }
     }
@@ -840,7 +791,7 @@ export class BlockContext implements PartialParse {
     } else {
       text = next == "\n" ? "" : next
     }
-    return pos + text.length > this.spec.to ? text.slice(0, this.spec.to - pos) : text
+    return pos + text.length > this.to ? text.slice(0, this.to - pos) : text
   }
 
   /// The end position of the previous line.
@@ -879,42 +830,6 @@ export class BlockContext implements PartialParse {
       .finish(elt.type, elt.to - elt.from), elt.from)
   }
 
-  /// Start a nested parse at the given position.
-  startNested(config: {
-    /// The inner parser to use.
-    parser: Parser,
-    /// The start position of the range to parse.
-    from: number,
-    /// The end position of the range to parse.
-    to: number,
-    /// A function that's called with the resulting tree, which should
-    /// return the finished node for the block element.
-    finish: (tree: Tree) => Tree,
-    /// The position at which to emit the final node, if different
-    /// from `from`.
-    resultPos?: number,
-    /// A set of marks inside the range that should be skipped by the
-    /// inner parser.
-    marks?: readonly Element[],
-  }) {
-    let {parser, from, to, finish, resultPos = from, marks} = config
-    let absFrom = this.mapToAbsolute(from), absTo = this.mapToAbsolute(to)
-    let gaps = InputGap.inner(absFrom, absTo, this.gaps, marks && marks.map(m => {
-      return new InputGap(this.mapToAbsolute(m.from), this.mapToAbsolute(m.to), m.toTree(this.parser.nodeSet))
-    }))
-    let parse = parser.startParse({...this.spec, gaps, from: absFrom, to: absTo})
-    if (this.stoppedAt != null && this.stoppedAt < absTo) parse.stopAt(absTo)
-    this.nested = new NestedParse(resultPos == null ? from : resultPos, parse, finish)
-  }
-
-  private mapToAbsolute(pos: number) {
-    if (this.gaps) for (let gap of this.gaps) {
-      if (gap.from >= pos) break
-      pos += gap.to - gap.from
-    }
-    return pos
-  }
-
   /// @internal
   finishContext() {
     let cx = this.stack.pop()!
@@ -929,7 +844,7 @@ export class BlockContext implements PartialParse {
   }
 
   private addGaps(tree: Tree) {
-    return this.gaps ? injectGaps(this.gaps, 0, tree.topNode, this.spec.from, this.dontInject) : tree
+    return this.ranges.length > 1 ? injectGaps(this.ranges, 0, tree.topNode, this.ranges[0].from, this.dontInject) : tree
   }
 
   /// @internal
@@ -954,36 +869,35 @@ export class BlockContext implements PartialParse {
   get buffer() { return new Buffer(this.parser.nodeSet) }
 }
 
-function injectGaps(gaps: readonly InputGap[], gapI: number, tree: SyntaxNode, offset: number, dont: Set<Tree>): Tree {
+function injectGaps(
+  ranges: readonly {from: number, to: number}[], rangeI: number,
+  tree: SyntaxNode, offset: number, dont: Set<Tree>
+): Tree {
   if (dont.has(tree.tree!)) return tree.tree!
-  let next: InputGap | null = gaps[gapI]
+  let rangeEnd = ranges[rangeI].to
   let children = [], positions = [], start = tree.from + offset
-  function movePastNext(upto: number, mount: boolean, inclusive: boolean) {
-    while (next && (inclusive ? upto >= next.from : upto > next.from)) {
-      if (mount && next.mount) {
-        children.push(next.mount)
-        positions.push(next.from - start)
-      }
-      let size = next.to - next.from
+  function movePastNext(upto: number, inclusive: boolean) {
+    while (inclusive ? upto >= rangeEnd : upto > rangeEnd) {
+      let size = ranges[rangeI + 1].from - rangeEnd
       offset += size
       upto += size
-      gapI++
-      next = gapI == gaps.length ? null : gaps[gapI]
+      rangeI++
+      rangeEnd = ranges[rangeI].to
     }
   }
   for (let ch = tree.firstChild; ch; ch = ch.nextSibling) {
-    movePastNext(ch.from + offset, true, true)
+    movePastNext(ch.from + offset, true)
     let from = ch.from + offset, node
-    if (next && ch.to + offset > next.from) {
-      node = injectGaps(gaps, gapI, ch, offset, dont)
-      movePastNext(ch.to + offset, false, false)
+    if (ch.to + offset > rangeEnd) {
+      node = injectGaps(ranges, rangeI, ch, offset, dont)
+      movePastNext(ch.to + offset, false)
     } else {
       node = ch.toTree()
     }
     children.push(node)
     positions.push(from - start)
   }
-  movePastNext(tree.to + offset, true, false)
+  movePastNext(tree.to + offset, false)
   return new Tree(tree.type, children, positions, tree.to + offset - start, tree.tree ? tree.tree.propValues : undefined)
 }
 
@@ -1108,15 +1022,6 @@ export interface LeafBlockParser {
 export interface MarkdownConfig {
   /// Node props to add to the parser's node set.
   props?: readonly NodePropSource[],
-  /// When provided, this will be used to parse the content of code
-  /// blocks. `info` is the string after the opening ` ``` ` marker,
-  /// or the empty string if there is no such info or this is an
-  /// indented code block. If there is a parser available for the
-  /// code, it should return a function that can construct the
-  /// [parse](https://lezer.codemirror.net/docs/ref/#common.PartialParse).
-  codeParser?: (info: string) => null | Parser
-  /// The parser used to parse HTML tags (both block and inline).
-  htmlParser?: Parser,
   /// Define new [node types](#NodeSpec) for use in parser extensions.
   defineNodes?: readonly (string | NodeSpec)[],
   /// Define additional [block parsing](#BlockParser) logic.
@@ -1144,10 +1049,6 @@ export class MarkdownParser extends Parser {
     /// types](https://lezer.codemirror.net/docs/ref/#common.NodeSet).
     readonly nodeSet: NodeSet,
     /// @internal
-    readonly codeParser: null | ((info: string) => null | Parser),
-    /// @internal
-    readonly htmlParser: null | Parser,
-    /// @internal
     readonly blockParsers: readonly (((cx: BlockContext, line: Line) => BlockResult) | undefined)[],
     /// @internal
     readonly leafBlockParsers: readonly (((cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null) | undefined)[],
@@ -1166,8 +1067,8 @@ export class MarkdownParser extends Parser {
     for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id
   }
 
-  startParse(spec: ParseSpec): PartialParse {
-    return new BlockContext(this, new FullParseSpec(spec))
+  startParseInner(input: Input, fragments: readonly TreeFragment[], ranges: readonly {from: number, to: number}[]): PartialParse {
+    return new BlockContext(this, input, fragments, ranges)
   }
 
   /// Reconfigure the parser.
@@ -1241,8 +1142,6 @@ export class MarkdownParser extends Parser {
     }
 
     return new MarkdownParser(nodeSet,
-                              config.codeParser || this.codeParser,
-                              config.htmlParser || this.htmlParser,
                               blockParsers, leafBlockParsers, blockNames,
                               endLeafBlock, skipContextMarkup,
                               inlineParsers, inlineNames)
@@ -1286,8 +1185,6 @@ function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
   let conc: <T>(a: readonly T[] | undefined, b: readonly T[] | undefined) => readonly T[] =
     (a, b) => (a || none).concat(b || none)
   return {props: conc(conf.props, rest.props),
-          codeParser: rest.codeParser || conf.codeParser,
-          htmlParser: rest.htmlParser || conf.htmlParser,
           defineNodes: conc(conf.defineNodes, rest.defineNodes),
           parseBlock: conc(conf.parseBlock, rest.parseBlock),
           parseInline: conc(conf.parseInline, rest.parseInline),
@@ -1471,13 +1368,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     if (procInst) return cx.append(elt(Type.ProcessingInstruction, start, start + 1 + procInst[0].length))
     let m = /^(?:![A-Z][^]*?>|!\[CDATA\[[^]*?\]\]>|\/\s*[a-zA-Z][\w-]*\s*>|\s*[a-zA-Z][\w-]*(\s+[a-zA-Z:_][\w-.:]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*(\/\s*)?>)/.exec(after)
     if (!m) return -1
-    let children: TreeElement[] = []
-    if (cx.parser.htmlParser) {
-      let p = cx.parser.htmlParser.startParse({input: cx.slice(start, start + 1 + m[0].length)}), tree: Tree | null
-      while (!(tree = p.advance())) {}
-      children.push(new TreeElement(tree, start))
-    }
-    return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length, children))
+    return cx.append(elt(Type.HTMLTag, start, start + 1 + m[0].length))
   },
 
   Emphasis(cx, next, start) {
@@ -1758,7 +1649,7 @@ export class InlineContext {
 
   /// Create an [`Element`](#Element) for a syntax node.
   elt(type: string, from: number, to: number, children?: readonly Element[]): Element
-  elt(tree: Tree | TreeBuffer, at: number): Element
+  elt(tree: Tree, at: number): Element
   elt(type: string | Tree, from: number, to?: number, children?: readonly Element[]): Element {
     if (typeof type == "string") return elt(this.parser.getNodeType(type), from, to!, children)
     return new TreeElement(type, from)
@@ -1873,8 +1764,6 @@ class FragmentCursor {
 /// The default CommonMark parser.
 export const parser = new MarkdownParser(
   new NodeSet(nodeTypes),
-  null,
-  null,
   Object.keys(DefaultBlockParsers).map(n => DefaultBlockParsers[n]),
   Object.keys(DefaultBlockParsers).map(n => DefaultLeafBlocks[n]),
   Object.keys(DefaultBlockParsers),

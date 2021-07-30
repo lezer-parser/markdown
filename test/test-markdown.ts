@@ -7,7 +7,7 @@ const specParser = new SpecParser(parser)
 function test(name: string, spec: string) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    compareTree(parser.parse({input: doc}), tree)
+    compareTree(parser.parse(doc), tree)
   })
 }
 
@@ -3550,6 +3550,6 @@ describe("Custom Markdown tests", () => {
 
   it("Doesn't get confused by tabs indenting a list item", () => {
     let doc = ` - a\n\t\tb`
-    if (parser.parse({input: doc}).length > doc.length) throw new RangeError("Wrong tree length")
+    if (parser.parse(doc).length > doc.length) throw new RangeError("Wrong tree length")
   })
 })

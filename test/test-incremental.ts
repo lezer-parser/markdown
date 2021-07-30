@@ -40,7 +40,7 @@ class State {
               readonly fragments: readonly TreeFragment[]) {}
 
   static start(doc: string) {
-    let tree = parser.parse({input: doc})
+    let tree = parser.parse(doc)
     return new State(doc, tree, TreeFragment.addTree(tree))
   }
 
@@ -53,7 +53,7 @@ class State {
     }
     let fragments = TreeFragment.applyChanges(this.fragments, changed, 2)
     if (!reparse) return new State(doc, Tree.empty, fragments)
-    let tree = parser.parse({input: doc, fragments})
+    let tree = parser.parse(doc, fragments)
     return new State(doc, tree, TreeFragment.addTree(tree, fragments))
   }
 }
@@ -72,7 +72,7 @@ function overlap(a: Tree, b: Tree) {
 
 function testChange(change: ChangeSpec, reuse = 10) {
   let state = state1().update(change)
-  compareTree(state.tree, parser.parse({input: state.doc}))
+  compareTree(state.tree, parser.parse(state.doc))
   if (reuse) ist(overlap(state.tree, state1().tree), reuse, ">")
 }
 
@@ -106,7 +106,7 @@ describe("Markdown incremental parsing", () => {
 
   it("can deal with multiple changes applied separately", () => {
     let state = state1().update([{from: 190, to: 191}], false).update([{from: 30, insert: "hi\n\nyou"}])
-    compareTree(state.tree, parser.parse({input: state.doc}))
+    compareTree(state.tree, parser.parse(state.doc))
     ist(overlap(state.tree, state1().tree), 20, ">")
   })
 
@@ -156,7 +156,7 @@ One paragraph to create a bit of string length here
 
 Another paragraph that is long enough to create a fragment
 `).update([{from: 76, insert: "    "}])
-    compareTree(state.tree, parser.parse({input: state.doc}))
+    compareTree(state.tree, parser.parse(state.doc))
   })
 
   it("properly re-parses a continued list", () => {
@@ -171,7 +171,7 @@ More content
 
 Another paragraph that is long enough to create a fragment
 `).update([{from: 65, insert: " * "}])
-    compareTree(state.tree, parser.parse({input: state.doc}))
+    compareTree(state.tree, parser.parse(state.doc))
   })
 
   it("can recover from incremental parses that stop in the middle of a list", () => {
@@ -182,7 +182,7 @@ Another paragraph that is long enough to create a fragment
 
 2. Oh no the list continues.
 `
-    let parse = parser.startParse({input: doc}), tree
+    let parse = parser.startParse(doc), tree
     parse.advance()
     ist(parse.parsedPos, doc.length, "<")
     parse.stopAt(parse.parsedPos)
@@ -197,10 +197,35 @@ Another paragraph that is long enough to create a fragment
     ist(overlap(start.tree, state.tree), 80, ">")
   })
 
-  it("returns a tree starting at startPos", () => {
-    let result = parser.parse({input: "foo\n\nbar", from: 5})
+  it("returns a tree starting at the first range", () => {
+    let result = parser.parse("foo\n\nbar", [], [{from: 5, to: 8}])
     ist(result.toString(), "Document(Paragraph)")
     ist(result.length, 3)
     ist(result.positions[0], 0)
+  })
+
+  it("Allows gaps in the input", () => {
+    let doc = `
+The first X *y* X<
+
+>X paragraph.
+
+ - And *a X<*>X list*
+`
+    let tree = parser.parse(doc, [], [{from: 0, to: 11}, {from: 12, to: 17}, {from: 23, to: 46}, {from: 51, to: 58}])
+    ist(tree.toString(),
+        "Document(Paragraph(Emphasis(EmphasisMark,EmphasisMark)),BulletList(ListItem(ListMark,Paragraph(Emphasis(EmphasisMark,EmphasisMark)))))")
+    ist(tree.length, doc.length)
+    let top = tree.topNode, first = top.firstChild!
+    ist(first.name, "Paragraph")
+    ist(first.from, 1)
+    ist(first.to, 34)
+    let last = top.lastChild!.lastChild!.lastChild!, em = last.lastChild!
+    ist(last.name, "Paragraph")
+    ist(last.from, 39)
+    ist(last.to, 57)
+    ist(em.name, "Emphasis")
+    ist(em.from, 43)
+    ist(em.to, 57)
   })
 })

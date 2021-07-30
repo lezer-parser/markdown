@@ -25,7 +25,7 @@ const specParser = new SpecParser(parser, {
 function test(name: string, spec: string, p = parser) {
   it(name, () => {
     let {tree, doc} = specParser.parse(spec, name)
-    compareTree(p.parse({input: doc}), tree)
+    compareTree(p.parse(doc), tree)
   })
 }
 
