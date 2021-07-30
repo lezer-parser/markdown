@@ -32,6 +32,8 @@ The code is licensed under an MIT license.
 
 @InnerParser
 
+@parseCode
+
 ### GitHub Flavored Markdown
 
 @GFM

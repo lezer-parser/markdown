@@ -37,7 +37,7 @@ class CompositeBlock {
   }
 }
 
-enum Type {
+export enum Type {
   Document = 1,
 
   CodeBlock,
