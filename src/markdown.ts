@@ -1,5 +1,5 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor,
-        Input, Parser, PartialParse, SyntaxNode} from "@lezer/common"
+        Input, Parser, PartialParse, SyntaxNode, ParseWrapper} from "@lezer/common"
 
 class CompositeBlock {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -82,6 +82,7 @@ export enum Type {
   LinkMark,
   EmphasisMark,
   CodeMark,
+  CodeText,
   CodeInfo,
   LinkTitle,
   LinkLabel
@@ -348,6 +349,12 @@ function getListIndent(line: Line, pos: number) {
 //   should continue on this line.
 type BlockResult = boolean | null
 
+function addCodeText(marks: Element[], from: number, to: number) {
+  let last = marks.length - 1
+  if (last >= 0 && marks[last].to == from && marks[last].type == Type.CodeText) (marks[last] as any).to = to
+  else marks.push(elt(Type.CodeText, from, to))
+}
+
 // Rules for parsing blocks. A return value of false means the rule
 // doesn't apply here, true means it does. When true is returned and
 // `p.line` has been updated, the rule is assumed to have consumed a
@@ -361,22 +368,32 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     let start = line.findColumn(base)
     let from = cx.lineStart + start, to = cx.lineStart + line.text.length
     let marks: Element[] = [], pendingMarks: Element[] = []
-    for (; cx.nextLine();) {
-      if (line.depth < cx.stack.length) break
+    addCodeText(marks, from, to)
+    while (cx.nextLine() && line.depth >= cx.stack.length) {
       if (line.pos == line.text.length) { // Empty
+        addCodeText(pendingMarks, cx.lineStart - 1, cx.lineStart)
         for (let m of line.markers) pendingMarks.push(m)
       } else if (line.indent < base) {
         break
       } else {
         if (pendingMarks.length) {
-          for (let m of pendingMarks) marks.push(m)
+          for (let m of pendingMarks) {
+            if (m.type == Type.CodeText) addCodeText(marks, m.from, m.to)
+            else marks.push(m)
+          }
           pendingMarks = []
         }
+        addCodeText(marks, cx.lineStart - 1, cx.lineStart)
         for (let m of line.markers) marks.push(m)
         to = cx.lineStart + line.text.length
+        let codeStart = cx.lineStart + line.findColumn(line.baseIndent + 4)
+        if (codeStart < to) addCodeText(marks, codeStart, to)
       }
     }
-    if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
+    if (pendingMarks.length) {
+      pendingMarks = pendingMarks.filter(m => m.type != Type.CodeText)
+      if (pendingMarks.length) line.markers = pendingMarks.concat(line.markers)
+    }
 
     cx.addNode(cx.buffer.writeElements(marks, -from).finish(Type.CodeBlock, to - from), from)
     return true
@@ -391,8 +408,7 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (infoFrom < infoTo)
       marks.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
 
-    for (; cx.nextLine();) {
-      if (line.depth < cx.stack.length) break
+    for (let first = true; cx.nextLine() && line.depth >= cx.stack.length; first = false) {
       let i = line.pos
       if (line.indent - line.baseIndent < 4)
         while (i < line.text.length && line.text.charCodeAt(i) == ch) i++
@@ -402,10 +418,12 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
         cx.nextLine()
         break
       } else {
+        if (!first) addCodeText(marks, cx.lineStart - 1, cx.lineStart)
         for (let m of line.markers) marks.push(m)
+        let textStart = cx.lineStart + line.basePos, textEnd = cx.lineStart + line.text.length
+        if (textStart < textEnd) addCodeText(marks, textStart, textEnd)
       }
     }
-    // (Don't try to nest if there are blockquote marks in the region.)
     cx.addNode(cx.buffer.writeElements(marks, -from)
       .finish(Type.FencedCode, cx.prevLineEnd() - from), from)
     return true
@@ -1030,6 +1048,9 @@ export interface MarkdownConfig {
   parseInline?: readonly InlineParser[],
   /// Remove the named parsers from the configuration.
   remove?: readonly string[]
+  /// Add a parse wrapper (such as a [mixed-language
+  /// parser](#common.parseMixed)) to this parser.
+  wrap?: ParseWrapper
 }
 
 /// To make it possible to group extensions together into bigger
@@ -1061,14 +1082,18 @@ export class MarkdownParser extends Parser {
     /// @internal
     readonly inlineParsers: readonly (((cx: InlineContext, next: number, pos: number) => number) | undefined)[],
     /// @internal
-    readonly inlineNames: readonly string[]
+    readonly inlineNames: readonly string[],
+    /// @internal
+    readonly wrappers: readonly ParseWrapper[]
   ) {
     super()
     for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id
   }
 
   startParseInner(input: Input, fragments: readonly TreeFragment[], ranges: readonly {from: number, to: number}[]): PartialParse {
-    return new BlockContext(this, input, fragments, ranges)
+    let parse: PartialParse = new BlockContext(this, input, fragments, ranges)
+    for (let w of this.wrappers) parse = w(parse, input, fragments, ranges)
+    return parse
   }
 
   /// Reconfigure the parser.
@@ -1078,7 +1103,8 @@ export class MarkdownParser extends Parser {
     let {nodeSet, skipContextMarkup} = this
     let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
         blockNames = this.blockNames.slice(), inlineParsers = this.inlineParsers.slice(),
-        inlineNames = this.inlineNames.slice(), endLeafBlock = this.endLeafBlock.slice()
+        inlineNames = this.inlineNames.slice(), endLeafBlock = this.endLeafBlock.slice(),
+        wrappers = this.wrappers
 
     if (nonEmpty(config.defineNodes)) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
@@ -1141,10 +1167,12 @@ export class MarkdownParser extends Parser {
       }
     }
 
+    if (config.wrap) wrappers = wrappers.concat(config.wrap)
+
     return new MarkdownParser(nodeSet,
                               blockParsers, leafBlockParsers, blockNames,
                               endLeafBlock, skipContextMarkup,
-                              inlineParsers, inlineNames)
+                              inlineParsers, inlineNames, wrappers)
   }
 
   /// @internal
@@ -1770,5 +1798,6 @@ export const parser = new MarkdownParser(
   DefaultEndLeaf,
   DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
-  Object.keys(DefaultInline)
+  Object.keys(DefaultInline),
+  []
 )

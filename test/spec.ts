@@ -41,6 +41,7 @@ const abbrev: {[abbr: string]: string} = {
   e: "EmphasisMark",
   c: "CodeMark",
   cI: "CodeInfo",
+  cT: "CodeText",
   LT: "LinkTitle",
   LL: "LinkLabel"
 }

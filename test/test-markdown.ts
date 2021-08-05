@@ -20,16 +20,16 @@ function test(name: string, spec: string) {
 
 describe("CommonMark spec", () => {
   test("Tabs (example 1)", `
-	{CB:foo	baz		bim}
+	{CB:{cT:foo	baz		bim}}
 `)
 
   test("Tabs (example 2)", `
-  	{CB:foo	baz		bim}
+  	{CB:{cT:foo	baz		bim}}
 `)
 
   test("Tabs (example 3)", `
-    {CB:a	a
-    ὐ	a}
+    {CB:{cT:a	a
+}    {cT:ὐ	a}}
 `)
 
   test("Tabs (example 4)", `
@@ -41,20 +41,20 @@ describe("CommonMark spec", () => {
   test("Tabs (example 5)", `
 {BL:{LI:{l:-} {P:foo}
 
-		{CB:bar}}}
+		{CB:{cT:bar}}}}
 `)
 
   test("Tabs (example 6)", `
-{Q:{q:>}		{CB:foo}}
+{Q:{q:>}		{CB:{cT:foo}}}
 `)
 
   test("Tabs (example 7)", `
-{BL:{LI:{l:-}		{CB:foo}}}
+{BL:{LI:{l:-}		{CB:{cT:foo}}}}
 `)
 
   test("Tabs (example 8)", `
-    {CB:foo
-	bar}
+    {CB:{cT:foo
+}	{cT:bar}}
 `)
 
   test("Tabs (example 9)", `
@@ -103,7 +103,7 @@ __}
 `)
 
   test("Thematic breaks (example 18)", `
-    {CB:***}
+    {CB:{cT:***}}
 `)
 
   test("Thematic breaks (example 19)", `
@@ -210,7 +210,7 @@ __}
 `)
 
   test("ATX headings (example 39)", `
-    {CB:# foo}
+    {CB:{cT:# foo}}
 `)
 
   test("ATX headings (example 40)", `
@@ -304,10 +304,10 @@ baz{e:*}}
 `)
 
   test("Setext headings (example 55)", `
-    {CB:Foo
-    ---
+    {CB:{cT:Foo
+}    {cT:---
 
-    Foo}
+}    {cT:Foo}}
 {HR:---}
 `)
 
@@ -396,7 +396,7 @@ Bar
 `)
 
   test("Setext headings (example 70)", `
-    {CB:foo}
+    {CB:{cT:foo}}
 {HR:---}
 `)
 
@@ -442,8 +442,8 @@ baz}
 `)
 
   test("Indented code blocks (example 77)", `
-    {CB:a simple
-      indented code block}
+    {CB:{cT:a simple
+}    {cT:  indented code block}}
 `)
 
   test("Indented code blocks (example 78)", `
@@ -459,26 +459,26 @@ baz}
 `)
 
   test("Indented code blocks (example 80)", `
-    {CB:<a/>
-    *hi*
+    {CB:{cT:<a/>
+}    {cT:*hi*
 
-    - one}
+}    {cT:- one}}
 `)
 
   test("Indented code blocks (example 81)", `
-    {CB:chunk1
+    {CB:{cT:chunk1
 
-    chunk2
-  
- 
- 
-    chunk3}
+}    {cT:chunk2
+}  {cT:
+} {cT:
+} {cT:
+}    {cT:chunk3}}
 `)
 
   test("Indented code blocks (example 82)", `
-    {CB:chunk1
-      
-      chunk2}
+    {CB:{cT:chunk1
+}      {cT:
+}    {cT:  chunk2}}
 `)
 
   test("Indented code blocks (example 83)", `
@@ -488,45 +488,45 @@ baz}
 `)
 
   test("Indented code blocks (example 84)", `
-    {CB:foo}
+    {CB:{cT:foo}}
 {P:bar}
 `)
 
   test("Indented code blocks (example 85)", `
 {H1:{h:#} Heading}
-    {CB:foo}
+    {CB:{cT:foo}}
 {SH2:Heading
 {h:------}}
-    {CB:foo}
+    {CB:{cT:foo}}
 {HR:----}
 `)
 
   test("Indented code blocks (example 86)", `
-    {CB:    foo
-    bar}
+    {CB:{cT:    foo
+}    {cT:bar}}
 `)
 
   test("Indented code blocks (example 87)", `
     
-    {CB:foo}
+    {CB:{cT:foo}}
     
 `)
 
   test("Indented code blocks (example 88)", `
-    {CB:foo  }
+    {CB:{cT:foo  }}
 `)
 
   test("Fenced code blocks (example 89)", `
 {FC:{c:\`\`\`}
-<
- >
+{cT:<
+ >}
 {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 90)", `
 {FC:{c:~~~}
-<
- >
+{cT:<
+ >}
 {c:~~~}}
 `)
 
@@ -538,29 +538,29 @@ foo
 
   test("Fenced code blocks (example 92)", `
 {FC:{c:\`\`\`}
-aaa
-~~~
+{cT:aaa
+~~~}
 {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 93)", `
 {FC:{c:~~~}
-aaa
-\`\`\`
+{cT:aaa
+\`\`\`}
 {c:~~~}}
 `)
 
   test("Fenced code blocks (example 94)", `
 {FC:{c:\`\`\`\`}
-aaa
-\`\`\`
+{cT:aaa
+\`\`\`}
 {c:\`\`\`\`\`\`}}
 `)
 
   test("Fenced code blocks (example 95)", `
 {FC:{c:~~~~}
-aaa
-~~~
+{cT:aaa
+~~~}
 {c:~~~~}}
 `)
 
@@ -570,22 +570,22 @@ aaa
 
   test("Fenced code blocks (example 97)", `
 {FC:{c:\`\`\`\`\`}
-
+{cT:
 \`\`\`
 aaa
-}`)
+}}`)
 
   test("Fenced code blocks (example 98)", `
 {Q:{q:>} {FC:{c:\`\`\`}
-{q:>} aaa}}
+{q:>}{cT: aaa}}}
 
 {P:bbb}
 `)
 
   test("Fenced code blocks (example 99)", `
 {FC:{c:\`\`\`}
-
-  
+{cT:
+  }
 {c:\`\`\`}}
 `)
 
@@ -596,50 +596,50 @@ aaa
 
   test("Fenced code blocks (example 101)", `
  {FC:{c:\`\`\`}
- aaa
-aaa
+{cT: aaa
+aaa}
 {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 102)", `
   {FC:{c:\`\`\`}
-aaa
+{cT:aaa
   aaa
-aaa
+aaa}
   {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 103)", `
    {FC:{c:\`\`\`}
-   aaa
+{cT:   aaa
     aaa
-  aaa
+  aaa}
    {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 104)", `
-    {CB:\`\`\`
-    aaa
-    \`\`\`}
+    {CB:{cT:\`\`\`
+}    {cT:aaa
+}    {cT:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 105)", `
 {FC:{c:\`\`\`}
-aaa
+{cT:aaa}
   {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 106)", `
    {FC:{c:\`\`\`}
-aaa
+{cT:aaa}
   {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 107)", `
 {FC:{c:\`\`\`}
-aaa
+{cT:aaa
     \`\`\`
-}`)
+}}`)
 
   test("Fenced code blocks (example 108)", `
 {P:{C:{c:\`\`\`} {c:\`\`\`}}
@@ -648,14 +648,14 @@ aaa}
 
   test("Fenced code blocks (example 109)", `
 {FC:{c:~~~~~~}
-aaa
+{cT:aaa
 ~~~ ~~
-}`)
+}}`)
 
   test("Fenced code blocks (example 110)", `
 {P:foo}
 {FC:{c:\`\`\`}
-bar
+{cT:bar}
 {c:\`\`\`}}
 {P:baz}
 `)
@@ -664,24 +664,24 @@ bar
 {SH2:foo
 {h:---}}
 {FC:{c:~~~}
-bar
+{cT:bar}
 {c:~~~}}
 {H1:{h:#} baz}
 `)
 
   test("Fenced code blocks (example 112)", `
 {FC:{c:\`\`\`}{cI:ruby}
-def foo(x)
+{cT:def foo(x)
   return 3
-end
+end}
 {c:\`\`\`}}
 `)
 
   test("Fenced code blocks (example 113)", `
 {FC:{c:~~~~}    {cI:ruby startline=3 $%@#$}
-def foo(x)
+{cT:def foo(x)
   return 3
-end
+end}
 {c:~~~~~~~}}
 `)
 
@@ -697,13 +697,13 @@ foo}
 
   test("Fenced code blocks (example 116)", `
 {FC:{c:~~~} {cI:aa \`\`\` ~~~}
-foo
+{cT:foo}
 {c:~~~}}
 `)
 
   test("Fenced code blocks (example 117)", `
 {FC:{c:\`\`\`}
-\`\`\` aaa
+{cT:\`\`\` aaa}
 {c:\`\`\`}}
 `)
 
@@ -944,13 +944,13 @@ function matchwo(a,b)
   test("HTML blocks (example 152)", `
   {CMB:<!-- foo -->}
 
-    {CB:<!-- foo -->}
+    {CB:{cT:<!-- foo -->}}
 `)
 
   test("HTML blocks (example 153)", `
   {HB:<div>}
 
-    {CB:<div>}
+    {CB:{cT:<div>}}
 `)
 
   test("HTML blocks (example 154)", `
@@ -1006,9 +1006,9 @@ Hi
 
   {HB:<tr>}
 
-    {CB:<td>
-      Hi
-    </td>}
+    {CB:{cT:<td>
+}    {cT:  Hi
+}    {cT:</td>}}
 
   {HB:</tr>}
 
@@ -1138,14 +1138,14 @@ foo
 `)
 
   test("Link reference definitions (example 180)", `
-    {CB:[foo]: /url "title"}
+    {CB:{cT:[foo]: /url "title"}}
 
 {P:{Ln:{L:[}foo{L:]}}}
 `)
 
   test("Link reference definitions (example 181)", `
 {FC:{c:\`\`\`}
-[foo]: /url
+{cT:[foo]: /url}
 {c:\`\`\`}}
 
 {P:{Ln:{L:[}foo{L:]}}}
@@ -1236,7 +1236,7 @@ bbb}
 `)
 
   test("Paragraphs (example 195)", `
-    {CB:aaa}
+    {CB:{cT:aaa}}
 {P:bbb}
 `)
 
@@ -1275,9 +1275,9 @@ bbb}
 `)
 
   test("Block quotes (example 201)", `
-    {CB:> # Foo
-    > bar
-    > baz}
+    {CB:{cT:> # Foo
+}    {cT:> bar
+}    {cT:> baz}}
 `)
 
   test("Block quotes (example 202)", `
@@ -1303,8 +1303,8 @@ baz
 `)
 
   test("Block quotes (example 206)", `
-{Q:{q:>}     {CB:foo}}
-    {CB:bar}
+{Q:{q:>}     {CB:{cT:foo}}}
+    {CB:{cT:bar}}
 `)
 
   test("Block quotes (example 207)", `
@@ -1391,7 +1391,7 @@ bar}}}}
 `)
 
   test("Block quotes (example 222)", `
-{Q:{q:>}     {CB:code}}
+{Q:{q:>}     {CB:{cT:code}}}
 
 {Q:{q:>}    {P:not code}}
 `)
@@ -1400,7 +1400,7 @@ bar}}}}
 {P:A paragraph
 with two lines.}
 
-    {CB:indented code}
+    {CB:{cT:indented code}}
 
 {Q:{q:>} {P:A block quote.}}
 `)
@@ -1409,7 +1409,7 @@ with two lines.}
 {OL:{LI:{l:1.}  {P:A paragraph
     with two lines.}
 
-        {CB:indented code}
+        {CB:{cT:indented code}}
 
     {Q:{q:>} {P:A block quote.}}}}
 `)
@@ -1429,7 +1429,7 @@ with two lines.}
   test("List items (example 227)", `
 {BL:{LI: {l:-}    {P:one}}}
 
-    {CB: two}
+    {CB:{cT: two}}
 `)
 
   test("List items (example 228)", `
@@ -1467,7 +1467,7 @@ with two lines.}
 {OL:{LI:{l:1.}  {P:foo}
 
     {FC:{c:\`\`\`}
-    bar
+    {cT:bar}
     {c:\`\`\`}}
 
     {P:baz}
@@ -1478,10 +1478,10 @@ with two lines.}
   test("List items (example 234)", `
 {BL:{LI:{l:-} {P:Foo}
 
-      {CB:bar
+      {CB:{cT:bar
 
 
-      baz}}}
+}      {cT:baz}}}}
 `)
 
   test("List items (example 235)", `
@@ -1507,37 +1507,37 @@ with two lines.}
   test("List items (example 240)", `
 {BL:{LI:{l:-} {P:foo}
 
-      {CB:bar}}}
+      {CB:{cT:bar}}}}
 `)
 
   test("List items (example 241)", `
 {OL:{LI:  {l:10.}  {P:foo}
 
-           {CB:bar}}}
+           {CB:{cT:bar}}}}
 `)
 
   test("List items (example 242)", `
-    {CB:indented code}
+    {CB:{cT:indented code}}
 
 {P:paragraph}
 
-    {CB:more code}
+    {CB:{cT:more code}}
 `)
 
   test("List items (example 243)", `
-{OL:{LI:{l:1.}     {CB:indented code}
+{OL:{LI:{l:1.}     {CB:{cT:indented code}}
 
    {P:paragraph}
 
-       {CB:more code}}}
+       {CB:{cT:more code}}}}
 `)
 
   test("List items (example 244)", `
-{OL:{LI:{l:1.}     {CB: indented code}
+{OL:{LI:{l:1.}     {CB:{cT: indented code}}
 
    {P:paragraph}
 
-       {CB:more code}}}
+       {CB:{cT:more code}}}}
 `)
 
   test("List items (example 245)", `
@@ -1563,7 +1563,7 @@ with two lines.}
   foo}}
 {LI:{l:-}{P:}
   {FC:{c:\`\`\`}
-  bar
+ {cT: bar}
   {c:\`\`\`}}}
 {LI:{l:-}{P:
       baz}}}
@@ -1614,7 +1614,7 @@ with two lines.}
 {OL:{LI: {l:1.}  {P:A paragraph
      with two lines.}
 
-         {CB:indented code}
+         {CB:{cT:indented code}}
 
      {Q:{q:>} {P:A block quote.}}}}
 `)
@@ -1623,7 +1623,7 @@ with two lines.}
 {OL:{LI:  {l:1.}  {P:A paragraph
       with two lines.}
 
-          {CB:indented code}
+          {CB:{cT:indented code}}
 
       {Q:{q:>} {P:A block quote.}}}}
 `)
@@ -1632,25 +1632,25 @@ with two lines.}
 {OL:{LI:   {l:1.}  {P:A paragraph
        with two lines.}
 
-           {CB:indented code}
+           {CB:{cT:indented code}}
 
        {Q:{q:>} {P:A block quote.}}}}
 `)
 
   test("List items (example 259)", `
-    {CB:1.  A paragraph
-        with two lines.
+    {CB:{cT:1.  A paragraph
+}    {cT:    with two lines.
 
-            indented code
+}    {cT:        indented code
 
-        > A block quote.}
+}    {cT:    > A block quote.}}
 `)
 
   test("List items (example 260)", `
 {OL:{LI:  {l:1.}  {P:A paragraph
 with two lines.}
 
-          {CB:indented code}
+          {CB:{cT:indented code}}
 
       {Q:{q:>} {P:A block quote.}}}}
 `)
@@ -1774,7 +1774,7 @@ continued here.}}}}}
 
 {CMB:<!-- -->}
 
-    {CB:code}
+    {CB:{cT:code}}
 `)
 
   test("Lists (example 280)", `
@@ -1808,7 +1808,7 @@ continued here.}}}}}
 
 {LI:  {l:2.} {P:b}}}
 
-    {CB:3. c}
+    {CB:{cT:3. c}}
 `)
 
   test("Lists (example 284)", `
@@ -1844,9 +1844,9 @@ continued here.}}}}}
   test("Lists (example 288)", `
 {BL:{LI:{l:-} {P:a}}
 {LI:{l:-} {FC:{c:\`\`\`}
-  b
+  {cT:b
 
-
+}
   {c:\`\`\`}}}
 {LI:{l:-} {P:c}}}
 `)
@@ -1870,7 +1870,7 @@ continued here.}}}}}
 {BL:{LI:{l:-} {P:a}
   {Q:{q:>} {P:b}}
   {FC:{c:\`\`\`}
-  c
+  {cT:c}
   {c:\`\`\`}}}
 {LI:{l:-} {P:d}}}
 `)
@@ -1886,7 +1886,7 @@ continued here.}}}}}
 
   test("Lists (example 294)", `
 {OL:{LI:{l:1.} {FC:{c:\`\`\`}
-   foo
+   {cT:foo}
    {c:\`\`\`}}
 
    {P:bar}}}
@@ -1943,12 +1943,12 @@ continued here.}}}}}
 `)
 
   test("Backslash escapes (example 304)", `
-    {CB:\\[\\]}
+    {CB:{cT:\\[\\]}}
 `)
 
   test("Backslash escapes (example 305)", `
 {FC:{c:~~~}
-\\[\\]
+{cT:\\[\\]}
 {c:~~~}}
 `)
 
@@ -1972,7 +1972,7 @@ continued here.}}}}}
 
   test("Backslash escapes (example 310)", `
 {FC:{c:\`\`\`} {cI:foo\\+bar}
-foo
+{cT:foo}
 {c:\`\`\`}}
 `)
 
@@ -2027,7 +2027,7 @@ foo
 
   test("Entity and numeric character references (example 320)", `
 {FC:{c:\`\`\`} {cI:f&ouml;&ouml;}
-foo
+{cT:foo}
 {c:\`\`\`}}
 `)
 
@@ -2036,7 +2036,7 @@ foo
 `)
 
   test("Entity and numeric character references (example 322)", `
-    {CB:f&ouml;f&ouml;}
+    {CB:{cT:f&ouml;f&ouml;}}
 `)
 
   test("Entity and numeric character references (example 323)", `
