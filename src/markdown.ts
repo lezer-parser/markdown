@@ -1090,7 +1090,7 @@ export class MarkdownParser extends Parser {
     for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id
   }
 
-  startParseInner(input: Input, fragments: readonly TreeFragment[], ranges: readonly {from: number, to: number}[]): PartialParse {
+  createParse(input: Input, fragments: readonly TreeFragment[], ranges: readonly {from: number, to: number}[]): PartialParse {
     let parse: PartialParse = new BlockContext(this, input, fragments, ranges)
     for (let w of this.wrappers) parse = w(parse, input, fragments, ranges)
     return parse
