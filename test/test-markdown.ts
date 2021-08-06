@@ -577,7 +577,7 @@ aaa
 
   test("Fenced code blocks (example 98)", `
 {Q:{q:>} {FC:{c:\`\`\`}
-{q:>}{cT: aaa}}}
+{q:>} {cT:aaa}}}
 
 {P:bbb}
 `)
@@ -3543,9 +3543,9 @@ describe("Custom Markdown tests", () => {
   // this'd require quite a big overhaul to fix.)
   test("Quote markers don't end up inside inner list items", `
 {Q:{q:>} {BL:{LI:{l:-} {P:Hello}}
-{q:>}{LI: {l:-} {P:Two}
+{q:>} {LI:{l:-} {P:Two}
 {q:>}}
-{q:>}{LI: {l:-} {P:Three}}}}
+{q:>} {LI:{l:-} {P:Three}}}}
 `)
 
   it("Doesn't get confused by tabs indenting a list item", () => {

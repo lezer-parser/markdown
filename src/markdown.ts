@@ -214,7 +214,7 @@ const DefaultSkipMarkup: {[type: number]: (bl: CompositeBlock, cx: BlockContext,
   [Type.Blockquote](bl, cx, line) {
     if (line.next != 62 /* '>' */) return false
     line.markers.push(elt(Type.QuoteMark, cx.lineStart + line.pos, cx.lineStart + line.pos + 1))
-    line.moveBase(line.pos + 1)
+    line.moveBase(line.pos + (space(line.text.charCodeAt(line.pos + 1)) ? 2 : 1))
     bl.end = cx.lineStart + line.text.length
     return true
   },

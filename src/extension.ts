@@ -87,7 +87,7 @@ class TableParser implements LeafBlockParser {
       this.emit(cx, leaf)
       return true
     }
-    return false // FIXME
+    return false
   }
 
   emit(cx: BlockContext, leaf: LeafBlock) {
