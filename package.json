@@ -1,6 +1,6 @@
 {
   "name": "@lezer/markdown",
-  "version": "0.14.5",
+  "version": "0.15.0",
   "description": "Incremental Markdown parser that consumes and emits Lezer trees",
   "main": "dist/index.cjs",
   "type": "module",
@@ -15,7 +15,7 @@
   "devDependencies": {
     "ist": "^1.1.1",
     "mocha": "^9.0.1",
-    "@lezer/html": "^0.13.0",
+    "@lezer/html": "^0.15.0",
     "rollup": "^2.52.2",
     "rollup-plugin-typescript2": "^0.30.0",
     "ts-node": "^10.0.0",
@@ -24,7 +24,7 @@
     "builddocs": "^1.0.0"
   },
   "dependencies": {
-    "@lezer/common": "^0.13.0"
+    "@lezer/common": "^0.15.0"
   },
   "repository": {
     "type" : "git",

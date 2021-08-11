@@ -1,3 +1,17 @@
+## 0.15.0 (2021-08-11)
+
+### Breaking changes
+
+The module name has changed from `lezer-markdown` to `@lezer/markdown`.
+
+`MarkdownParser` now extends `Parser` and follows its interface.
+
+The Markdown parser no longer has its own support for nested parsing (but can be wrapped with `parseCode` to get a similar effect).
+
+### New features
+
+The new `parseCode` function can be used to set up a mixed-language parser for Markdown.
+
 ## 0.14.5 (2021-05-12)
 
 ### Bug fixes
