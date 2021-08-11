@@ -30,8 +30,6 @@ The code is licensed under an MIT license.
 
 @MarkdownExtension
 
-@InnerParser
-
 @parseCode
 
 ### GitHub Flavored Markdown

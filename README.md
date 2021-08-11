@@ -32,19 +32,15 @@ The code is licensed under an MIT license.
 <dt id="user-content-markdownparser">
   <h4>
     <code>class</code>
-    <a href="#user-content-markdownparser">MarkdownParser</a></h4>
+    <a href="#user-content-markdownparser">MarkdownParser</a> <code>extends <a href="https://lezer.codemirror.net/docs/ref/#common.Parser">Parser</a></code></h4>
 </dt>
 
 <dd><p>A Markdown parser configuration.</p>
 <dl><dt id="user-content-markdownparser.nodeset">
-  <code><strong><a href="#user-content-markdownparser.nodeset">nodeSet</a></strong>: <a href="https://lezer.codemirror.net/docs/ref/#tree.NodeSet">NodeSet</a></code></dt>
+  <code><strong><a href="#user-content-markdownparser.nodeset">nodeSet</a></strong>: <a href="https://lezer.codemirror.net/docs/ref/#common.NodeSet">NodeSet</a></code></dt>
 
-<dd><p>The parser's syntax <a href="https://lezer.codemirror.net/docs/ref/#tree.NodeSet">node
+<dd><p>The parser's syntax <a href="https://lezer.codemirror.net/docs/ref/#common.NodeSet">node
 types</a>.</p>
-</dd><dt id="user-content-markdownparser.startparse">
-  <code><strong><a href="#user-content-markdownparser.startparse">startParse</a></strong>(<a id="user-content-markdownparser.startparse^input" href="#user-content-markdownparser.startparse^input">input</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Input">Input</a>, <a id="user-content-markdownparser.startparse^startpos" href="#user-content-markdownparser.startparse^startpos">startPos</a>&#8288;?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a id="user-content-markdownparser.startparse^parsecontext" href="#user-content-markdownparser.startparse^parsecontext">parseContext</a>&#8288;?: <a href="https://lezer.codemirror.net/docs/ref/#tree.ParseContext">ParseContext</a> = {}) → <a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">PartialParse</a></code></dt>
-
-<dd><p>Start a parse on the given input.</p>
 </dd><dt id="user-content-markdownparser.configure">
   <code><strong><a href="#user-content-markdownparser.configure">configure</a></strong>(<a id="user-content-markdownparser.configure^spec" href="#user-content-markdownparser.configure^spec">spec</a>: <a href="#user-content-markdownextension">MarkdownExtension</a>) → <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
@@ -69,22 +65,9 @@ the inline content.</p>
 <dd><p>Objects of this type are used to
 <a href="#user-content-markdownparser.configure">configure</a> the Markdown parser.</p>
 <dl><dt id="user-content-markdownconfig.props">
-  <code><strong><a href="#user-content-markdownconfig.props">props</a></strong>&#8288;?: readonly <a href="https://lezer.codemirror.net/docs/ref/#tree.NodePropSource">NodePropSource</a>[]</code></dt>
+  <code><strong><a href="#user-content-markdownconfig.props">props</a></strong>&#8288;?: readonly <a href="https://lezer.codemirror.net/docs/ref/#common.NodePropSource">NodePropSource</a>[]</code></dt>
 
 <dd><p>Node props to add to the parser's node set.</p>
-</dd><dt id="user-content-markdownconfig.codeparser">
-  <code><strong><a href="#user-content-markdownconfig.codeparser">codeParser</a></strong>&#8288;?: fn(<a id="user-content-markdownconfig.codeparser^info" href="#user-content-markdownconfig.codeparser^info">info</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>) → <a href="#user-content-innerparser">InnerParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
-
-<dd><p>When provided, this will be used to parse the content of code
-blocks. <code>info</code> is the string after the opening <code>```</code> marker,
-or the empty string if there is no such info or this is an
-indented code block. If there is a parser available for the
-code, it should return a function that can construct the
-<a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">parse</a>.</p>
-</dd><dt id="user-content-markdownconfig.htmlparser">
-  <code><strong><a href="#user-content-markdownconfig.htmlparser">htmlParser</a></strong>&#8288;?: <a href="#user-content-innerparser">InnerParser</a></code></dt>
-
-<dd><p>The parser used to parse HTML tags (both block and inline).</p>
 </dd><dt id="user-content-markdownconfig.definenodes">
   <code><strong><a href="#user-content-markdownconfig.definenodes">defineNodes</a></strong>&#8288;?: readonly (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a href="#user-content-nodespec">NodeSpec</a>)[]</code></dt>
 
@@ -101,6 +84,11 @@ code, it should return a function that can construct the
   <code><strong><a href="#user-content-markdownconfig.remove">remove</a></strong>&#8288;?: readonly <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>[]</code></dt>
 
 <dd><p>Remove the named parsers from the configuration.</p>
+</dd><dt id="user-content-markdownconfig.wrap">
+  <code><strong><a href="#user-content-markdownconfig.wrap">wrap</a></strong>&#8288;?: <a href="https://lezer.codemirror.net/docs/ref/#common.ParseWrapper">ParseWrapper</a></code></dt>
+
+<dd><p>Add a parse wrapper (such as a <a href="#user-content-common.parsemixed">mixed-language
+parser</a>) to this parser.</p>
 </dd></dl>
 
 </dd>
@@ -119,19 +107,28 @@ nested arrays of <a href="#user-content-markdownconfig">config</a> objects.</p>
 </dd>
 </dl>
 <dl>
-<dt id="user-content-innerparser">
-  <h4>
-    <code>type</code>
-    <a href="#user-content-innerparser">InnerParser</a></h4>
-</dt>
+<dt id="user-content-parsecode">
+  <code><strong><a href="#user-content-parsecode">parseCode</a></strong>(<a id="user-content-parsecode^config" href="#user-content-parsecode^config">config</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>) → <a href="#user-content-markdownextension">MarkdownExtension</a></code></dt>
 
-<dd><p>The type that nested parsers should conform to.</p>
-<dl><dt id="user-content-innerparser.startparse">
-  <code><strong><a href="#user-content-innerparser.startparse">startParse</a></strong>(<a id="user-content-innerparser.startparse^input" href="#user-content-innerparser.startparse^input">input</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Input">Input</a>, <a id="user-content-innerparser.startparse^startpos" href="#user-content-innerparser.startparse^startpos">startPos</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-innerparser.startparse^context" href="#user-content-innerparser.startparse^context">context</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.ParseContext">ParseContext</a>) → <a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">PartialParse</a></code></dt>
+<dd><p>Create a Markdown extension to enable nested parsing on code
+blocks and/or embedded HTML.</p>
+<dl><dt id="user-content-parsecode^config">
+  <code><strong><a href="#user-content-parsecode^config">config</a></strong></code></dt>
 
-<dd></dd></dl>
+<dd><dl><dt id="user-content-parsecode^config.codeparser">
+  <code><strong><a href="#user-content-parsecode^config.codeparser">codeParser</a></strong>&#8288;?: fn(<a id="user-content-parsecode^config.codeparser^info" href="#user-content-parsecode^config.codeparser^info">info</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>) → <a href="https://lezer.codemirror.net/docs/ref/#common.Parser">Parser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
-</dd>
+<dd><p>When provided, this will be used to parse the content of code
+blocks. <code>info</code> is the string after the opening <code>```</code> marker,
+or the empty string if there is no such info or this is an
+indented code block. If there is a parser available for the
+code, it should return a function that can construct the
+<a href="https://lezer.codemirror.net/docs/ref/#common.PartialParse">parse</a>.</p>
+</dd><dt id="user-content-parsecode^config.htmlparser">
+  <code><strong><a href="#user-content-parsecode^config.htmlparser">htmlParser</a></strong>&#8288;?: <a href="https://lezer.codemirror.net/docs/ref/#common.Parser">Parser</a></code></dt>
+
+<dd><p>The parser used to parse HTML tags (both block and inline).</p>
+</dd></dl></dd></dl></dd>
 </dl>
 
 ### GitHub Flavored Markdown
@@ -216,7 +213,7 @@ syntax.
 </dt>
 
 <dd><p>Used in the <a href="#user-content-markdownconfig.definenodes">configuration</a> to define
-new <a href="https://lezer.codemirror.net/docs/ref/#tree.NodeType">syntax node
+new <a href="https://lezer.codemirror.net/docs/ref/#common.NodeType">syntax node
 types</a>.</p>
 <dl><dt id="user-content-nodespec.name">
   <code><strong><a href="#user-content-nodespec.name">name</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a></code></dt>
@@ -243,7 +240,7 @@ in the block's syntax.</p>
 <dt id="user-content-blockcontext">
   <h4>
     <code>class</code>
-    <a href="#user-content-blockcontext">BlockContext</a> <code>implements <a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">PartialParse</a></code></h4>
+    <a href="#user-content-blockcontext">BlockContext</a> <code>implements <a href="https://lezer.codemirror.net/docs/ref/#common.PartialParse">PartialParse</a></code></h4>
 </dt>
 
 <dd><p>Block-level parsing functions get access to this context object.</p>
@@ -283,14 +280,8 @@ parsers</a>.</p>
 <dd><p>Add a block element from a <a href="#user-content-leafblockparser">leaf parser</a>. This
 makes sure any extra composite block markup (such as blockquote
 markers) inside the block are also added to the syntax tree.</p>
-</dd><dt id="user-content-blockcontext.startnested">
-  <code><strong><a href="#user-content-blockcontext.startnested">startNested</a></strong>(<a id="user-content-blockcontext.startnested^from" href="#user-content-blockcontext.startnested^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.startnested^parse" href="#user-content-blockcontext.startnested^parse">parse</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.PartialParse">PartialParse</a>, <a id="user-content-blockcontext.startnested^finish" href="#user-content-blockcontext.startnested^finish">finish</a>: fn(<a id="user-content-blockcontext.startnested^finish^tree" href="#user-content-blockcontext.startnested^finish^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a>) → <a href="#user-content-element">Element</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>)</code></dt>
-
-<dd><p>Start a nested parse at the given position. When it finishes,
-the <code>finish</code> callback is called with the resulting tree, and
-should return the finished node for the block element.</p>
 </dd><dt id="user-content-blockcontext.elt">
-  <code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^type" href="#user-content-blockcontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-blockcontext.elt^from" href="#user-content-blockcontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^to" href="#user-content-blockcontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^children" href="#user-content-blockcontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^tree" href="#user-content-blockcontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>, <a id="user-content-blockcontext.elt^at" href="#user-content-blockcontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
+  <code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^type" href="#user-content-blockcontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-blockcontext.elt^from" href="#user-content-blockcontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^to" href="#user-content-blockcontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-blockcontext.elt^children" href="#user-content-blockcontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-blockcontext.elt">elt</a></strong>(<a id="user-content-blockcontext.elt^tree" href="#user-content-blockcontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#common.Tree">Tree</a>, <a id="user-content-blockcontext.elt^at" href="#user-content-blockcontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
 
 <dd><p>Create an <a href="#user-content-element"><code>Element</code></a> object to represent some syntax
 node.</p>
@@ -344,7 +335,7 @@ observe that block.</p>
 
 <dd><p>The eager parse function, which can look at the block's first
 line and return <code>false</code> to do nothing, <code>true</code> if it has parsed
-(and <a href="#user-content-blockcontext.nextline">moved past</a> a block, or <code>null</code> if
+(and <a href="#user-content-blockcontext.nextline">moved past</a> a block), or <code>null</code> if
 it has started a composite block.</p>
 </dd><dt id="user-content-blockparser.leaf">
   <code><strong><a href="#user-content-blockparser.leaf">leaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.leaf^cx" href="#user-content-blockparser.leaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.leaf^leaf" href="#user-content-blockparser.leaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="#user-content-leafblockparser">LeafBlockParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
@@ -568,7 +559,7 @@ of elements.</p>
 the position of the next non-space character or the end of the
 section.</p>
 </dd><dt id="user-content-inlinecontext.elt">
-  <code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^type" href="#user-content-inlinecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-inlinecontext.elt^from" href="#user-content-inlinecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^to" href="#user-content-inlinecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^children" href="#user-content-inlinecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^tree" href="#user-content-inlinecontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#tree.Tree">Tree</a> | <a href="https://lezer.codemirror.net/docs/ref/#tree.TreeBuffer">TreeBuffer</a>, <a id="user-content-inlinecontext.elt^at" href="#user-content-inlinecontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
+  <code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^type" href="#user-content-inlinecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-inlinecontext.elt^from" href="#user-content-inlinecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^to" href="#user-content-inlinecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^children" href="#user-content-inlinecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^tree" href="#user-content-inlinecontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#common.Tree">Tree</a>, <a id="user-content-inlinecontext.elt^at" href="#user-content-inlinecontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
 
 <dd><p>Create an <a href="#user-content-element"><code>Element</code></a> for a syntax node.</p>
 </dd></dl>
@@ -659,7 +650,7 @@ node, set this to the name of the syntax node.</p>
   <code><strong><a href="#user-content-element.type">type</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
 <dd><p>The node's
-<a href="https://lezer.codemirror.net/docs/ref/#tree.NodeType.id">id</a>.</p>
+<a href="https://lezer.codemirror.net/docs/ref/#common.NodeType.id">id</a>.</p>
 </dd><dt id="user-content-element.from">
   <code><strong><a href="#user-content-element.from">from</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
