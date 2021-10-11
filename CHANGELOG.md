@@ -1,3 +1,9 @@
+## 0.15.1 (2021-10-11)
+
+### Bug fixes
+
+Fix a bug that caused `endLeafBlock` configuration to be ignored by the parser.
+
 ## 0.15.0 (2021-08-11)
 
 ### Breaking changes
