@@ -706,7 +706,7 @@ export class BlockContext implements PartialParse {
     lines: while (this.nextLine()) {
       if (line.pos == line.text.length) break
       if (line.indent < line.baseIndent + 4) {
-        for (let stop of parser.endLeafBlock) if (stop(this, line)) break lines
+        for (let stop of this.parser.endLeafBlock) if (stop(this, line)) break lines
       }
       for (let parser of leaf.parsers) if (parser.nextLine(this, line, leaf)) return null
       leaf.content += "\n" + line.scrub()
