@@ -267,8 +267,9 @@ function isHorizontalRule(line: Line, cx: BlockContext, breaking: boolean) {
 }
 
 function inList(cx: BlockContext, type: Type) {
-  return cx.block.type == type ||
-    cx.stack.length > 1 && cx.stack[cx.stack.length - 2].type == type
+  for (let i = cx.stack.length - 1; i >= 0; i--)
+    if (cx.stack[i].type == type) return true
+  return false
 }
 
 function isBulletList(line: Line, cx: BlockContext, breaking: boolean) {

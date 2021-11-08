@@ -3548,6 +3548,13 @@ describe("Custom Markdown tests", () => {
 {q:>} {LI:{l:-} {P:Three}}}}
 `)
 
+  test("Nested bullet lists don't break ordered list parsing", `
+{OL:{LI:{l:1.} {P:A}
+   {BL:{LI:{l:*} {P:A1}}
+   {LI:{l:*} {P:A2}}}}
+{LI:{l:2.} {P:B}}}
+`)
+
   it("Doesn't get confused by tabs indenting a list item", () => {
     let doc = ` - a\n\t\tb`
     if (parser.parse(doc).length > doc.length) throw new RangeError("Wrong tree length")
