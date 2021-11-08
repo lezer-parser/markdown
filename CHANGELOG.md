@@ -1,3 +1,9 @@
+## 0.15.2 (2021-11-08)
+
+### Bug fixes
+
+Fix a bug where an ordered list item after a nested bullet list would get treated as part of the bullet list item.
+
 ## 0.15.1 (2021-10-11)
 
 ### Bug fixes
