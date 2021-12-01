@@ -1755,11 +1755,11 @@ class FragmentCursor {
   }
 
   takeNodes(cx: BlockContext) {
-    let cur = this.cursor!, off = this.fragment!.offset
+    let cur = this.cursor!, off = this.fragment!.offset, fragEnd = this.fragmentEnd - (this.fragment!.openEnd ? 1 : 0)
     let start = cx.absoluteLineStart, end = start, blockI = cx.block.children.length
     let prevEnd = end, prevI = blockI
     for (;;) {
-      if (cur.to - off >= this.fragmentEnd) {
+      if (cur.to - off > fragEnd) {
         if (cur.type.isAnonymous && cur.firstChild()) continue
         break
       }

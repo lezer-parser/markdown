@@ -228,4 +228,21 @@ The first X *y* X<
     ist(em.from, 43)
     ist(em.to, 57)
   })
+
+  it("can reuse nodes at the end of the document", () => {
+    let doc = `* List item
+
+~~~js
+function foo() {
+  return false
+}
+~~~
+`
+    let tree = parser.parse(doc)
+    let ins = 11
+    let doc2 = doc.slice(0, ins) + "\n* " + doc.slice(ins)
+    let fragments = TreeFragment.applyChanges(TreeFragment.addTree(tree), [{fromA: ins, toA: ins, fromB: ins, toB: ins + 3}])
+    let tree2 = parser.parse(doc2, fragments)
+    ist(tree2.topNode.lastChild!.tree, tree.topNode.lastChild!.tree)
+  })
 })
