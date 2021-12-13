@@ -1,3 +1,9 @@
+## 0.15.3 (2021-12-13)
+
+### Bug fixes
+
+Fix a bug where, if there were multiple extensions passed to the editor, the `wrap` option got dropped from the resulting configuration.
+
 ## 0.15.2 (2021-11-08)
 
 ### Bug fixes
