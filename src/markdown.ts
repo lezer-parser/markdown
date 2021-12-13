@@ -1213,11 +1213,16 @@ function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
   if (!rest || !conf) return conf || rest
   let conc: <T>(a: readonly T[] | undefined, b: readonly T[] | undefined) => readonly T[] =
     (a, b) => (a || none).concat(b || none)
-  return {props: conc(conf.props, rest.props),
-          defineNodes: conc(conf.defineNodes, rest.defineNodes),
-          parseBlock: conc(conf.parseBlock, rest.parseBlock),
-          parseInline: conc(conf.parseInline, rest.parseInline),
-          remove: conc(conf.remove, rest.remove)}
+  let wrapA = conf.wrap, wrapB = rest.wrap
+  return {
+    props: conc(conf.props, rest.props),
+    defineNodes: conc(conf.defineNodes, rest.defineNodes),
+    parseBlock: conc(conf.parseBlock, rest.parseBlock),
+    parseInline: conc(conf.parseInline, rest.parseInline),
+    remove: conc(conf.remove, rest.remove),
+    wrap: !wrapA ? wrapB : !wrapB ? wrapA :
+      (inner, input, fragments, ranges) => wrapA!(wrapB!(inner, input, fragments, ranges), input, fragments, ranges)
+  }
 }
 
 function findName(names: readonly string[], name: string) {
