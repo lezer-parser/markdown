@@ -1,6 +1,6 @@
 <!-- /README.md is generated from /src/README.md -->
 
-# @lezer/markdown
+# lezer-markdown
 
 This is an incremental Markdown ([CommonMark](https://commonmark.org/)
 with support for extension) parser that integrates well with the
@@ -17,6 +17,11 @@ some things that a conforming CommonMark parser is expected to
 do—specifically, it doesn't validate link references, so it'll parse
 `[a][b]` and similar as a link, even if no `[b]` reference is
 declared.
+
+The
+[@codemirror/lang-markdown](https://github.com/codemirror/lang-markdown)
+package integrates this parser with CodeMirror to provide Markdown
+editor support.
 
 The code is licensed under an MIT license.
 

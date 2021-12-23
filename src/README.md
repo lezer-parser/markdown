@@ -18,6 +18,11 @@ do—specifically, it doesn't validate link references, so it'll parse
 `[a][b]` and similar as a link, even if no `[b]` reference is
 declared.
 
+The
+[@codemirror/lang-markdown](https://github.com/codemirror/lang-markdown)
+package integrates this parser with CodeMirror to provide Markdown
+editor support.
+
 The code is licensed under an MIT license.
 
 ## Interface
