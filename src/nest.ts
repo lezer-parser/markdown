@@ -30,7 +30,7 @@ export function parseCode(config: {
     let id = node.type.id
     if (codeParser && (id == Type.CodeBlock || id == Type.FencedCode)) {
       let info = ""
-      if (id = Type.FencedCode) {
+      if (id == Type.FencedCode) {
         let infoNode = node.node.getChild(Type.CodeInfo)
         if (infoNode) info = input.read(infoNode.from, infoNode.to)
       }
