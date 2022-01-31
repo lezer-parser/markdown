@@ -1354,7 +1354,7 @@ class InlineDelimiter {
 const Escapable = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 let Punctuation = /[!"#$%&'()*+,\-.\/:;<=>?@\[\\\]^_`{|}~\xA1\u2010-\u2027]/
-try { Punctuation = /[\p{Pc}|\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}]/u } catch (_) {}
+try { Punctuation = new RegExp("[\\p{Pc}|\\p{Pd}|\\p{Pe}|\\p{Pf}|\\p{Pi}|\\p{Po}|\\p{Ps}]", "u") } catch (_) {}
 
 const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: number) => number} = {
   Escape(cx, next, start) {
