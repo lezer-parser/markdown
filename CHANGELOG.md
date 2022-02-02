@@ -1,3 +1,9 @@
+## 0.15.4 (2022-02-02)
+
+### Bug fixes
+
+Fix compatibility fallback for engines with RegExp `\p` support.
+
 ## 0.15.3 (2021-12-13)
 
 ### Bug fixes
