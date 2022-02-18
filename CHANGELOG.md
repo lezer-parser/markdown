@@ -1,3 +1,9 @@
+## 0.15.5 (2022-02-18)
+
+### New features
+
+The `BlockContext` type now has a `depth` property providing the amount of parent nodes, and a `parentType` method allowing code to inspect the type of those nodes.
+
 ## 0.15.4 (2022-02-02)
 
 ### Bug fixes
