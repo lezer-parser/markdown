@@ -143,7 +143,7 @@ export const TaskList: MarkdownConfig = {
   parseBlock: [{
     name: "TaskList",
     leaf(cx, leaf) {
-      return /^\[[ xX]\]/.test(leaf.content) && cx.parser.nodeSet.types[cx.block.type].name == "ListItem" ? new TaskParser : null
+      return /^\[[ xX]\]/.test(leaf.content) && cx.parentType().name == "ListItem" ? new TaskParser : null
     },
     after: "SetextHeading"
   }]

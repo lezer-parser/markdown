@@ -257,6 +257,15 @@ in the block's syntax.</p>
   <code><strong><a href="#user-content-blockcontext.parser">parser</a></strong>: <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
 <dd><p>The parser configuration used.</p>
+</dd><dt id="user-content-blockcontext.depth">
+  <code><strong><a href="#user-content-blockcontext.depth">depth</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
+
+<dd><p>The number of parent blocks surrounding the current block.</p>
+</dd><dt id="user-content-blockcontext.parenttype">
+  <code><strong><a href="#user-content-blockcontext.parenttype">parentType</a></strong>(<a id="user-content-blockcontext.parenttype^depth" href="#user-content-blockcontext.parenttype^depth">depth</a>&#8288;?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = this.depth - 1) → <a href="https://lezer.codemirror.net/docs/ref/#common.NodeType">NodeType</a></code></dt>
+
+<dd><p>Get the type of the parent block at the given depth. When no
+depth is passed, return the type of the innermost parent.</p>
 </dd><dt id="user-content-blockcontext.nextline">
   <code><strong><a href="#user-content-blockcontext.nextline">nextLine</a></strong>() → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 

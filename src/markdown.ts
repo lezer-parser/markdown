@@ -746,6 +746,17 @@ export class BlockContext implements PartialParse {
     return true
   }
 
+  /// The number of parent blocks surrounding the current block.
+  get depth() {
+    return this.stack.length
+  }
+
+  /// Get the type of the parent block at the given depth. When no
+  /// depth is passed, return the type of the innermost parent.
+  parentType(depth = this.depth - 1) {
+    return this.parser.nodeSet.types[this.stack[depth].type]
+  }
+
   /// Move to the next input line. This should only be called by
   /// (non-composite) [block parsers](#BlockParser.parse) that consume
   /// the line directly, or leaf block parser
