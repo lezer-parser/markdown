@@ -87,6 +87,18 @@ describe("Extension", () => {
 {tb:| :-: | :-: |}
 {TR:{tb:|} {TC:One} {tb:|} {TC:Two} {tb:|}}}`)
 
+  test("Tables (end paragraph)", `
+{P:Hello}
+{TB:{TH:{tb:|} {TC:foo} {tb:|} {TC:bar} {tb:|}}
+{tb:| --- | --- |}
+{TR:{tb:|} {TC:baz} {tb:|} {TC:bim} {tb:|}}}`)
+
+  test("Tables (invalid tables don't end paragraph)", `
+{P:Hello
+| abc | def |
+| --- |
+| bar |}`)
+
   test("Task list (example 279)", `
 {BL:{LI:{l:-} {T:{t:[ ]} foo}}
 {LI:{l:-} {T:{t:[x]} bar}}}`)

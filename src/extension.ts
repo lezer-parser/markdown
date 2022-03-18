@@ -57,6 +57,8 @@ function hasPipe(str: string, start: number) {
   return false
 }
 
+const delimiterLine = /^\|?(\s*:?-+:?\s*\|)+(\s*:?-+:?\s*)?$/
+
 class TableParser implements LeafBlockParser {
   // Null means we haven't seen the second line yet, false means this
   // isn't a table, and an array means this is a table and we've
@@ -68,7 +70,7 @@ class TableParser implements LeafBlockParser {
       this.rows = false
       let lineText
       if ((line.next == 45 || line.next == 58 || line.next == 124 /* '-:|' */) &&
-          /^\|?(\s*:?-+:?\s*\|)+(\s*:?-+:?\s*)?$/.test(lineText = line.text.slice(line.pos))) {
+          delimiterLine.test(lineText = line.text.slice(line.pos))) {
         let firstRow: Element[] = [], firstCount = parseRow(cx, leaf.content, 0, firstRow, leaf.start)
         if (firstCount == parseRow(cx, lineText, line.pos))
           this.rows = [cx.elt("TableHeader", leaf.start, leaf.start + leaf.content.length, firstRow),
@@ -83,15 +85,9 @@ class TableParser implements LeafBlockParser {
   }
 
   finish(cx: BlockContext, leaf: LeafBlock) {
-    if (this.rows) {
-      this.emit(cx, leaf)
-      return true
-    }
-    return false
-  }
-
-  emit(cx: BlockContext, leaf: LeafBlock) {
+    if (!this.rows) return false
     cx.addLeafElement(leaf, cx.elt("Table", leaf.start, leaf.start + leaf.content.length, this.rows as readonly Element[]))
+    return true
   }
 }
 
@@ -115,6 +111,11 @@ export const Table: MarkdownConfig = {
   parseBlock: [{
     name: "Table",
     leaf(_, leaf) { return hasPipe(leaf.content, 0) ? new TableParser : null },
+    endLeaf(cx, line, leaf) {
+      if (leaf.parsers.some(p => p instanceof TableParser) || !hasPipe(line.text, line.basePos)) return false
+      let next = cx.scanLine(cx.absoluteLineEnd + 1).text
+      return delimiterLine.test(next) && parseRow(cx, line.text, line.basePos) == parseRow(cx, next, line.basePos)
+    },
     before: "SetextHeading"
   }]
 }

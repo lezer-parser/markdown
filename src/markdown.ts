@@ -93,7 +93,7 @@ export enum Type {
 export class LeafBlock {
   /// @internal
   marks: Element[] = []
-  /// @internal
+  /// The block parsers active for this block.
   parsers: LeafBlockParser[] = []
 
   /// @internal
@@ -627,6 +627,8 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
   (p, line) => isHTMLBlock(line, p, true) >= 0
 ]
 
+const scanLineResult = {text: "", end: 0}
+
 /// Block-level parsing functions get access to this context object.
 export class BlockContext implements PartialParse {
   /// @internal
@@ -707,7 +709,7 @@ export class BlockContext implements PartialParse {
     lines: while (this.nextLine()) {
       if (line.pos == line.text.length) break
       if (line.indent < line.baseIndent + 4) {
-        for (let stop of this.parser.endLeafBlock) if (stop(this, line)) break lines
+        for (let stop of this.parser.endLeafBlock) if (stop(this, line, leaf)) break lines
       }
       for (let parser of leaf.parsers) if (parser.nextLine(this, line, leaf)) return null
       leaf.content += "\n" + line.scrub()
@@ -784,25 +786,32 @@ export class BlockContext implements PartialParse {
   }
 
   /// @internal
-  readLine() {
-    let {line} = this, text, end = this.absoluteLineStart
-    if (this.atEnd) {
-      text = ""
+  scanLine(start: number) {
+    let r = scanLineResult
+    r.end = start
+    if (start >= this.to) {
+      r.text = ""
     } else {
-      text = this.lineChunkAt(end)
-      end += text.length
+      r.text = this.lineChunkAt(r.end)
+      r.end += r.text.length
       if (this.ranges.length > 1) {
         let textOffset = this.absoluteLineStart, rangeI = this.rangeI
-        while (this.ranges[rangeI].to < end) {
+        while (this.ranges[rangeI].to < r.end) {
           rangeI++
           let nextFrom = this.ranges[rangeI].from
           let after = this.lineChunkAt(nextFrom)
-          end = nextFrom + after.length
-          text = text.slice(0, this.ranges[rangeI - 1].to - textOffset) + after
-          textOffset = end - text.length
+          r.end = nextFrom + after.length
+          r.text = r.text.slice(0, this.ranges[rangeI - 1].to - textOffset) + after
+          textOffset = r.end - r.text.length
         }
       }
     }
+    return r
+  }
+
+  /// @internal
+  readLine() {
+    let {line} = this, {text, end} = this.scanLine(this.absoluteLineStart)
     this.absoluteLineEnd = end
     line.reset(text)
     for (; line.depth < this.stack.length; line.depth++) {
@@ -1016,7 +1025,7 @@ export interface BlockParser {
   /// If your construct can do this, provide a predicate here that
   /// recognizes lines that should end a paragraph (or other non-eager
   /// [leaf block](#BlockParser.leaf)).
-  endLeaf?(cx: BlockContext, line: Line): boolean
+  endLeaf?(cx: BlockContext, line: Line, leaf: LeafBlock): boolean
   /// When given, this parser will be installed directly before the
   /// block parser with the given name. The default configuration
   /// defines block parsers with names LinkReference, IndentedCode,
@@ -1088,7 +1097,7 @@ export class MarkdownParser extends Parser {
     /// @internal
     readonly blockNames: readonly string[],
     /// @internal
-    readonly endLeafBlock: readonly ((cx: BlockContext, line: Line) => boolean)[],
+    readonly endLeafBlock: readonly ((cx: BlockContext, line: Line, leaf: LeafBlock) => boolean)[],
     /// @internal
     readonly skipContextMarkup: {readonly [type: number]: (bl: CompositeBlock, cx: BlockContext, line: Line) => boolean},
     /// @internal
