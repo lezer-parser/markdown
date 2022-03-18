@@ -1,3 +1,9 @@
+## 0.15.6 (2022-03-18)
+
+### Bug fixes
+
+Fix a bug where GFM tables occuring directly below a paragraph weren't recognized.
+
 ## 0.15.5 (2022-02-18)
 
 ### New features
