@@ -1,5 +1,6 @@
 import {Tree, TreeBuffer, NodeType, NodeProp, NodePropSource, TreeFragment, NodeSet, TreeCursor,
         Input, Parser, PartialParse, SyntaxNode, ParseWrapper} from "@lezer/common"
+import {styleTags, tags as t, Tag} from "@lezer/highlight"
 
 class CompositeBlock {
   static create(type: number, value: number, from: number, parentHash: number, end: number) {
@@ -954,7 +955,13 @@ export interface NodeSpec {
   /// optionally [adjusts](#Line.moveBase) the line's base position
   /// and [registers](#Line.addMarker) nodes for any markers involved
   /// in the block's syntax.
-  composite?(cx: BlockContext, line: Line, value: number): boolean
+  composite?(cx: BlockContext, line: Line, value: number): boolean,
+  /// Add highlighting tag information for this node. The value of
+  /// this property may either by a tag or array of tags to assign
+  /// directly to this node, or an object in the style of
+  /// [`styleTags`](https://lezer.codemirror.net/docs/ref/#highlight.styleTags)'s
+  /// argument to assign more complicated rules.
+  style?: Tag | readonly Tag[] | {[selector: string]: Tag | readonly Tag[]},
 }
 
 /// Inline parsers are called for every character of parts of the
@@ -1129,9 +1136,9 @@ export class MarkdownParser extends Parser {
 
     if (nonEmpty(config.defineNodes)) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
-      let nodeTypes = nodeSet.types.slice()
+      let nodeTypes = nodeSet.types.slice(), styles: {[selector: string]: Tag | readonly Tag[]} | undefined
       for (let s of config.defineNodes) {
-        let {name, block, composite}: NodeSpec = typeof s == "string" ? {name: s} : s
+        let {name, block, composite, style} = typeof s == "string" ? {name: s} as NodeSpec : s
         if (nodeTypes.some(t => t.name == name)) continue
         if (composite) (skipContextMarkup as any)[nodeTypes.length] =
           (bl: CompositeBlock, cx: BlockContext, line: Line) => composite!(cx, line, bl.value)
@@ -1143,8 +1150,14 @@ export class MarkdownParser extends Parser {
           name,
           props: group && [[NodeProp.group, group]]
         }))
+        if (style) {
+          if (!styles) styles = {}
+          if (Array.isArray(style) || style instanceof Tag) styles[name] = style
+          else Object.assign(style, styles)
+        }
       }
       nodeSet = new NodeSet(nodeTypes)
+      if (styles) nodeSet = nodeSet.extend(styleTags(styles))
     }
 
     if (nonEmpty(config.props)) nodeSet = nodeSet.extend(...config.props)
@@ -1815,9 +1828,34 @@ class FragmentCursor {
   }
 }
 
+const markdownHighlighting = styleTags({
+  "Blockquote/...": t.quote,
+  HorizontalRule: t.contentSeparator,
+  "ATXHeading1/... SetextHeading1/...": t.heading1,
+  "ATXHeading2/... SetextHeading2/...": t.heading2,
+  "ATXHeading3/...": t.heading3,
+  "ATXHeading4/...": t.heading4,
+  "ATXHeading5/...": t.heading5,
+  "ATXHeading6/...": t.heading6,
+  "Comment CommentBlock": t.comment,
+  Escape: t.escape,
+  Entity: t.character,
+  "Emphasis/...": t.emphasis,
+  "StrongEmphasis/...": t.strong,
+  "Link/... Image/...": t.link,
+  "OrderedList/... BulletList/...": t.list,
+  "BlockQuote/...": t.quote,
+  "InlineCode CodeText": t.monospace,
+  URL: t.url,
+  "HeaderMark HardBreak QuoteMark ListMark LinkMark EmphasisMark CodeMark": t.processingInstruction,
+  "CodeInfo LinkLabel": t.labelName,
+  LinkTitle: t.string,
+  Paragraph: t.content
+})
+
 /// The default CommonMark parser.
 export const parser = new MarkdownParser(
-  new NodeSet(nodeTypes),
+  new NodeSet(nodeTypes).extend(markdownHighlighting),
   Object.keys(DefaultBlockParsers).map(n => DefaultBlockParsers[n]),
   Object.keys(DefaultBlockParsers).map(n => DefaultLeafBlocks[n]),
   Object.keys(DefaultBlockParsers),

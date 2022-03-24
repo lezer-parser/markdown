@@ -1,5 +1,6 @@
 import {InlineContext, BlockContext, MarkdownConfig,
         LeafBlockParser, LeafBlock, Line, Element, space} from "./markdown"
+import {tags as t} from "@lezer/highlight"
 
 const StrikethroughDelim = {resolve: "Strikethrough", mark: "StrikethroughMark"}
 
@@ -7,7 +8,13 @@ const StrikethroughDelim = {resolve: "Strikethrough", mark: "StrikethroughMark"}
 /// [GFM-style](https://github.github.com/gfm/#strikethrough-extension-)
 /// Strikethrough syntax using `~~` delimiters.
 export const Strikethrough: MarkdownConfig = {
-  defineNodes: ["Strikethrough", "StrikethroughMark"],
+  defineNodes: [{
+    name: "Strikethrough",
+    style: {"Strikethrough/...": t.strikethrough}
+  }, {
+    name: "StrikethroughMark",
+    style: t.processingInstruction
+  }],
   parseInline: [{
     name: "Strikethrough",
     parse(cx, next, pos) {
@@ -103,10 +110,10 @@ class TableParser implements LeafBlockParser {
 export const Table: MarkdownConfig = {
   defineNodes: [
     {name: "Table", block: true},
-    "TableHeader",
+    {name: "TableHeader", style: {"TableHeader/...": t.heading}},
     "TableRow",
-    "TableCell",
-    "TableDelimiter"
+    {name: "TableCell", style: t.content},
+    {name: "TableDelimiter", style: t.processingInstruction},
   ],
   parseBlock: [{
     name: "Table",
@@ -138,8 +145,8 @@ class TaskParser implements LeafBlockParser {
 /// `[x]` to add a checkbox.
 export const TaskList: MarkdownConfig = {
   defineNodes: [
-    {name: "Task", block: true},
-    "TaskMarker"
+    {name: "Task", block: true, style: t.list},
+    {name: "TaskMarker", style: t.atom}
   ],
   parseBlock: [{
     name: "TaskList",
@@ -174,7 +181,10 @@ function parseSubSuper(ch: number, node: string, mark: string) {
 /// [Pandoc-style](https://pandoc.org/MANUAL.html#superscripts-and-subscripts)
 /// superscript using `^` markers.
 export const Superscript: MarkdownConfig = {
-  defineNodes: ["Superscript", "SuperscriptMark"],
+  defineNodes: [
+    {name: "Superscript", style: t.special(t.content)},
+    {name: "SuperscriptMark", style: t.processingInstruction}
+  ],
   parseInline: [{
     name: "Superscript",
     parse: parseSubSuper(94 /* '^' */, "Superscript", "SuperscriptMark")
@@ -185,7 +195,10 @@ export const Superscript: MarkdownConfig = {
 /// [Pandoc-style](https://pandoc.org/MANUAL.html#superscripts-and-subscripts)
 /// subscript using `~` markers.
 export const Subscript: MarkdownConfig = {
-  defineNodes: ["Subscript", "SubscriptMark"],
+  defineNodes: [
+    {name: "Subscript", style: t.special(t.content)},
+    {name: "SubscriptMark", style: t.processingInstruction}
+  ],
   parseInline: [{
     name: "Subscript",
     parse: parseSubSuper(126 /* '~' */, "Subscript", "SubscriptMark")
@@ -195,7 +208,7 @@ export const Subscript: MarkdownConfig = {
 /// Extension that parses two colons with only letters, underscores,
 /// and numbers between them as `Emoji` nodes.
 export const Emoji: MarkdownConfig = {
-  defineNodes: ["Emoji"],
+  defineNodes: [{name: "Emoji", style: t.character}],
   parseInline: [{
     name: "Emoji",
     parse(cx, next, pos) {

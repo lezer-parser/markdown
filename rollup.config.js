@@ -11,7 +11,7 @@ export default {
     file: "./dist/index.js",
     externalLiveBindings: false
   }],
-  external: ["@lezer/common", "@lezer/lr"],
+  external: ["@lezer/common", "@lezer/highlight", "@lezer/lr"],
   plugins: [
     typescript({
       check: false,

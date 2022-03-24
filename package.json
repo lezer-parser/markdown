@@ -24,7 +24,8 @@
     "builddocs": "^1.0.0"
   },
   "dependencies": {
-    "@lezer/common": "^0.15.0"
+    "@lezer/common": "^0.15.0",
+    "@lezer/highlight": "^0.15.0"
   },
   "repository": {
     "type" : "git",
