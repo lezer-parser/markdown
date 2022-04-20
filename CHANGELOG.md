@@ -1,3 +1,11 @@
+## 0.16.0 (2022-04-20)
+
+### New features
+
+This package now attached highlighting information to its syntax tree.
+
+It is now possible to include highlighting information when defining nodes in extensions via `NodeSpec.style`.
+
 ## 0.15.6 (2022-03-18)
 
 ### Bug fixes
