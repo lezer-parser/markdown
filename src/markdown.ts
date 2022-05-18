@@ -1153,7 +1153,7 @@ export class MarkdownParser extends Parser {
         if (style) {
           if (!styles) styles = {}
           if (Array.isArray(style) || style instanceof Tag) styles[name] = style
-          else Object.assign(style, styles)
+          else Object.assign(styles, style)
         }
       }
       nodeSet = new NodeSet(nodeTypes)
