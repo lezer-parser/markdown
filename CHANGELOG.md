@@ -1,3 +1,9 @@
+## 0.16.1 (2022-05-20)
+
+### Bug fixes
+
+Fix a bug that prevented style tags from built-in extensions from being applied.
+
 ## 0.16.0 (2022-04-20)
 
 ### New features
