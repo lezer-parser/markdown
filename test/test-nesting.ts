@@ -1,4 +1,4 @@
-import {Tree, NodeProp, SyntaxNode} from "@lezer/common"
+import {Tree, NodeProp} from "@lezer/common"
 import {parser as html} from "@lezer/html"
 import ist from "ist"
 import {parser, parseCode} from "../dist/index.js"
@@ -72,4 +72,15 @@ Okay
 ~~~python
 False
 ~~~`, ["EntityReference", 9, 16]))
+
+  it("can parse disjoint ranges", () => {
+    let tree = parser.parse(`==foo\n==\n==ba==r\n==`, undefined,
+                            [{from: 2, to: 6}, {from: 8, to: 9}, {from: 11, to: 13}, {from: 15, to: 17}])
+    ist(tree.toString(), "Document(Paragraph,Paragraph)")
+    ist(tree.length, 15)
+    ist(tree.topNode.firstChild!.from, 0)
+    ist(tree.topNode.firstChild!.to, 3)
+    ist(tree.topNode.lastChild!.from, 9)
+    ist(tree.topNode.lastChild!.to, 14)
+  })
 })

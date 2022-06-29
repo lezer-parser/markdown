@@ -782,8 +782,10 @@ export class BlockContext implements PartialParse {
   }
 
   private moveRangeI() {
-    while (this.rangeI < this.ranges.length - 1 && this.absoluteLineStart >= this.ranges[this.rangeI].to)
+    while (this.rangeI < this.ranges.length - 1 && this.absoluteLineStart >= this.ranges[this.rangeI].to) {
       this.rangeI++
+      this.absoluteLineStart = Math.max(this.absoluteLineStart, this.ranges[this.rangeI].from)
+    }
   }
 
   /// @internal
@@ -793,7 +795,7 @@ export class BlockContext implements PartialParse {
     if (start >= this.to) {
       r.text = ""
     } else {
-      r.text = this.lineChunkAt(r.end)
+      r.text = this.lineChunkAt(start)
       r.end += r.text.length
       if (this.ranges.length > 1) {
         let textOffset = this.absoluteLineStart, rangeI = this.rangeI
