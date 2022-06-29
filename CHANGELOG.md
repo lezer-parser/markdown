@@ -1,3 +1,9 @@
+## 1.0.1 (2022-06-29)
+
+### Bug fixes
+
+Fix a crash that could occur when there were gaps in the parseable ranges right at the start of a line.
+
 ## 1.0.0 (2022-06-06)
 
 ### New features
