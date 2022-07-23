@@ -1640,26 +1640,31 @@ export class InlineContext {
     return this.append(elt)
   }
 
-  /// @internal
+  /// Converts any `InlineDelimiter` into elements, and correctly parces emphasis. @internal
   resolveMarkers(from: number) {
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
       if (!(close instanceof InlineDelimiter && close.type.resolve && (close.side & Mark.Close))) continue
 
+      // Bellow if statement finds all emphasis opening delimiter which aren't 
+      // a combination of 1 and 2 or vise versa with closing delimiter, or 
+      // simply finds any opening delimiter for other delimiter.
       let emp = close.type == EmphasisUnderscore || close.type == EmphasisAsterisk
       let closeSize = close.to - close.from
       let open: InlineDelimiter | undefined, j = i - 1
       for (; j >= from; j--) {
         let part = this.parts[j] as InlineDelimiter
-        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && part.type == close.type) ||
-            emp && ((close.side & Mark.Open) || (part.side & Mark.Close)) &&
-            (part.to - part.from + closeSize) % 3 == 0 && ((part.to - part.from) % 3 || closeSize % 3))
+        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && part.type == close.type) || // <-- For any delimiters
+            emp && ((close.side & Mark.Open) || (part.side & Mark.Close)) && // <-- For simple checking if EMP with bellow statement
+            (part.to - part.from + closeSize) % 3 == 0 && ((part.to - part.from) % 3 || closeSize % 3)) // <-- Here it checks for the combination.
           continue
         open = part
         break
       }
       if (!open) continue
 
+      // Bellow if statement finds whether the emphasis is strong(size = 2) or
+      // normal(size = 1).
       let type = close.type.resolve, content = []
       let start = open.from, end = close.to
       if (emp) {
@@ -1668,6 +1673,13 @@ export class InlineContext {
         end = close.from + size
         type = size == 1 ? "Emphasis" : "StrongEmphasis"
       }
+
+      // Here we create the parent element(not spesific to emphasis) with delimiter
+      // elements and any elements in between the delimiter elements as children, and
+      // remove any delimiters between the delimiter elements.
+      // Note: As we finding closing delimiters in an accending order, there should not
+      // be any delimiters remaining between the found delimiters, therefore we are
+      // removing it.
       if (open.type.mark) content.push(this.elt(open.type.mark, start, open.to))
       for (let k = j + 1; k < i; k++) {
         if (this.parts[k] instanceof Element) content.push(this.parts[k] as Element)
@@ -1675,12 +1687,19 @@ export class InlineContext {
       }
       if (close.type.mark) content.push(this.elt(close.type.mark, close.from, end))
       let element = this.elt(type, start, end, content)
+
+      // Checks whether there are remaining delimiters of emphasis, as we are adding
+      // elements using sizes of 2(strong) and 1(normal), if remaining add them again, to
+      // loop through it again in an recursive manor.
+      // Note: We use keep as the closing delimiter for the if statement because we have
+      // to loop back into it, compaired to using openning delimiter.
       this.parts[j] = emp && open.from != start ? new InlineDelimiter(open.type, open.from, start, open.side) : null
       let keep = this.parts[i] = emp && close.to != end ? new InlineDelimiter(close.type, end, close.to, close.side) : null
       if (keep) this.parts.splice(i, 0, element)
       else this.parts[i] = element
     }
 
+    // Finally loops though the parts one last time to remove any remaining delimiters.
     let result = []
     for (let i = from; i < this.parts.length; i++) {
       let part = this.parts[i]
