@@ -237,6 +237,14 @@ whether the composite block should continue (return value) and
 optionally <a href="#user-content-line.movebase">adjusts</a> the line's base position
 and <a href="#user-content-line.addmarker">registers</a> nodes for any markers involved
 in the block's syntax.</p>
+</dd><dt id="user-content-nodespec.style">
+  <code><strong><a href="#user-content-nodespec.style">style</a></strong>&#8288;?: <a href="https://lezer.codemirror.net/docs/ref/#highlight.Tag">Tag</a> | readonly <a href="https://lezer.codemirror.net/docs/ref/#highlight.Tag">Tag</a>[] | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>&lt;<a href="https://lezer.codemirror.net/docs/ref/#highlight.Tag">Tag</a> | readonly <a href="https://lezer.codemirror.net/docs/ref/#highlight.Tag">Tag</a>[]&gt;</code></dt>
+
+<dd><p>Add highlighting tag information for this node. The value of
+this property may either by a tag or array of tags to assign
+directly to this node, or an object in the style of
+<a href="https://lezer.codemirror.net/docs/ref/#highlight.styleTags"><code>styleTags</code></a>'s
+argument to assign more complicated rules.</p>
 </dd></dl>
 
 </dd>
@@ -360,7 +368,7 @@ accumulated for a paragraph-style block. This method can return
 an <a href="#user-content-leafblockparser">object</a> that overrides that style of
 parsing in some situations.</p>
 </dd><dt id="user-content-blockparser.endleaf">
-  <code><strong><a href="#user-content-blockparser.endleaf">endLeaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.endleaf^cx" href="#user-content-blockparser.endleaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.endleaf^line" href="#user-content-blockparser.endleaf^line">line</a>: <a href="#user-content-line">Line</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+  <code><strong><a href="#user-content-blockparser.endleaf">endLeaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.endleaf^cx" href="#user-content-blockparser.endleaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.endleaf^line" href="#user-content-blockparser.endleaf^line">line</a>: <a href="#user-content-line">Line</a>, <a id="user-content-blockparser.endleaf^leaf" href="#user-content-blockparser.endleaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
 
 <dd><p>Some constructs, such as code blocks or newly started
 blockquotes, can interrupt paragraphs even without a blank line.
@@ -494,7 +502,11 @@ position and column.</p>
 
 <dd><p>Data structure used to accumulate a block's content during <a href="#user-content-blockparser.leaf">leaf
 block parsing</a>.</p>
-<dl><dt id="user-content-leafblock.start">
+<dl><dt id="user-content-leafblock.parsers">
+  <code><strong><a href="#user-content-leafblock.parsers">parsers</a></strong>: <a href="#user-content-leafblockparser">LeafBlockParser</a>[]</code></dt>
+
+<dd><p>The block parsers active for this block.</p>
+</dd><dt id="user-content-leafblock.start">
   <code><strong><a href="#user-content-leafblock.start">start</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
 <dd><p>The start position of the block.</p>

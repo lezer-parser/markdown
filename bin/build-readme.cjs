@@ -20,6 +20,8 @@ function buildReadme() {
         return `https://lezer.codemirror.net/docs/ref/#common.${type.type}`
       if (/\blr\b/.test(type.typeSource))
         return `https://lezer.codemirror.net/docs/ref/#lr.${type.type}`
+      if (/\bhighlight\b/.test(type.typeSource))
+        return `https://lezer.codemirror.net/docs/ref/#highlight.${type.type}`
       if (type.type == "NodeSet") console.log(type.typeSource)
     }]
   }, gather({filename: join(root, "src", "index.ts"), basedir: join(root, "src"), }))
