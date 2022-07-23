@@ -1719,11 +1719,11 @@ export class InlineContext {
     return null
   }
 
-  /// Remove all inline elements and delimiters starting from the
+  /// Removes all inline elements and delimiters starting from the
   /// given index (which you should get from
-  /// [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter),
-  /// resolve delimiters inside of them, and return them as an array
-  /// of elements.
+  /// [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter)),
+  /// and resolves delimiters inside of them, and returns them as an
+  /// array of elements.
   takeContent(startIndex: number) {
     let content = this.resolveMarkers(startIndex)
     this.parts.length = startIndex
