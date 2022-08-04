@@ -1640,8 +1640,10 @@ export class InlineContext {
     return this.append(elt)
   }
 
-  /// @internal
+  /// Resolve markers between this.parts.length and from, wrapping matched markers in the
+  /// appropriate node and updating the content of this.parts. @internal
   resolveMarkers(from: number) {
+    // Scan forward, looking for closing tokens
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
       if (!(close instanceof InlineDelimiter && close.type.resolve && (close.side & Mark.Close))) continue
@@ -1649,25 +1651,30 @@ export class InlineContext {
       let emp = close.type == EmphasisUnderscore || close.type == EmphasisAsterisk
       let closeSize = close.to - close.from
       let open: InlineDelimiter | undefined, j = i - 1
+      // Continue scanning for a matching opening token
       for (; j >= from; j--) {
-        let part = this.parts[j] as InlineDelimiter
-        if (!(part instanceof InlineDelimiter && (part.side & Mark.Open) && part.type == close.type) ||
-            emp && ((close.side & Mark.Open) || (part.side & Mark.Close)) &&
-            (part.to - part.from + closeSize) % 3 == 0 && ((part.to - part.from) % 3 || closeSize % 3))
-          continue
-        open = part
-        break
+        let part = this.parts[j]
+        if (part instanceof InlineDelimiter && (part.side & Mark.Open) && part.type == close.type &&
+            // Ignore emphasis delimiters where the character count doesn't match
+            !(emp && ((close.side & Mark.Open) || (part.side & Mark.Close)) &&
+              (part.to - part.from + closeSize) % 3 == 0 && ((part.to - part.from) % 3 || closeSize % 3))) {
+          open = part
+          break
+        }
       }
       if (!open) continue
 
       let type = close.type.resolve, content = []
       let start = open.from, end = close.to
+      // Emphasis marker effect depends on the character count. Size consumed is minimum of the two
+      // markers.
       if (emp) {
         let size = Math.min(2, open.to - open.from, closeSize)
         start = open.to - size
         end = close.from + size
         type = size == 1 ? "Emphasis" : "StrongEmphasis"
       }
+      // Move the covered region into content, optionally adding marker nodes
       if (open.type.mark) content.push(this.elt(open.type.mark, start, open.to))
       for (let k = j + 1; k < i; k++) {
         if (this.parts[k] instanceof Element) content.push(this.parts[k] as Element)
@@ -1675,12 +1682,15 @@ export class InlineContext {
       }
       if (close.type.mark) content.push(this.elt(close.type.mark, close.from, end))
       let element = this.elt(type, start, end, content)
+      // If there are leftover emphasis marker characters, shrink the close/open markers. Otherwise, clear them.
       this.parts[j] = emp && open.from != start ? new InlineDelimiter(open.type, open.from, start, open.side) : null
       let keep = this.parts[i] = emp && close.to != end ? new InlineDelimiter(close.type, end, close.to, close.side) : null
+      // Insert the new element in this.parts
       if (keep) this.parts.splice(i, 0, element)
       else this.parts[i] = element
     }
 
+    // Collect the elements remaining in this.parts into an array.
     let result = []
     for (let i = from; i < this.parts.length; i++) {
       let part = this.parts[i]
