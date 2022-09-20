@@ -139,6 +139,9 @@ describe("Extension", () => {
   test("Strikethrough (escaped)", `
 {P:A {Esc:\\~}~b c~~}`)
 
+  test("Strikethrough around spaces", `
+{P:One ~~ two~~ three {Th:{tm:~~}.foo.{tm:~~}} a~~.foo.~~a {Th:{tm:~~}blah{tm:~~}}.}`)
+
   test("Subscript", `
 {P:One {Sub:{sub:~}two{sub:~}} {Em:{e:*}one {Sub:{sub:~}two{sub:~}}{e:*}}}`)
 
