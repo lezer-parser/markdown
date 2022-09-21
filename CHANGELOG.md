@@ -1,3 +1,9 @@
+## 1.0.2 (2022-09-21)
+
+### Bug fixes
+
+In the stikethrough extension, ignore opening marks with a space after and closing marks with a space before them.
+
 ## 1.0.1 (2022-06-29)
 
 ### Bug fixes
