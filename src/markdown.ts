@@ -1271,7 +1271,8 @@ for (let i = 1, name; name = Type[i]; i++) {
   nodeTypes[i] = NodeType.define({
     id: i,
     name,
-    props: i >= Type.Escape ? [] : [[NodeProp.group, i in DefaultSkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]]
+    props: i >= Type.Escape ? [] : [[NodeProp.group, i in DefaultSkipMarkup ? ["Block", "BlockContext"] : ["Block", "LeafBlock"]]],
+    top: name == "Document"
   })
 }
 
