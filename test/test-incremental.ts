@@ -245,4 +245,15 @@ function foo() {
     let tree2 = parser.parse(doc2, fragments)
     ist(tree2.topNode.lastChild!.tree, tree.topNode.lastChild!.tree)
   })
+
+  it("places reused nodes at the right position when there are gaps before them", () => {
+    let doc = " {{}}\nb\n{{}}"
+    let ast1 = parser.parse(doc, undefined, [{from: 0, to: 1}, {from: 5, to: 8}])
+    let frag = TreeFragment.applyChanges(TreeFragment.addTree(ast1), [{fromA: 0, toA: 0, fromB: 0, toB: 1}])
+    let ast2 = parser.parse(" " + doc, frag, [{from: 0, to: 2}, {from: 6, to: 9}])
+    ist(ast2.toString(), "Document(Paragraph)")
+    let p = ast2.topNode.firstChild!
+    ist(p.from, 7)
+    ist(p.to, 8)
+  })
 })

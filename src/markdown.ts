@@ -1808,6 +1808,7 @@ class FragmentCursor {
   takeNodes(cx: BlockContext) {
     let cur = this.cursor!, off = this.fragment!.offset, fragEnd = this.fragmentEnd - (this.fragment!.openEnd ? 1 : 0)
     let start = cx.absoluteLineStart, end = start, blockI = cx.block.children.length
+    let absOff = cx.lineStart - start
     let prevEnd = end, prevI = blockI
     for (;;) {
       if (cur.to - off > fragEnd) {
@@ -1815,7 +1816,7 @@ class FragmentCursor {
         break
       }
       cx.dontInject.add(cur.tree!)
-      cx.addNode(cur.tree!, cur.from - off)
+      cx.addNode(cur.tree!, cur.from - off + absOff)
       // Taken content must always end in a block, because incremental
       // parsing happens on block boundaries. Never stop directly
       // after an indented code block, since those can continue after
