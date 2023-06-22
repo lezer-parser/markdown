@@ -1,3 +1,11 @@
+## 1.0.3 (2023-06-22)
+
+### Bug fixes
+
+Only parse list items as tasks when there is whitespace after the checkbox brackets. Remove an unnecessary regexp operator
+
+Fix a crash doing an incremental parse on input ranges with gaps between them.
+
 ## 1.0.2 (2022-09-21)
 
 ### Bug fixes
