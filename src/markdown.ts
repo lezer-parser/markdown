@@ -8,7 +8,8 @@ class CompositeBlock {
     return new CompositeBlock(type, value, from, hash, end, [], [])
   }
 
-  private hashProp: [NodeProp<any>, any][]
+  /// @internal
+  hashProp: [NodeProp<any>, any][]
 
   constructor(readonly type: number,
               // Used for indentation in list items, markup character in lists
@@ -31,10 +32,9 @@ class CompositeBlock {
   toTree(nodeSet: NodeSet, end = this.end) {
     let last = this.children.length - 1
     if (last >= 0) end = Math.max(end, this.positions[last] + this.children[last].length + this.from)
-    let tree = new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance({
+    return new Tree(nodeSet.types[this.type], this.children, this.positions, end - this.from).balance({
       makeTree: (children, positions, length) => new Tree(NodeType.none, children, positions, length, this.hashProp)
     })
-    return tree
   }
 }
 
@@ -640,8 +640,11 @@ export class BlockContext implements PartialParse {
   private atEnd = false
   private fragments: FragmentCursor | null
   private to: number
-  /// @internal
-  dontInject: Set<Tree> = new Set
+  /// For reused nodes on gaps, we can't directly put the original
+  /// node into the tree, since that may be bitter than its parent.
+  /// When this happens, we create a dummy tree that is replaced by
+  /// the proper node in `injectGaps` @internal
+  reusePlaceholders: Map<Tree, Tree> = new Map
   stoppedAt: number | null = null
 
   /// The start of the current line.
@@ -886,7 +889,8 @@ export class BlockContext implements PartialParse {
   }
 
   private addGaps(tree: Tree) {
-    return this.ranges.length > 1 ? injectGaps(this.ranges, 0, tree.topNode, this.ranges[0].from, this.dontInject) : tree
+    return this.ranges.length > 1 ?
+      injectGaps(this.ranges, 0, tree.topNode, this.ranges[0].from, this.reusePlaceholders) : tree
   }
 
   /// @internal
@@ -913,9 +917,8 @@ export class BlockContext implements PartialParse {
 
 function injectGaps(
   ranges: readonly {from: number, to: number}[], rangeI: number,
-  tree: SyntaxNode, offset: number, dont: Set<Tree>
+  tree: SyntaxNode, offset: number, dummies: Map<Tree, Tree>
 ): Tree {
-  if (dont.has(tree.tree!)) return tree.tree!
   let rangeEnd = ranges[rangeI].to
   let children = [], positions = [], start = tree.from + offset
   function movePastNext(upto: number, inclusive: boolean) {
@@ -929,9 +932,11 @@ function injectGaps(
   }
   for (let ch = tree.firstChild; ch; ch = ch.nextSibling) {
     movePastNext(ch.from + offset, true)
-    let from = ch.from + offset, node
-    if (ch.to + offset > rangeEnd) {
-      node = injectGaps(ranges, rangeI, ch, offset, dont)
+    let from = ch.from + offset, node, reuse = dummies.get(ch.tree!)
+    if (reuse) {
+      node = reuse
+    } else if (ch.to + offset > rangeEnd) {
+      node = injectGaps(ranges, rangeI, ch, offset, dummies)
       movePastNext(ch.to + offset, false)
     } else {
       node = ch.toTree()
@@ -1815,8 +1820,14 @@ class FragmentCursor {
         if (cur.type.isAnonymous && cur.firstChild()) continue
         break
       }
-      cx.dontInject.add(cur.tree!)
-      cx.addNode(cur.tree!, cur.from - off + absOff)
+      let pos = cur.from - off + absOff
+      if (cur.to - off <= cx.ranges[cx.rangeI].to) { // Fits in current range
+        cx.addNode(cur.tree!, pos)
+      } else {
+        let dummy = new Tree(cx.parser.nodeSet.types[Type.Paragraph], [], [], 0, cx.block.hashProp)
+        cx.reusePlaceholders.set(dummy, cur.tree!)
+        cx.addNode(dummy, pos)
+      }
       // Taken content must always end in a block, because incremental
       // parsing happens on block boundaries. Never stop directly
       // after an indented code block, since those can continue after
