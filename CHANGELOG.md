@@ -1,3 +1,9 @@
+## 1.0.4 (2023-06-29)
+
+### Bug fixes
+
+Fix another bug in incremental parsing across input gaps.
+
 ## 1.0.3 (2023-06-22)
 
 ### Bug fixes
