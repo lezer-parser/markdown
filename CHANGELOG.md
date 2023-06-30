@@ -1,3 +1,9 @@
+## 1.0.5 (2023-06-30)
+
+### Bug fixes
+
+Fix another issue in reuse of nodes when the input has gaps.
+
 ## 1.0.4 (2023-06-29)
 
 ### Bug fixes
