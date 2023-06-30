@@ -733,13 +733,8 @@ export class BlockContext implements PartialParse {
         !this.fragments!.matches(this.block.hash)) return false
     let taken = this.fragments!.takeNodes(this)
     if (!taken) return false
-    let withoutGaps = taken, end = this.absoluteLineStart + taken
-    for (let i = 1; i < this.ranges.length; i++) {
-      let gapFrom = this.ranges[i - 1].to, gapTo = this.ranges[i].from
-      if (gapFrom >= this.lineStart && gapTo < end) withoutGaps -= gapTo - gapFrom
-    }
-    this.lineStart += withoutGaps
     this.absoluteLineStart += taken
+    this.lineStart = toRelative(this.absoluteLineStart, this.ranges)
     this.moveRangeI()
     if (this.absoluteLineStart < this.to) {
       this.lineStart++
@@ -1813,14 +1808,13 @@ class FragmentCursor {
   takeNodes(cx: BlockContext) {
     let cur = this.cursor!, off = this.fragment!.offset, fragEnd = this.fragmentEnd - (this.fragment!.openEnd ? 1 : 0)
     let start = cx.absoluteLineStart, end = start, blockI = cx.block.children.length
-    let absOff = cx.lineStart - start
     let prevEnd = end, prevI = blockI
     for (;;) {
       if (cur.to - off > fragEnd) {
         if (cur.type.isAnonymous && cur.firstChild()) continue
         break
       }
-      let pos = cur.from - off + absOff
+      let pos = toRelative(cur.from - off, cx.ranges)
       if (cur.to - off <= cx.ranges[cx.rangeI].to) { // Fits in current range
         cx.addNode(cur.tree!, pos)
       } else {
@@ -1851,6 +1845,18 @@ class FragmentCursor {
     }
     return end - start
   }
+}
+
+// Convert an input-stream-relative position to a
+// Markdown-doc-relative position by subtracting the size of all input
+// gaps before `abs`.
+function toRelative(abs: number, ranges: readonly {from: number, to: number}[]) {
+  let pos = abs
+  for (let i = 1; i < ranges.length; i++) {
+    let gapFrom = ranges[i - 1].to, gapTo = ranges[i].from
+    if (gapFrom < abs) pos -= gapTo - gapFrom
+  }
+  return pos
 }
 
 const markdownHighlighting = styleTags({
