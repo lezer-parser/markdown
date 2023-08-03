@@ -162,9 +162,77 @@ export const TaskList: MarkdownConfig = {
   }]
 }
 
+const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]+@)|(mailto:|xmpp:)/gy
+const urlRE = /[\w-]+(\.\w+(\.\w+)?)(\/[^\s<]*)?/gy
+const emailRE = /[\w.+-]+@[\w-]+\.[\w.-]+/gy
+const xmppResourceRE = /\/[a-zA-Z\d@.]+/gy
+
+function count(str: string, from: number, to: number, ch: string) {
+  let result = 0
+  for (let i = from; i < to; i++) if (str[i] == ch) result++
+  return result
+}
+
+function autolinkURLEnd(text: string, from: number) {
+  urlRE.lastIndex = from
+  let m = urlRE.exec(text)
+  if (!m) return -1
+  let end = from + m[0].length
+  for (;;) {
+    let last = text[end - 1], m
+    if (/[?!.,:*_~]/.test(last) ||
+        last == ")" && count(text, from, end, ")") > count(text, from, end, "("))
+      end--
+    else if (last == ";" && (m = /&(?:#\d+|#x[a-f\d]+|\w+);$/.exec(text.slice(from, end))))
+      end = from + m.index
+    else
+      break
+  }
+  return end
+}
+
+function autolinkEmailEnd(text: string, from: number) {
+  emailRE.lastIndex = from
+  let m = emailRE.exec(text)
+  if (!m) return -1
+  let last = m[0][m[0].length - 1]
+  return last == "_" || last == "-" ? -1 : from + m[0].length - (last == "." ? 1 : 0)
+}
+
+/// Extension that implements autolinking for
+/// `www.`/`http://`/`https://`/`mailto:`/`xmpp:` URLs and email
+/// addresses.
+export const Autolink: MarkdownConfig = {
+  parseInline: [{
+    name: "Autolink",
+    parse(cx, next, absPos) {
+      let pos = absPos - cx.offset
+      autolinkRE.lastIndex = pos
+      let m = autolinkRE.exec(cx.text), end = -1
+      if (!m) return -1
+      if (m[1] || m[2]) { // www., http://
+        end = autolinkURLEnd(cx.text, pos + m[0].length)
+      } else if (m[3]) { // email address
+        end = autolinkEmailEnd(cx.text, pos)
+      } else { // mailto:/xmpp:
+        end = autolinkEmailEnd(cx.text, pos + m[0].length)
+        if (end > -1 && m[0] == "xmpp:") {
+          xmppResourceRE.lastIndex = end
+          m = xmppResourceRE.exec(cx.text)
+          if (m) end = m.index + m[0].length
+        }
+      }
+      if (end < 0) return -1
+      cx.addElement(cx.elt("URL", absPos, end + cx.offset))
+      return end + cx.offset
+    }
+  }]
+}
+
 /// Extension bundle containing [`Table`](#Table),
-/// [`TaskList`](#TaskList) and [`Strikethrough`](#Strikethrough).
-export const GFM = [Table, TaskList, Strikethrough]
+/// [`TaskList`](#TaskList), [`Strikethrough`](#Strikethrough), and
+/// [`Autolink`](#Autolink).
+export const GFM = [Table, TaskList, Strikethrough, Autolink]
 
 function parseSubSuper(ch: number, node: string, mark: string) {
   return (cx: InlineContext, next: number, pos: number) => {

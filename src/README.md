@@ -47,6 +47,8 @@ The code is licensed under an MIT license.
 
 @Strikethrough
 
+@Autolink
+
 ### Other extensions
 
 @Subscript

@@ -109,6 +109,84 @@ describe("Extension", () => {
   {LI:{l:-} {T:{t:[x]} baz}}}}
 {LI:{l:-} {T:{t:[ ]} bim}}}`)
 
+  test("Autolink (example 622)", `
+{P:{URL:www.commonmark.org}}`)
+
+  test("Autolink (example 623)", `
+{P:Visit {URL:www.commonmark.org/help} for more information.}`)
+
+  test("Autolink (example 624)", `
+{P:Visit {URL:www.commonmark.org}.}
+
+{P:Visit {URL:www.commonmark.org/a.b}.}`)
+
+  test("Autolink (example 625)", `
+{P:{URL:www.google.com/search?q=Markup+(business)}}
+
+{P:{URL:www.google.com/search?q=Markup+(business)}))}
+
+{P:({URL:www.google.com/search?q=Markup+(business)})}
+
+{P:({URL:www.google.com/search?q=Markup+(business)}}`)
+
+  test("Autolink (example 626)", `
+{P:{URL:www.google.com/search?q=(business))+ok}}`)
+
+  test("Autolink (example 627)", `
+{P:{URL:www.google.com/search?q=commonmark&hl=en}}
+
+{P:{URL:www.google.com/search?q=commonmark}{Entity:&hl;}}`)
+
+  test("Autolink (example 628)", `
+{P:{URL:www.commonmark.org/he}<lp}`)
+
+  test("Autolink (example 629)", `
+{P:{URL:http://commonmark.org}}
+
+{P:(Visit {URL:https://encrypted.google.com/search?q=Markup+(business)})}`)
+
+  test("Autolink (example 630)", `
+{P:{URL:foo@bar.baz}}`)
+
+  test("Autolink (example 631)", `
+{P:hello@mail+xyz.example isn't valid, but {URL:hello+xyz@mail.example} is.}`)
+
+  test("Autolink (example 632)", `
+{P:{URL:a.b-c_d@a.b}}
+
+{P:{URL:a.b-c_d@a.b}.}
+
+{P:a.b-c_d@a.b-}
+
+{P:a.b-c_d@a.b_}`)
+
+  test("Autolink (example 633)", `
+{P:{URL:mailto:foo@bar.baz}}
+
+{P:{URL:mailto:a.b-c_d@a.b}}
+
+{P:{URL:mailto:a.b-c_d@a.b}.}
+
+{P:{URL:mailto:a.b-c_d@a.b}/}
+
+{P:mailto:a.b-c_d@a.b-}
+
+{P:mailto:a.b-c_d@a.b_}
+
+{P:{URL:xmpp:foo@bar.baz}}
+
+{P:{URL:xmpp:foo@bar.baz}.}`)
+
+  test("Autolink (example 634)", `
+{P:{URL:xmpp:foo@bar.baz/txt}}
+
+{P:{URL:xmpp:foo@bar.baz/txt@bin}}
+
+{P:{URL:xmpp:foo@bar.baz/txt@bin.com}}`)
+
+  test("Autolink (example 635)", `
+{P:{URL:xmpp:foo@bar.baz/txt}/bin}`)
+
   test("Task list (in ordered list)", `
 {OL:{LI:{l:1.} {T:{t:[X]} Okay}}}`)
 

@@ -100,8 +100,8 @@ parser</a>) to this parser.</p>
 </dl>
 <dl>
 <dt id="user-content-markdownextension">
-  type
   <code>
+    type
     <strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
 </dt>
 
@@ -142,7 +142,8 @@ code, it should return a function that can construct the
   <code><strong><a href="#user-content-gfm">GFM</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a>[]</code></dt>
 
 <dd><p>Extension bundle containing <a href="#user-content-table"><code>Table</code></a>,
-<a href="#user-content-tasklist"><code>TaskList</code></a> and <a href="#user-content-strikethrough"><code>Strikethrough</code></a>.</p>
+<a href="#user-content-tasklist"><code>TaskList</code></a>, <a href="#user-content-strikethrough"><code>Strikethrough</code></a>, and
+<a href="#user-content-autolink"><code>Autolink</code></a>.</p>
 </dd>
 </dl>
 <dl>
@@ -175,6 +176,15 @@ task list items, where list items can be prefixed with <code>[ ]</code> or
 <dd><p>An extension that implements
 <a href="https://github.github.com/gfm/#strikethrough-extension-">GFM-style</a>
 Strikethrough syntax using <code>~~</code> delimiters.</p>
+</dd>
+</dl>
+<dl>
+<dt id="user-content-autolink">
+  <code><strong><a href="#user-content-autolink">Autolink</a></strong>: <a href="#user-content-markdownconfig">MarkdownConfig</a></code></dt>
+
+<dd><p>Extension that implements autolinking for
+<code>www.</code>/<code>http://</code>/<code>https://</code>/<code>mailto:</code>/<code>xmpp:</code> URLs and email
+addresses.</p>
 </dd>
 </dl>
 
