@@ -1,3 +1,9 @@
+## 1.1.0 (2023-08-03)
+
+### New features
+
+The new `Autolink` extension (included in the `GFM` extension bundle) marks some types of URLs even without angle brackets.
+
 ## 1.0.5 (2023-06-30)
 
 ### Bug fixes
