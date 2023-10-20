@@ -251,4 +251,10 @@ describe("Extension", () => {
 
 {P:No setext either
 ===}`, parser.configure({remove: ["Superscript", "Blockquote", "SetextHeading"]}))
+
+  test("Autolink (.co.uk)", `
+{P:{URL:www.blah.co.uk/path}}`)
+
+  test("Autolink (email .co.uk)", `
+{P:{URL:foo@bar.co.uk}}`)
 })

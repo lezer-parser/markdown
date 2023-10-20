@@ -163,8 +163,8 @@ export const TaskList: MarkdownConfig = {
 }
 
 const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]+@)|(mailto:|xmpp:)/gy
-const urlRE = /[\w-]+(\.\w+(\.\w+)?)(\/[^\s<]*)?/gy
-const emailRE = /[\w.+-]+@[\w-]+\.[\w.-]+/gy
+const urlRE = /[\w-]+(\.\w+(\.\w+)*)(\/[^\s<]*)?/gy
+const emailRE = /[\w.+-]+@[\w-]+(\.[\w.-]+)+/gy
 const xmppResourceRE = /\/[a-zA-Z\d@.]+/gy
 
 function count(str: string, from: number, to: number, ch: string) {
