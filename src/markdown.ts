@@ -1453,7 +1453,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore)
     let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter)
     return cx.append(new InlineDelimiter(next == 95 ? EmphasisUnderscore : EmphasisAsterisk, start, pos,
-                                         (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
+                                         (canOpen ? Mark.Open : Mark.None) | (canClose ? Mark.Close : Mark.None)))
   },
 
   HardBreak(cx, next, start) {
@@ -1633,7 +1633,7 @@ export class InlineContext {
   /// or both. Returns the end of the delimiter, for convenient
   /// returning from [parse functions](#InlineParser.parse).
   addDelimiter(type: DelimiterType, from: number, to: number, open: boolean, close: boolean) {
-    return this.append(new InlineDelimiter(type, from, to, (open ? Mark.Open : 0) | (close ? Mark.Close : 0)))
+    return this.append(new InlineDelimiter(type, from, to, (open ? Mark.Open : Mark.None) | (close ? Mark.Close : Mark.None)))
   }
 
   /// Add an inline element. Returns the end of the element.
