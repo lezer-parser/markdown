@@ -1353,7 +1353,7 @@ function elt(type: Type, from: number, to: number, children?: readonly (Element 
   return new Element(type, from, to, children)
 }
 
-const enum Mark { Open = 1, Close = 2 }
+const enum Mark { None = 0, Open = 1, Close = 2 }
 
 /// Delimiters are used during inline parsing to store the positions
 /// of things that _might_ be delimiters, if another matching
@@ -1496,7 +1496,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
         // Set any open-link markers before this link to invalid.
         if (part.type == LinkStart) for (let j = 0; j < i; j++) {
           let p = cx.parts[j]
-          if (p instanceof InlineDelimiter && p.type == LinkStart) p.side = 0
+          if (p instanceof InlineDelimiter && p.type == LinkStart) p.side = Mark.None
         }
         return link.to
       }

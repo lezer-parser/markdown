@@ -1,4 +1,4 @@
-import {TreeCursor, SyntaxNode, Parser, Input, parseMixed} from "@lezer/common"
+import {SyntaxNode, Parser, Input, parseMixed, SyntaxNodeRef} from "@lezer/common"
 import {Type, MarkdownExtension} from "./markdown"
 
 function leftOverSpace(node: SyntaxNode, from: number, to: number) {
@@ -26,7 +26,7 @@ export function parseCode(config: {
   htmlParser?: Parser,
 }): MarkdownExtension {
   let {codeParser, htmlParser} = config
-  let wrap = parseMixed((node: TreeCursor, input: Input) => {
+  let wrap = parseMixed((node: SyntaxNodeRef, input: Input) => {
     let id = node.type.id
     if (codeParser && (id == Type.CodeBlock || id == Type.FencedCode)) {
       let info = ""
