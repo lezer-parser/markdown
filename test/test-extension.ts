@@ -260,4 +260,7 @@ describe("Extension", () => {
 
   test("Autolink (http://www.foo-bar.com/)", `
 {P:{URL:http://www.foo-bar.com/}}`)
+
+  test("Autolink (exclude underscores)", `
+{P:http://www.foo_/ http://foo_.com}`)
 })

@@ -163,7 +163,8 @@ export const TaskList: MarkdownConfig = {
 }
 
 const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]+@)|(mailto:|xmpp:)/gy
-const urlRE = /[\w-]+(\.\w+(\.\w+)*)(\/[^\s<]*)?/gy
+const urlRE = /[\w-]+(\.[\w-]+)+(\/[^\s<]*)?/gy
+const lastTwoDomainWords = /[\w-]+\.[\w-]+($|\/)/
 const emailRE = /[\w.+-]+@[\w-]+(\.[\w.-]+)+/gy
 const xmppResourceRE = /\/[a-zA-Z\d@.]+/gy
 
@@ -176,7 +177,7 @@ function count(str: string, from: number, to: number, ch: string) {
 function autolinkURLEnd(text: string, from: number) {
   urlRE.lastIndex = from
   let m = urlRE.exec(text)
-  if (!m) return -1
+  if (!m || lastTwoDomainWords.exec(m[0])![0].indexOf("_") > -1) return -1
   let end = from + m[0].length
   for (;;) {
     let last = text[end - 1], m
