@@ -1,3 +1,11 @@
+## 1.1.1 (2023-11-17)
+
+### Bug fixes
+
+Make sure GFM autolinking accepts URLs like test.co.uk
+
+Fix a bug in `Autolink` that made it fail to accept some URLs with hyphens.
+
 ## 1.1.0 (2023-08-03)
 
 ### New features
