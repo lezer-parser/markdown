@@ -257,4 +257,7 @@ describe("Extension", () => {
 
   test("Autolink (email .co.uk)", `
 {P:{URL:foo@bar.co.uk}}`)
+
+  test("Autolink (http://www.foo-bar.com/)", `
+{P:{URL:http://www.foo-bar.com/}}`)
 })
