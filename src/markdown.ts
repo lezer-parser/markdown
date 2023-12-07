@@ -684,8 +684,15 @@ export class BlockContext implements PartialParse {
 
     let {line} = this
     for (;;) {
-      while (line.depth < this.stack.length) this.finishContext()
-      for (let mark of line.markers) this.addNode(mark.type, mark.from, mark.to)
+      for (let markI = 0;;) {
+        let next = line.depth < this.stack.length ? this.stack[this.stack.length - 1] : null
+        while (markI < line.markers.length && (!next || line.markers[markI].from < next.end)) {
+          let mark = line.markers[markI++]
+          this.addNode(mark.type, mark.from, mark.to)
+        }
+        if (!next) break
+        this.finishContext()
+      }
       if (line.pos < line.text.length) break
       // Empty line
       if (!this.nextLine()) return this.finish()
