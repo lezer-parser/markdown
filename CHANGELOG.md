@@ -1,3 +1,9 @@
+## 1.1.2 (2023-12-07)
+
+### Bug fixes
+
+Fix a bug that could cause blockquote markers to be attached to the wrong parent node, causing them to overlap with sibling syntax nodes.
+
 ## 1.1.1 (2023-11-17)
 
 ### Bug fixes
