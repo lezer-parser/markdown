@@ -74,7 +74,7 @@ export enum Type {
   HTMLTag,
   Comment,
   ProcessingInstruction,
-  URL,
+  Autolink,
 
   // Smaller tokens
   HeaderMark,
@@ -86,7 +86,8 @@ export enum Type {
   CodeText,
   CodeInfo,
   LinkTitle,
-  LinkLabel
+  LinkLabel,
+  URL
 }
 
 /// Data structure used to accumulate a block's content during [leaf
@@ -1438,7 +1439,14 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     if (next != 60 /* '<' */ || start == cx.end - 1) return -1
     let after = cx.slice(start + 1, cx.end)
     let url = /^(?:[a-z][-\w+.]+:[^\s>]+|[a-z\d.!#$%&'*+/=?^_`{|}~-]+@[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)*)>/i.exec(after)
-    if (url) return cx.append(elt(Type.URL, start, start + 1 + url[0].length))
+    if (url) {
+      return cx.append(elt(Type.Autolink, start, start + 1 + url[0].length, [
+        elt(Type.LinkMark, start, start + 1),
+        // url[0] includes the closing bracket, so exclude it from this slice
+        elt(Type.URL, start + 1, start + url[0].length),
+        elt(Type.LinkMark, start + url[0].length, start + 1 + url[0].length)
+      ]))
+    }
     let comment = /^!--[^>](?:-[^-]|[^-])*?-->/i.exec(after)
     if (comment) return cx.append(elt(Type.Comment, start, start + 1 + comment[0].length))
     let procInst = /^\?[^]*?\?>/.exec(after)
@@ -1884,7 +1892,7 @@ const markdownHighlighting = styleTags({
   "OrderedList/... BulletList/...": t.list,
   "BlockQuote/...": t.quote,
   "InlineCode CodeText": t.monospace,
-  URL: t.url,
+  "URL Autolink": t.url,
   "HeaderMark HardBreak QuoteMark ListMark LinkMark EmphasisMark CodeMark": t.processingInstruction,
   "CodeInfo LinkLabel": t.labelName,
   LinkTitle: t.string,

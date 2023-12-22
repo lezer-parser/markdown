@@ -29,6 +29,7 @@ const abbrev: {[abbr: string]: string} = {
   Em: "Emphasis",
   St: "StrongEmphasis",
   Ln: "Link",
+  Al: "Autolink",
   Im: "Image",
   C: "InlineCode",
   HT: "HTMLTag",
