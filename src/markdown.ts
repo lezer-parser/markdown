@@ -1521,8 +1521,11 @@ function finishLink(cx: InlineContext, content: Element[], type: Type, start: nu
     let dest = parseURL(text, pos - cx.offset, cx.offset), title
     if (dest) {
       pos = cx.skipSpace(dest.to)
-      title = parseLinkTitle(text, pos - cx.offset, cx.offset)
-      if (title) pos = cx.skipSpace(title.to)
+      // The destination and title must be separated by whitespace
+      if (pos != dest.to) {
+        title = parseLinkTitle(text, pos - cx.offset, cx.offset)
+        if (title) pos = cx.skipSpace(title.to)
+      }
     }
     if (cx.char(pos) == 41 /* ')' */) {
       content.push(elt(Type.LinkMark, startPos, startPos + 1))
