@@ -1953,7 +1953,7 @@ continued here.}}}}}
 `)
 
   test("Backslash escapes (example 306)", `
-{P:{URL:<http://example.com?find=\\*>}}
+{P:{Al:{L:<}{URL:http://example.com?find=\\*}{L:>}}}
 `)
 
   test("Backslash escapes (example 307)", `
@@ -2143,7 +2143,7 @@ baz{c:\`}}}
 `)
 
   test("Code spans (example 346)", `
-{P:{URL:<http://foo.bar.\`baz>}\`}
+{P:{Al:{L:<}{URL:http://foo.bar.\`baz}{L:>}}\`}
 `)
 
   test("Code spans (example 347)", `
@@ -2681,11 +2681,11 @@ bim{e:*}} bop{e:**}}}
 `)
 
   test("Emphasis and strong emphasis (example 479)", `
-{P:**a{URL:<http://foo.bar/?q=**>}}
+{P:**a{Al:{L:<}{URL:http://foo.bar/?q=**}{L:>}}}
 `)
 
   test("Emphasis and strong emphasis (example 480)", `
-{P:__a{URL:<http://foo.bar/?q=__>}}
+{P:__a{Al:{L:<}{URL:http://foo.bar/?q=__}{L:>}}}
 `)
 
   test("Links (example 481)", `
@@ -2870,7 +2870,7 @@ bar>})}
 `)
 
   test("Links (example 522)", `
-{P:[foo{URL:<http://example.com/?search=](uri)>}}
+{P:[foo{Al:{L:<}{URL:http://example.com/?search=](uri)}{L:>}}}
 `)
 
   test("Links (example 523)", `
@@ -2942,7 +2942,7 @@ bar>})}
 `)
 
   test("Links (example 534)", `
-{P:[foo{URL:<http://example.com/?search=][ref]>}}
+{P:[foo{Al:{L:<}{URL:http://example.com/?search=][ref]}{L:>}}}
 
 {LR:{LL:[ref]}{L::} {URL:/uri}}
 `)
@@ -3277,35 +3277,35 @@ bar>})}
 `)
 
   test("Autolinks (example 590)", `
-{P:{URL:<http://foo.bar.baz>}}
+{P:{Al:{L:<}{URL:http://foo.bar.baz}{L:>}}}
 `)
 
   test("Autolinks (example 591)", `
-{P:{URL:<http://foo.bar.baz/test?q=hello&id=22&boolean>}}
+{P:{Al:{L:<}{URL:http://foo.bar.baz/test?q=hello&id=22&boolean}{L:>}}}
 `)
 
   test("Autolinks (example 592)", `
-{P:{URL:<irc://foo.bar:2233/baz>}}
+{P:{Al:{L:<}{URL:irc://foo.bar:2233/baz}{L:>}}}
 `)
 
   test("Autolinks (example 593)", `
-{P:{URL:<MAILTO:FOO@BAR.BAZ>}}
+{P:{Al:{L:<}{URL:MAILTO:FOO@BAR.BAZ}{L:>}}}
 `)
 
   test("Autolinks (example 594)", `
-{P:{URL:<a+b+c:d>}}
+{P:{Al:{L:<}{URL:a+b+c:d}{L:>}}}
 `)
 
   test("Autolinks (example 595)", `
-{P:{URL:<made-up-scheme://foo,bar>}}
+{P:{Al:{L:<}{URL:made-up-scheme://foo,bar}{L:>}}}
 `)
 
   test("Autolinks (example 596)", `
-{P:{URL:<http://../>}}
+{P:{Al:{L:<}{URL:http://../}{L:>}}}
 `)
 
   test("Autolinks (example 597)", `
-{P:{URL:<localhost:5001/foo>}}
+{P:{Al:{L:<}{URL:localhost:5001/foo}{L:>}}}
 `)
 
   test("Autolinks (example 598)", `
@@ -3313,15 +3313,15 @@ bar>})}
 `)
 
   test("Autolinks (example 599)", `
-{P:{URL:<http://example.com/\\[\\>}}
+{P:{Al:{L:<}{URL:http://example.com/\\[\\}{L:>}}}
 `)
 
   test("Autolinks (example 600)", `
-{P:{URL:<foo@bar.example.com>}}
+{P:{Al:{L:<}{URL:foo@bar.example.com}{L:>}}}
 `)
 
   test("Autolinks (example 601)", `
-{P:{URL:<foo+special@Bar.baz-bar0.com>}}
+{P:{Al:{L:<}{URL:foo+special@Bar.baz-bar0.com}{L:>}}}
 `)
 
   test("Autolinks (example 602)", `
