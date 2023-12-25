@@ -1,3 +1,13 @@
+## 1.2.0 (2023-12-25)
+
+### Bug fixes
+
+Properly require whitespace before link titles. Parse autolinks as their own nodes
+
+### New features
+
+Wrap autolinks in an `Autolink` syntax node, rather than just `URL`, and exclude the wrapping angle brackets from the `URL` nodes.
+
 ## 1.1.2 (2023-12-07)
 
 ### Bug fixes
