@@ -213,6 +213,10 @@ export const Autolink: MarkdownConfig = {
       if (!m) return -1
       if (m[1] || m[2]) { // www., http://
         end = autolinkURLEnd(cx.text, pos + m[0].length)
+        if (end > -1 && cx.hasOpenLink) {
+          let noBracket = /([^\[\]]|\[[^\]]*\])*/.exec(cx.text.slice(pos, end))
+          end = pos + noBracket![0].length
+        }
       } else if (m[3]) { // email address
         end = autolinkEmailEnd(cx.text, pos)
       } else { // mailto:/xmpp:

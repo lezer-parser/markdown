@@ -263,4 +263,7 @@ describe("Extension", () => {
 
   test("Autolink (exclude underscores)", `
 {P:http://www.foo_/ http://foo_.com}`)
+
+  test("Autolink (in image)", `
+{P:{Im:{L:![}Link: {URL:http://foo.com/}{L:]}{L:(}{URL:x.jpg}{L:)}}}`)
 })
