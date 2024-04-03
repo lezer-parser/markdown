@@ -1654,6 +1654,16 @@ export class InlineContext {
     return this.append(new InlineDelimiter(type, from, to, (open ? Mark.Open : Mark.None) | (close ? Mark.Close : Mark.None)))
   }
 
+  /// Returns true when there is an unmatched link or image opening
+  /// token before the current position.
+  get hasOpenLink() {
+    for (let i = this.parts.length - 1; i >= 0; i--) {
+      let part = this.parts[i]
+      if (part instanceof InlineDelimiter && (part.type == LinkStart || part.type == ImageStart)) return true
+    }
+    return false
+  }
+
   /// Add an inline element. Returns the end of the element.
   addElement(elt: Element) {
     return this.append(elt)
