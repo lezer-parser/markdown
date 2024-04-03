@@ -1,3 +1,13 @@
+## 1.3.0 (2024-04-03)
+
+### Bug fixes
+
+GFM autolinks will no longer include the closing bracket of a surrounding link or image.
+
+### New features
+
+`InlineContext.hasOpenLink` can now be used to query whether there is an unclosed link or image marker before the current token.
+
 ## 1.2.0 (2023-12-25)
 
 ### Bug fixes
