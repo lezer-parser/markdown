@@ -1398,7 +1398,7 @@ class InlineDelimiter {
 const Escapable = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 export let Punctuation = /[!"#$%&'()*+,\-.\/:;<=>?@\[\\\]^_`{|}~\xA1\u2010-\u2027]/
-try { Punctuation = new RegExp("[\\p{Pc}|\\p{Pd}|\\p{Pe}|\\p{Pf}|\\p{Pi}|\\p{Po}|\\p{Ps}]", "u") } catch (_) {}
+try { Punctuation = new RegExp("[\\p{S}|\\p{P}]", "u") } catch (_) {}
 
 const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: number) => number} = {
   Escape(cx, next, start) {
@@ -1465,6 +1465,7 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     let sBefore = /\s|^$/.test(before), sAfter = /\s|^$/.test(after)
     let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore)
     let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter)
+    console.log("@", start, leftFlanking, rightFlanking, "from", sBefore, sAfter, "p", pBefore, pAfter, "ch", before, after, "...", after.length, Punctuation.test(after), Punctuation.source)
     let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore)
     let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter)
     return cx.append(new InlineDelimiter(next == 95 ? EmphasisUnderscore : EmphasisAsterisk, start, pos,
