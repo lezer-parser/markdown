@@ -1465,7 +1465,6 @@ const DefaultInline: {[name: string]: (cx: InlineContext, next: number, pos: num
     let sBefore = /\s|^$/.test(before), sAfter = /\s|^$/.test(after)
     let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore)
     let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter)
-    console.log("@", start, leftFlanking, rightFlanking, "from", sBefore, sAfter, "p", pBefore, pAfter, "ch", before, after, "...", after.length, Punctuation.test(after), Punctuation.source)
     let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore)
     let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter)
     return cx.append(new InlineDelimiter(next == 95 ? EmphasisUnderscore : EmphasisAsterisk, start, pos,
