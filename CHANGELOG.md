@@ -1,3 +1,11 @@
+## 1.3.1 (2024-09-02)
+
+### Bug fixes
+
+Fix emphasis parsing to properly test for punctuation on platforms that support regular expression unicode categories.
+
+Fix an issue where dashes right after a paragraph weren't parsed as horizontal rules when setext headers are disabled.
+
 ## 1.3.0 (2024-04-03)
 
 ### Bug fixes
