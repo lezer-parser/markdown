@@ -264,7 +264,8 @@ function isHorizontalRule(line: Line, cx: BlockContext, breaking: boolean) {
     else if (!space(ch)) return -1
   }
   // Setext headers take precedence
-  if (breaking && line.next == 45 && isSetextUnderline(line) > -1 && line.depth == cx.stack.length) return -1
+  if (breaking && line.next == 45 && isSetextUnderline(line) > -1 && line.depth == cx.stack.length &&
+      cx.parser.leafBlockParsers.indexOf(DefaultLeafBlocks.SetextHeading) > -1) return -1
   return count < 3 ? -1 : 1
 }
 

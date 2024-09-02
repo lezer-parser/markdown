@@ -3559,4 +3559,10 @@ describe("Custom Markdown tests", () => {
     let doc = ` - a\n\t\tb`
     if (parser.parse(doc).length > doc.length) throw new RangeError("Wrong tree length")
   })
+
+  it("Parses horizontal rules when setext headers are disabled", () => {
+    let tree = parser.configure({remove: ["SetextHeading"]}).parse(`abc\n---`)
+    if (tree.toString() != "Document(Paragraph,HorizontalRule)")
+      throw new Error("Unexpected tree: " + tree)
+  })
 })
