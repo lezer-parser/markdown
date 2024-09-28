@@ -1,15 +1,12 @@
+import ist from 'ist';
 import {parser} from "../dist/index.js"
-import {compareTree} from "./compare-tree.js"
-import {SpecParser} from "./spec.js"
+import {formatNode} from "./format-node.js"
 
-const specParser = new SpecParser(parser)
-
-function test(name: string, spec: string) {
-  it(name, () => {
-    let {tree, doc} = specParser.parse(spec, name)
-    compareTree(parser.parse(doc), tree)
-  })
+function parse(spec: string) {
+  return formatNode(spec, parser.parse(spec).topNode, 0);
 }
+
+const r = String.raw;
 
 // These are the tests from revision 0.29 of the CommonMark spec,
 // mechanically translated to the format used here (because their
@@ -19,3541 +16,8793 @@ function test(name: string, spec: string) {
 // the test.
 
 describe("CommonMark spec", () => {
-  test("Tabs (example 1)", `
-	{CB:{cT:foo	baz		bim}}
-`)
-
-  test("Tabs (example 2)", `
-  	{CB:{cT:foo	baz		bim}}
-`)
-
-  test("Tabs (example 3)", `
-    {CB:{cT:a	a
-}    {cT:ὐ	a}}
-`)
-
-  test("Tabs (example 4)", `
-{BL:{LI:  {l:-} {P:foo}
-
-	{P:bar}}}
-`)
-
-  test("Tabs (example 5)", `
-{BL:{LI:{l:-} {P:foo}
-
-		{CB:{cT:bar}}}}
-`)
-
-  test("Tabs (example 6)", `
-{Q:{q:>}		{CB:{cT:foo}}}
-`)
-
-  test("Tabs (example 7)", `
-{BL:{LI:{l:-}		{CB:{cT:foo}}}}
-`)
-
-  test("Tabs (example 8)", `
-    {CB:{cT:foo
-}	{cT:bar}}
-`)
-
-  test("Tabs (example 9)", `
-{BL:{LI: {l:-} {P:foo}
-   {BL:{LI:{l:-} {P:bar}
-	 {BL:{LI:{l:-} {P:baz}}}}}}}
-`)
-
-  test("Tabs (example 10)", `
-{P:#	Foo}
-`)
-
-  test("Tabs (example 11)", `
-{HR:*	*	*	}
-`)
-
-  test("Precedence (example 12)", `
-{BL:{LI:{l:-} {P:\`one}}
-{LI:{l:-} {P:two\`}}}
-`)
-
-  test("Thematic breaks (example 13)", `
-{HR:***}
-{HR:---}
-{HR:___}
-`)
-
-  test("Thematic breaks (example 14)", `
-{P:+++}
-`)
-
-  test("Thematic breaks (example 15)", `
-{P:===}
-`)
-
-  test("Thematic breaks (example 16)", `
-{P:--
-**
-__}
-`)
-
-  test("Thematic breaks (example 17)", `
- {HR:***}
-  {HR:***}
-   {HR:***}
-`)
-
-  test("Thematic breaks (example 18)", `
-    {CB:{cT:***}}
-`)
-
-  test("Thematic breaks (example 19)", `
-{P:Foo
-    ***}
-`)
-
-  test("Thematic breaks (example 20)", `
-{HR:_____________________________________}
-`)
-
-  test("Thematic breaks (example 21)", `
- {HR:- - -}
-`)
-
-  test("Thematic breaks (example 22)", `
- {HR:**  * ** * ** * **}
-`)
-
-  test("Thematic breaks (example 23)", `
-{HR:-     -      -      -}
-`)
-
-  test("Thematic breaks (example 24)", `
-{HR:- - - -    }
-`)
-
-  test("Thematic breaks (example 25)", `
-{P:_ _ _ _ a}
-
-{P:a------}
-
-{P:---a---}
-`)
-
-  test("Thematic breaks (example 26)", `
- {P:{Em:{e:*}-{e:*}}}
-`)
-
-  test("Thematic breaks (example 27)", `
-{BL:{LI:{l:-} {P:foo}}}
-{HR:***}
-{BL:{LI:{l:-} {P:bar}}}
-`)
-
-  test("Thematic breaks (example 28)", `
-{P:Foo}
-{HR:***}
-{P:bar}
-`)
-
-  test("Thematic breaks (example 29)", `
-{SH2:Foo
-{h:---}}
-{P:bar}
-`)
-
-  test("Thematic breaks (example 30)", `
-{BL:{LI:{l:*} {P:Foo}}}
-{HR:* * *}
-{BL:{LI:{l:*} {P:Bar}}}
-`)
-
-  test("Thematic breaks (example 31)", `
-{BL:{LI:{l:-} {P:Foo}}
-{LI:{l:-} {HR:* * *}}}
-`)
-
-  test("ATX headings (example 32)", `
-{H1:{h:#} foo}
-{H2:{h:##} foo}
-{H3:{h:###} foo}
-{H4:{h:####} foo}
-{H5:{h:#####} foo}
-{H6:{h:######} foo}
-`)
-
-  test("ATX headings (example 33)", `
-{P:####### foo}
-`)
-
-  test("ATX headings (example 34)", `
-{P:#5 bolt}
-
-{P:#hashtag}
-`)
-
-  test("ATX headings (example 35)", `
-{P:{Esc:\\#}# foo}
-`)
-
-  test("ATX headings (example 36)", `
-{H1:{h:#} foo {Em:{e:*}bar{e:*}} {Esc:\\*}baz{Esc:\\*}}
-`)
-
-  test("ATX headings (example 37)", `
-{H1:{h:#}                  foo                     }
-`)
-
-  test("ATX headings (example 38)", `
- {H3:{h:###} foo}
-  {H2:{h:##} foo}
-   {H1:{h:#} foo}
-`)
-
-  test("ATX headings (example 39)", `
-    {CB:{cT:# foo}}
-`)
-
-  test("ATX headings (example 40)", `
-{P:foo
-    # bar}
-`)
-
-  test("ATX headings (example 41)", `
-{H2:{h:##} foo {h:##}}
-  {H3:{h:###}   bar    {h:###}}
-`)
-
-  test("ATX headings (example 42)", `
-{H1:{h:#} foo {h:##################################}}
-{H5:{h:#####} foo {h:##}}
-`)
-
-  test("ATX headings (example 43)", `
-{H3:{h:###} foo {h:###}     }
-`)
-
-  test("ATX headings (example 44)", `
-{H3:{h:###} foo ### b}
-`)
-
-  test("ATX headings (example 45)", `
-{H1:{h:#} foo#}
-`)
-
-  test("ATX headings (example 46)", `
-{H3:{h:###} foo {Esc:\\#}##}
-{H2:{h:##} foo #{Esc:\\#}#}
-{H1:{h:#} foo {Esc:\\#}}
-`)
-
-  test("ATX headings (example 47)", `
-{HR:****}
-{H2:{h:##} foo}
-{HR:****}
-`)
-
-  test("ATX headings (example 48)", `
-{P:Foo bar}
-{H1:{h:#} baz}
-{P:Bar foo}
-`)
-
-  test("ATX headings (example 49)", `
-{H2:{h:##} }
-{H1:{h:#}}
-{H3:{h:###} {h:###}}
-`)
-
-  test("Setext headings (example 50)", `
-{SH1:Foo {Em:{e:*}bar{e:*}}
-{h:=========}}
-
-{SH2:Foo {Em:{e:*}bar{e:*}}
-{h:---------}}
-`)
-
-  test("Setext headings (example 51)", `
-{SH1:Foo {Em:{e:*}bar
-baz{e:*}}
-{h:====}}
-`)
-
-  test("Setext headings (example 52)", `
-  {SH1:Foo {Em:{e:*}bar
-baz{e:*}}	
-{h:====}}
-`)
-
-  test("Setext headings (example 53)", `
-{SH2:Foo
-{h:-------------------------}}
-
-{SH1:Foo
-{h:=}}
-`)
-
-  test("Setext headings (example 54)", `
-   {SH2:Foo
-{h:---}}
-
-  {SH2:Foo
-{h:-----}}
-
-  {SH1:Foo
-  {h:===}}
-`)
-
-  test("Setext headings (example 55)", `
-    {CB:{cT:Foo
-}    {cT:---
-
-}    {cT:Foo}}
-{HR:---}
-`)
-
-  test("Setext headings (example 56)", `
-{SH2:Foo
-   {h:----}      }
-`)
-
-  test("Setext headings (example 57)", `
-{P:Foo
-    ---}
-`)
-
-  test("Setext headings (example 58)", `
-{P:Foo
-= =}
-
-{P:Foo}
-{HR:--- -}
-`)
-
-  test("Setext headings (example 59)", `
-{SH2:Foo  
-{h:-----}}
-`)
-
-  test("Setext headings (example 60)", `
-{SH2:Foo\\
-{h:----}}
-`)
-
-  test("Setext headings (example 61)", `
-{SH2:\`Foo
-{h:----}}
-{P:\`}
-
-{SH2:<a title="a lot
-{h:---}}
-{P:of dashes"/>}
-`)
-
-  test("Setext headings (example 62)", `
-{Q:{q:>} {P:Foo}}
-{HR:---}
-`)
-
-  test("Setext headings (example 63)", `
-{Q:{q:>} {P:foo
-bar
-===}}
-`)
-
-  test("Setext headings (example 64)", `
-{BL:{LI:{l:-} {P:Foo}}}
-{HR:---}
-`)
-
-  test("Setext headings (example 65)", `
-{SH2:Foo
-Bar
-{h:---}}
-`)
-
-  test("Setext headings (example 66)", `
-{HR:---}
-{SH2:Foo
-{h:---}}
-{SH2:Bar
-{h:---}}
-{P:Baz}
-`)
-
-  test("Setext headings (example 67)", `
-
-{P:====}
-`)
-
-  test("Setext headings (example 68)", `
-{HR:---}
-{HR:---}
-`)
-
-  test("Setext headings (example 69)", `
-{BL:{LI:{l:-} {P:foo}}}
-{HR:-----}
-`)
-
-  test("Setext headings (example 70)", `
-    {CB:{cT:foo}}
-{HR:---}
-`)
-
-  test("Setext headings (example 71)", `
-{Q:{q:>} {P:foo}}
-{HR:-----}
-`)
-
-  test("Setext headings (example 72)", `
-{SH2:{Esc:\\>} foo
-{h:------}}
-`)
-
-  test("Setext headings (example 73)", `
-{P:Foo}
-
-{SH2:bar
-{h:---}}
-{P:baz}
-`)
-
-  test("Setext headings (example 74)", `
-{P:Foo
-bar}
-
-{HR:---}
-
-{P:baz}
-`)
-
-  test("Setext headings (example 75)", `
-{P:Foo
-bar}
-{HR:* * *}
-{P:baz}
-`)
-
-  test("Setext headings (example 76)", `
-{P:Foo
-bar
-{Esc:\\-}--
-baz}
-`)
-
-  test("Indented code blocks (example 77)", `
-    {CB:{cT:a simple
-}    {cT:  indented code block}}
-`)
-
-  test("Indented code blocks (example 78)", `
-{BL:{LI:  {l:-} {P:foo}
-
-    {P:bar}}}
-`)
-
-  test("Indented code blocks (example 79)", `
-{OL:{LI:{l:1.}  {P:foo}
-
-    {BL:{LI:{l:-} {P:bar}}}}}
-`)
-
-  test("Indented code blocks (example 80)", `
-    {CB:{cT:<a/>
-}    {cT:*hi*
-
-}    {cT:- one}}
-`)
-
-  test("Indented code blocks (example 81)", `
-    {CB:{cT:chunk1
-
-}    {cT:chunk2
-}  {cT:
-} {cT:
-} {cT:
-}    {cT:chunk3}}
-`)
-
-  test("Indented code blocks (example 82)", `
-    {CB:{cT:chunk1
-}      {cT:
-}    {cT:  chunk2}}
-`)
-
-  test("Indented code blocks (example 83)", `
-{P:Foo
-    bar}
-
-`)
-
-  test("Indented code blocks (example 84)", `
-    {CB:{cT:foo}}
-{P:bar}
-`)
-
-  test("Indented code blocks (example 85)", `
-{H1:{h:#} Heading}
-    {CB:{cT:foo}}
-{SH2:Heading
-{h:------}}
-    {CB:{cT:foo}}
-{HR:----}
-`)
-
-  test("Indented code blocks (example 86)", `
-    {CB:{cT:    foo
-}    {cT:bar}}
-`)
-
-  test("Indented code blocks (example 87)", `
-    
-    {CB:{cT:foo}}
-    
-`)
-
-  test("Indented code blocks (example 88)", `
-    {CB:{cT:foo  }}
-`)
-
-  test("Fenced code blocks (example 89)", `
-{FC:{c:\`\`\`}
-{cT:<
- >}
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 90)", `
-{FC:{c:~~~}
-{cT:<
- >}
-{c:~~~}}
-`)
-
-  test("Fenced code blocks (example 91)", `
-{P:{C:{c:\`\`}
-foo
-{c:\`\`}}}
-`)
-
-  test("Fenced code blocks (example 92)", `
-{FC:{c:\`\`\`}
-{cT:aaa
-~~~}
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 93)", `
-{FC:{c:~~~}
-{cT:aaa
-\`\`\`}
-{c:~~~}}
-`)
-
-  test("Fenced code blocks (example 94)", `
-{FC:{c:\`\`\`\`}
-{cT:aaa
-\`\`\`}
-{c:\`\`\`\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 95)", `
-{FC:{c:~~~~}
-{cT:aaa
-~~~}
-{c:~~~~}}
-`)
-
-  test("Fenced code blocks (example 96)", `
-{FC:{c:\`\`\`}
-}`)
-
-  test("Fenced code blocks (example 97)", `
-{FC:{c:\`\`\`\`\`}
-{cT:
-\`\`\`
-aaa
-}}`)
-
-  test("Fenced code blocks (example 98)", `
-{Q:{q:>} {FC:{c:\`\`\`}
-{q:>} {cT:aaa}}}
-
-{P:bbb}
-`)
-
-  test("Fenced code blocks (example 99)", `
-{FC:{c:\`\`\`}
-{cT:
+  it("Tabs (example 1)", () => {
+    ist(parse("\tfoo\tbaz\t\tbim\n"), r`Document {
+  CodeBlock {
+    CodeText("foo\tbaz\t\tbim")
   }
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 100)", `
-{FC:{c:\`\`\`}
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 101)", `
- {FC:{c:\`\`\`}
-{cT: aaa
-aaa}
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 102)", `
-  {FC:{c:\`\`\`}
-{cT:aaa
-  aaa
-aaa}
-  {c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 103)", `
-   {FC:{c:\`\`\`}
-{cT:   aaa
-    aaa
-  aaa}
-   {c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 104)", `
-    {CB:{cT:\`\`\`
-}    {cT:aaa
-}    {cT:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 105)", `
-{FC:{c:\`\`\`}
-{cT:aaa}
-  {c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 106)", `
-   {FC:{c:\`\`\`}
-{cT:aaa}
-  {c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 107)", `
-{FC:{c:\`\`\`}
-{cT:aaa
-    \`\`\`
-}}`)
-
-  test("Fenced code blocks (example 108)", `
-{P:{C:{c:\`\`\`} {c:\`\`\`}}
-aaa}
-`)
-
-  test("Fenced code blocks (example 109)", `
-{FC:{c:~~~~~~}
-{cT:aaa
-~~~ ~~
-}}`)
-
-  test("Fenced code blocks (example 110)", `
-{P:foo}
-{FC:{c:\`\`\`}
-{cT:bar}
-{c:\`\`\`}}
-{P:baz}
-`)
-
-  test("Fenced code blocks (example 111)", `
-{SH2:foo
-{h:---}}
-{FC:{c:~~~}
-{cT:bar}
-{c:~~~}}
-{H1:{h:#} baz}
-`)
-
-  test("Fenced code blocks (example 112)", `
-{FC:{c:\`\`\`}{cI:ruby}
-{cT:def foo(x)
-  return 3
-end}
-{c:\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 113)", `
-{FC:{c:~~~~}    {cI:ruby startline=3 $%@#$}
-{cT:def foo(x)
-  return 3
-end}
-{c:~~~~~~~}}
-`)
-
-  test("Fenced code blocks (example 114)", `
-{FC:{c:\`\`\`\`}{cI:;}
-{c:\`\`\`\`}}
-`)
-
-  test("Fenced code blocks (example 115)", `
-{P:{C:{c:\`\`\`} aa {c:\`\`\`}}
-foo}
-`)
-
-  test("Fenced code blocks (example 116)", `
-{FC:{c:~~~} {cI:aa \`\`\` ~~~}
-{cT:foo}
-{c:~~~}}
-`)
-
-  test("Fenced code blocks (example 117)", `
-{FC:{c:\`\`\`}
-{cT:\`\`\` aaa}
-{c:\`\`\`}}
-`)
-
-  test("HTML blocks (example 118)", `
-{HB:<table><tr><td>
-<pre>
-**Hello**,}
-
-{P:{Em:{e:_}world{e:_}}.
-{HT:</pre>}}
-{HB:</td></tr></table>}
-`)
-
-  test("HTML blocks (example 119)", `
-{HB:<table>
-  <tr>
-    <td>
-           hi
-    </td>
-  </tr>
-</table>}
-
-{P:okay.}
-`)
-
-  test("HTML blocks (example 120)", `
- {HB:<div>
-  *hello*
-         <foo><a>}
-`)
-
-  test("HTML blocks (example 121)", `
-{HB:</div>
-*foo*}
-`)
-
-  test("HTML blocks (example 122)", `
-{HB:<DIV CLASS="foo">}
-
-{P:{Em:{e:*}Markdown{e:*}}}
-
-{HB:</DIV>}
-`)
-
-  test("HTML blocks (example 123)", `
-{HB:<div id="foo"
-  class="bar">
-</div>}
-`)
-
-  test("HTML blocks (example 124)", `
-{HB:<div id="foo" class="bar
-  baz">
-</div>}
-`)
-
-  test("HTML blocks (example 125)", `
-{HB:<div>
-*foo*}
-
-{P:{Em:{e:*}bar{e:*}}}
-`)
-
-  test("HTML blocks (example 126)", `
-{HB:<div id="foo"
-*hi*}
-`)
-
-  test("HTML blocks (example 127)", `
-{HB:<div class
-foo}
-`)
-
-  test("HTML blocks (example 128)", `
-{HB:<div *???-&&&-<---
-*foo*}
-`)
-
-  test("HTML blocks (example 129)", `
-{HB:<div><a href="bar">*foo*</a></div>}
-`)
-
-  test("HTML blocks (example 130)", `
-{HB:<table><tr><td>
-foo
-</td></tr></table>}
-`)
-
-  test("HTML blocks (example 131)", `
-{HB:<div></div>
-\`\`\` c
-int x = 33;
-x\`\`\`}
-`)
-
-  test("HTML blocks (example 132)", `
-{HB:<a href="foo">
-*bar*
-</a>}
-`)
-
-  test("HTML blocks (example 133)", `
-{HB:<Warning>
-*bar*
-</Warning>}
-`)
-
-  test("HTML blocks (example 134)", `
-{HB:<i class="foo">
-*bar*
-</i>}
-`)
-
-  test("HTML blocks (example 135)", `
-{HB:</ins>
-*bar*}
-`)
-
-  test("HTML blocks (example 136)", `
-{HB:<del>
-*foo*
-</del>}
-`)
-
-  test("HTML blocks (example 137)", `
-{HB:<del>}
-
-{P:{Em:{e:*}foo{e:*}}}
-
-{HB:</del>}
-`)
-
-  test("HTML blocks (example 138)", `
-{P:{HT:<del>}{Em:{e:*}foo{e:*}}{HT:</del>}}
-`)
-
-  test("HTML blocks (example 139)", `
-{HB:<pre language="haskell"><code>
-import Text.HTML.TagSoup
-
-main :: IO ()
-main = print $ parseTags tags
-</code></pre>}
-{P:okay}
-`)
-
-  test("HTML blocks (example 140)", `
-{HB:<script type="text/javascript">
-// JavaScript example
-
-document.getElementById("demo").innerHTML = "Hello JavaScript!";
-</script>}
-{P:okay}
-`)
-
-  test("HTML blocks (example 141)", `
-{HB:<style
-  type="text/css">
-h1 [color:red;]
-
-p [color:blue;]
-</style>}
-{P:okay}
-`)
-
-  test("HTML blocks (example 142)", `
-{HB:<style
-  type="text/css">
-
-foo
-}`)
-
-  test("HTML blocks (example 143)", `
-{Q:{q:>} {HB:<div>
-{q:>} foo}}
-
-{P:bar}
-`)
-
-  test("HTML blocks (example 144)", `
-{BL:{LI:{l:-} {HB:<div>}}
-{LI:{l:-} {P:foo}}}
-`)
-
-  test("HTML blocks (example 145)", `
-{HB:<style>p[color:red;]</style>}
-{P:{Em:{e:*}foo{e:*}}}
-`)
-
-  test("HTML blocks (example 146)", `
-{CMB:<!-- foo -->*bar*}
-{P:{Em:{e:*}baz{e:*}}}
-`)
-
-  test("HTML blocks (example 147)", `
-{HB:<script>
-foo
-</script>1. *bar*}
-`)
-
-  test("HTML blocks (example 148)", `
-{CMB:<!-- Foo
-
-bar
-   baz -->}
-{P:okay}
-`)
-
-  test("HTML blocks (example 149)", `
-{PI:<?php
-
-  echo '>';
-
-?>}
-{P:okay}
-`)
-
-  test("HTML blocks (example 150)", `
-{HB:<!DOCTYPE html>}
-`)
-
-  test("HTML blocks (example 151)", `
-{HB:<![CDATA[
-function matchwo(a,b)
-[
-  if (a < b && a < 0) then [
-    return 1;
-
-  ] else [
-
-    return 0;
-  ]
-]
-]]>}
-{P:okay}
-`)
-
-  test("HTML blocks (example 152)", `
-  {CMB:<!-- foo -->}
-
-    {CB:{cT:<!-- foo -->}}
-`)
-
-  test("HTML blocks (example 153)", `
-  {HB:<div>}
-
-    {CB:{cT:<div>}}
-`)
-
-  test("HTML blocks (example 154)", `
-{P:Foo}
-{HB:<div>
-bar
-</div>}
-`)
-
-  test("HTML blocks (example 155)", `
-{HB:<div>
-bar
-</div>
-*foo*}
-`)
-
-  test("HTML blocks (example 156)", `
-{P:Foo
-{HT:<a href="bar">}
-baz}
-`)
-
-  test("HTML blocks (example 157)", `
-{HB:<div>}
-
-{P:{Em:{e:*}Emphasized{e:*}} text.}
-
-{HB:</div>}
-`)
-
-  test("HTML blocks (example 158)", `
-{HB:<div>
-*Emphasized* text.
-</div>}
-`)
-
-  test("HTML blocks (example 159)", `
-{HB:<table>}
-
-{HB:<tr>}
-
-{HB:<td>
-Hi
-</td>}
-
-{HB:</tr>}
-
-{HB:</table>}
-`)
-
-  test("HTML blocks (example 160)", `
-{HB:<table>}
-
-  {HB:<tr>}
-
-    {CB:{cT:<td>
-}    {cT:  Hi
-}    {cT:</td>}}
-
-  {HB:</tr>}
-
-{HB:</table>}
-`)
-
-  test("Link reference definitions (example 161)", `
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 162)", `
-   {LR:{LL:[foo]}{L::} 
-      {URL:/url}  
-           {LT:'the title'}  }
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 163)", `
-{LR:{LL:[Foo*bar\\]]}{L::}{URL:my_(url)} {LT:'title (with parens)'}}
-
-{P:{Ln:{L:[}Foo*bar{Esc:\\]}{L:]}}}
-`)
-
-  test("Link reference definitions (example 164)", `
-{LR:{LL:[Foo bar]}{L::}
-{URL:<my url>}
-{LT:'title'}}
-
-{P:{Ln:{L:[}Foo bar{L:]}}}
-`)
-
-  test("Link reference definitions (example 165)", `
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:'
-title
-line1
-line2
-'}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 166)", `
-{P:{Ln:{L:[}foo{L:]}}: /url 'title}
-
-{P:with blank line'}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 167)", `
-{LR:{LL:[foo]}{L::}
-{URL:/url}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 168)", `
-{P:{Ln:{L:[}foo{L:]}}:}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 169)", `
-{LR:{LL:[foo]}{L::} {URL:<>}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 170)", `
-{P:{Ln:{L:[}foo{L:]}}: {HT:<bar>}(baz)}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 171)", `
-{LR:{LL:[foo]}{L::} {URL:/url\`bar\`*baz} {LT:"foo\\"bar\\baz"}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 172)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:url}}
-`)
-
-  test("Link reference definitions (example 173)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:first}}
-{LR:{LL:[foo]}{L::} {URL:second}}
-`)
-
-  test("Link reference definitions (example 174)", `
-{LR:{LL:[FOO]}{L::} {URL:/url}}
-
-{P:{Ln:{L:[}Foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 175)", `
-{LR:{LL:[ΑΓΩ]}{L::} {URL:/φου}}
-
-{P:{Ln:{L:[}αγω{L:]}}}
-`)
-
-  test("Link reference definitions (example 176)", `
-{LR:{LL:[foo]}{L::} {URL:/url}}
-`)
-
-  test("Link reference definitions (example 177)", `
-{LR:{LL:[
-foo
-]}{L::} {URL:/url}}
-{P:bar}
-`)
-
-  test("Link reference definitions (example 178)", `
-{P:{Ln:{L:[}foo{L:]}}: /url "title" ok}
-`)
-
-  test("Link reference definitions (example 179)", `
-{LR:{LL:[foo]}{L::} {URL:/url}}
-{P:"title" ok}
-`)
-
-  test("Link reference definitions (example 180)", `
-    {CB:{cT:[foo]: /url "title"}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 181)", `
-{FC:{c:\`\`\`}
-{cT:[foo]: /url}
-{c:\`\`\`}}
-
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 182)", `
-{P:Foo
-{Ln:{L:[}bar{L:]}}: /baz}
-
-{P:{Ln:{L:[}bar{L:]}}}
-`)
-
-  test("Link reference definitions (example 183)", `
-{H1:{h:#} {Ln:{L:[}Foo{L:]}}}
-{LR:{LL:[foo]}{L::} {URL:/url}}
-{Q:{q:>} {P:bar}}
-`)
-
-  test("Link reference definitions (example 184)", `
-{LR:{LL:[foo]}{L::} {URL:/url}}
-{SH1:bar
-{h:===}}
-{P:{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 185)", `
-{LR:{LL:[foo]}{L::} {URL:/url}}
-{P:===
-{Ln:{L:[}foo{L:]}}}
-`)
-
-  test("Link reference definitions (example 186)", `
-{LR:{LL:[foo]}{L::} {URL:/foo-url} {LT:"foo"}}
-{LR:{LL:[bar]}{L::} {URL:/bar-url}
-  {LT:"bar"}}
-{LR:{LL:[baz]}{L::} {URL:/baz-url}}
-
-{P:{Ln:{L:[}foo{L:]}},
-{Ln:{L:[}bar{L:]}},
-{Ln:{L:[}baz{L:]}}}
-`)
-
-  test("Link reference definitions (example 187)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{Q:{q:>} {LR:{LL:[foo]}{L::} {URL:/url}}}
-`)
-
-  test("Link reference definitions (example 188)", `
-{LR:{LL:[foo]}{L::} {URL:/url}}
-`)
-
-  test("Paragraphs (example 189)", `
-{P:aaa}
-
-{P:bbb}
-`)
-
-  test("Paragraphs (example 190)", `
-{P:aaa
-bbb}
-
-{P:ccc
-ddd}
-`)
-
-  test("Paragraphs (example 191)", `
-{P:aaa}
-
-
-{P:bbb}
-`)
-
-  test("Paragraphs (example 192)", `
-  {P:aaa
- bbb}
-`)
-
-  test("Paragraphs (example 193)", `
-{P:aaa
-             bbb
-                                       ccc}
-`)
-
-  test("Paragraphs (example 194)", `
-   {P:aaa
-bbb}
-`)
-
-  test("Paragraphs (example 195)", `
-    {CB:{cT:aaa}}
-{P:bbb}
-`)
-
-  test("Paragraphs (example 196)", `
-{P:aaa{BR:     
-}bbb     }
-`)
-
-  test("Blank lines (example 197)", `
-  
-
-{P:aaa}
-  
-
-{H1:{h:#} aaa}
-
-  
-`)
-
-  test("Block quotes (example 198)", `
-{Q:{q:>} {H1:{h:#} Foo}
-{q:>} {P:bar
-{q:>} baz}}
-`)
-
-  test("Block quotes (example 199)", `
-{Q:{q:>}{H1:{h:#} Foo}
-{q:>}{P:bar
-{q:>} baz}}
-`)
-
-  test("Block quotes (example 200)", `
-   {Q:{q:>} {H1:{h:#} Foo}
-   {q:>} {P:bar
- {q:>} baz}}
-`)
-
-  test("Block quotes (example 201)", `
-    {CB:{cT:> # Foo
-}    {cT:> bar
-}    {cT:> baz}}
-`)
-
-  test("Block quotes (example 202)", `
-{Q:{q:>} {H1:{h:#} Foo}
-{q:>} {P:bar
-baz}}
-`)
-
-  test("Block quotes (example 203)", `
-{Q:{q:>} {P:bar
-baz
-{q:>} foo}}
-`)
-
-  test("Block quotes (example 204)", `
-{Q:{q:>} {P:foo}}
-{HR:---}
-`)
-
-  test("Block quotes (example 205)", `
-{Q:{q:>} {BL:{LI:{l:-} {P:foo}}}}
-{BL:{LI:{l:-} {P:bar}}}
-`)
-
-  test("Block quotes (example 206)", `
-{Q:{q:>}     {CB:{cT:foo}}}
-    {CB:{cT:bar}}
-`)
-
-  test("Block quotes (example 207)", `
-{Q:{q:>} {FC:{c:\`\`\`}}}
-{P:foo}
-{FC:{c:\`\`\`}
-}`)
-
-  test("Block quotes (example 208)", `
-{Q:{q:>} {P:foo
-    - bar}}
-`)
-
-  test("Block quotes (example 209)", `
-{Q:{q:>}{P:}}
-`)
-
-  test("Block quotes (example 210)", `
-{Q:{q:>}{P:}
-{q:>}  
-{q:>} }
-`)
-
-  test("Block quotes (example 211)", `
-{Q:{q:>}{P:
-{q:>} foo}
-{q:>}  }
-`)
-
-  test("Block quotes (example 212)", `
-{Q:{q:>} {P:foo}}
-
-{Q:{q:>} {P:bar}}
-`)
-
-  test("Block quotes (example 213)", `
-{Q:{q:>} {P:foo
-{q:>} bar}}
-`)
-
-  test("Block quotes (example 214)", `
-{Q:{q:>} {P:foo}
-{q:>}
-{q:>} {P:bar}}
-`)
-
-  test("Block quotes (example 215)", `
-{P:foo}
-{Q:{q:>} {P:bar}}
-`)
-
-  test("Block quotes (example 216)", `
-{Q:{q:>} {P:aaa}}
-{HR:***}
-{Q:{q:>} {P:bbb}}
-`)
-
-  test("Block quotes (example 217)", `
-{Q:{q:>} {P:bar
-baz}}
-`)
-
-  test("Block quotes (example 218)", `
-{Q:{q:>} {P:bar}}
-
-{P:baz}
-`)
-
-  test("Block quotes (example 219)", `
-{Q:{q:>} {P:bar}
-{q:>}}
-{P:baz}
-`)
-
-  test("Block quotes (example 220)", `
-{Q:{q:>} {Q:{q:>} {Q:{q:>} {P:foo
-bar}}}}
-`)
-
-  test("Block quotes (example 221)", `
-{Q:{q:>}{Q:{q:>}{Q:{q:>} {P:foo
-{q:>} bar
-{q:>}{q:>}baz}}}}
-`)
-
-  test("Block quotes (example 222)", `
-{Q:{q:>}     {CB:{cT:code}}}
-
-{Q:{q:>}    {P:not code}}
-`)
-
-  test("List items (example 223)", `
-{P:A paragraph
-with two lines.}
-
-    {CB:{cT:indented code}}
-
-{Q:{q:>} {P:A block quote.}}
-`)
-
-  test("List items (example 224)", `
-{OL:{LI:{l:1.}  {P:A paragraph
-    with two lines.}
-
-        {CB:{cT:indented code}}
-
-    {Q:{q:>} {P:A block quote.}}}}
-`)
-
-  test("List items (example 225)", `
-{BL:{LI:{l:-} {P:one}}}
-
- {P:two}
-`)
-
-  test("List items (example 226)", `
-{BL:{LI:{l:-} {P:one}
-
-  {P:two}}}
-`)
-
-  test("List items (example 227)", `
-{BL:{LI: {l:-}    {P:one}}}
-
-    {CB:{cT: two}}
-`)
-
-  test("List items (example 228)", `
-{BL:{LI: {l:-}    {P:one}
-
-      {P:two}}}
-`)
-
-  test("List items (example 229)", `
-   {Q:{q:>} {Q:{q:>} {OL:{LI:{l:1.}  {P:one}
-{q:>}{q:>}
-{q:>}{q:>}     {P:two}}}}}
-`)
-
-  test("List items (example 230)", `
-{Q:{q:>}{Q:{q:>}{BL:{LI:{l:-} {P:one}
-{q:>}{q:>}}}
-  {q:>}  {q:>} {P:two}}}
-`)
-
-  test("List items (example 231)", `
-{P:-one}
-
-{P:2.two}
-`)
-
-  test("List items (example 232)", `
-{BL:{LI:{l:-} {P:foo}
-
-
-  {P:bar}}}
-`)
-
-  test("List items (example 233)", `
-{OL:{LI:{l:1.}  {P:foo}
-
-    {FC:{c:\`\`\`}
-    {cT:bar}
-    {c:\`\`\`}}
-
-    {P:baz}
-
-    {Q:{q:>} {P:bam}}}}
-`)
-
-  test("List items (example 234)", `
-{BL:{LI:{l:-} {P:Foo}
-
-      {CB:{cT:bar
-
-
-}      {cT:baz}}}}
-`)
-
-  test("List items (example 235)", `
-{OL:{LI:{l:123456789.} {P:ok}}}
-`)
-
-  test("List items (example 236)", `
-{P:1234567890. not ok}
-`)
-
-  test("List items (example 237)", `
-{OL:{LI:{l:0.} {P:ok}}}
-`)
-
-  test("List items (example 238)", `
-{OL:{LI:{l:003.} {P:ok}}}
-`)
-
-  test("List items (example 239)", `
-{P:-1. not ok}
-`)
-
-  test("List items (example 240)", `
-{BL:{LI:{l:-} {P:foo}
-
-      {CB:{cT:bar}}}}
-`)
-
-  test("List items (example 241)", `
-{OL:{LI:  {l:10.}  {P:foo}
-
-           {CB:{cT:bar}}}}
-`)
-
-  test("List items (example 242)", `
-    {CB:{cT:indented code}}
-
-{P:paragraph}
-
-    {CB:{cT:more code}}
-`)
-
-  test("List items (example 243)", `
-{OL:{LI:{l:1.}     {CB:{cT:indented code}}
-
-   {P:paragraph}
-
-       {CB:{cT:more code}}}}
-`)
-
-  test("List items (example 244)", `
-{OL:{LI:{l:1.}     {CB:{cT: indented code}}
-
-   {P:paragraph}
-
-       {CB:{cT:more code}}}}
-`)
-
-  test("List items (example 245)", `
-   {P:foo}
-
-{P:bar}
-`)
-
-  test("List items (example 246)", `
-{BL:{LI:{l:-}    {P:foo}}}
-
-  {P:bar}
-`)
-
-  test("List items (example 247)", `
-{BL:{LI:{l:-}  {P:foo}
-
-   {P:bar}}}
-`)
-
-  test("List items (example 248)", `
-{BL:{LI:{l:-}{P:
-  foo}}
-{LI:{l:-}{P:}
-  {FC:{c:\`\`\`}
- {cT: bar}
-  {c:\`\`\`}}}
-{LI:{l:-}{P:
-      baz}}}
-`)
-
-  test("List items (example 249)", `
-{BL:{LI:{l:-}   {P:
-  foo}}}
-`)
-
-  test("List items (example 250)", `
-{BL:{LI:{l:-}{P:}
-
-  {P:foo}}}
-`)
-
-  test("List items (example 251)", `
-{BL:{LI:{l:-} {P:foo}}
-{LI:{l:-}{P:}}
-{LI:{l:-} {P:bar}}}
-`)
-
-  test("List items (example 252)", `
-{BL:{LI:{l:-} {P:foo}}
-{LI:{l:-}   {P:}}
-{LI:{l:-} {P:bar}}}
-`)
-
-  test("List items (example 253)", `
-{OL:{LI:{l:1.} {P:foo}}
-{LI:{l:2.}{P:}}
-{LI:{l:3.} {P:bar}}}
-`)
-
-  test("List items (example 254)", `
-{BL:{LI:{l:*}{P:}}}
-`)
-
-  test("List items (example 255)", `
-{P:foo
-*}
-
-{P:foo
-1.}
-`)
-
-  test("List items (example 256)", `
-{OL:{LI: {l:1.}  {P:A paragraph
-     with two lines.}
-
-         {CB:{cT:indented code}}
-
-     {Q:{q:>} {P:A block quote.}}}}
-`)
-
-  test("List items (example 257)", `
-{OL:{LI:  {l:1.}  {P:A paragraph
-      with two lines.}
-
-          {CB:{cT:indented code}}
-
-      {Q:{q:>} {P:A block quote.}}}}
-`)
-
-  test("List items (example 258)", `
-{OL:{LI:   {l:1.}  {P:A paragraph
-       with two lines.}
-
-           {CB:{cT:indented code}}
-
-       {Q:{q:>} {P:A block quote.}}}}
-`)
-
-  test("List items (example 259)", `
-    {CB:{cT:1.  A paragraph
-}    {cT:    with two lines.
-
-}    {cT:        indented code
-
-}    {cT:    > A block quote.}}
-`)
-
-  test("List items (example 260)", `
-{OL:{LI:  {l:1.}  {P:A paragraph
-with two lines.}
-
-          {CB:{cT:indented code}}
-
-      {Q:{q:>} {P:A block quote.}}}}
-`)
-
-  test("List items (example 261)", `
-{OL:{LI:  {l:1.}  {P:A paragraph
-    with two lines.}}}
-`)
-
-  test("List items (example 262)", `
-{Q:{q:>} {OL:{LI:{l:1.} {Q:{q:>} {P:Blockquote
-continued here.}}}}}
-`)
-
-  test("List items (example 263)", `
-{Q:{q:>} {OL:{LI:{l:1.} {Q:{q:>} {P:Blockquote
-{q:>} continued here.}}}}}
-`)
-
-  test("List items (example 264)", `
-{BL:{LI:{l:-} {P:foo}
-  {BL:{LI:{l:-} {P:bar}
-    {BL:{LI:{l:-} {P:baz}
-      {BL:{LI:{l:-} {P:boo}}}}}}}}}
-`)
-
-  test("List items (example 265)", `
-{BL:{LI:{l:-} {P:foo}}
-{LI: {l:-} {P:bar}}
-{LI:  {l:-} {P:baz}}
-{LI:   {l:-} {P:boo}}}
-`)
-
-  test("List items (example 266)", `
-{OL:{LI:{l:10)} {P:foo}
-    {BL:{LI:{l:-} {P:bar}}}}}
-`)
-
-  test("List items (example 267)", `
-{OL:{LI:{l:10)} {P:foo}}}
-{BL:{LI:   {l:-} {P:bar}}}
-`)
-
-  test("List items (example 268)", `
-{BL:{LI:{l:-} {BL:{LI:{l:-} {P:foo}}}}}
-`)
-
-  test("List items (example 269)", `
-{OL:{LI:{l:1.} {BL:{LI:{l:-} {OL:{LI:{l:2.} {P:foo}}}}}}}
-`)
-
-  test("List items (example 270)", `
-{BL:{LI:{l:-} {H1:{h:#} Foo}}
-{LI:{l:-} {SH2:Bar
-  {h:---}}
-  {P:baz}}}
-`)
-
-  test("Lists (example 271)", `
-{BL:{LI:{l:-} {P:foo}}
-{LI:{l:-} {P:bar}}}
-{BL:{LI:{l:+} {P:baz}}}
-`)
-
-  test("Lists (example 272)", `
-{OL:{LI:{l:1.} {P:foo}}
-{LI:{l:2.} {P:bar}}}
-{OL:{LI:{l:3)} {P:baz}}}
-`)
-
-  test("Lists (example 273)", `
-{P:Foo}
-{BL:{LI:{l:-} {P:bar}}
-{LI:{l:-} {P:baz}}}
-`)
-
-  test("Lists (example 274)", `
-{P:The number of windows in my house is
-14.  The number of doors is 6.}
-`)
-
-  test("Lists (example 275)", `
-{P:The number of windows in my house is}
-{OL:{LI:{l:1.}  {P:The number of doors is 6.}}}
-`)
-
-  test("Lists (example 276)", `
-{BL:{LI:{l:-} {P:foo}}
-
-{LI:{l:-} {P:bar}}
-
-
-{LI:{l:-} {P:baz}}}
-`)
-
-  test("Lists (example 277)", `
-{BL:{LI:{l:-} {P:foo}
-  {BL:{LI:{l:-} {P:bar}
-    {BL:{LI:{l:-} {P:baz}
-
-
-      {P:bim}}}}}}}
-`)
-
-  test("Lists (example 278)", `
-{BL:{LI:{l:-} {P:foo}}
-{LI:{l:-} {P:bar}}}
-
-{CMB:<!-- -->}
-
-{BL:{LI:{l:-} {P:baz}}
-{LI:{l:-} {P:bim}}}
-`)
-
-  test("Lists (example 279)", `
-{BL:{LI:{l:-}   {P:foo}
-
-    {P:notcode}}
-
-{LI:{l:-}   {P:foo}}}
-
-{CMB:<!-- -->}
-
-    {CB:{cT:code}}
-`)
-
-  test("Lists (example 280)", `
-{BL:{LI:{l:-} {P:a}}
-{LI: {l:-} {P:b}}
-{LI:  {l:-} {P:c}}
-{LI:   {l:-} {P:d}}
-{LI:  {l:-} {P:e}}
-{LI: {l:-} {P:f}}
-{LI:{l:-} {P:g}}}
-`)
-
-  test("Lists (example 281)", `
-{OL:{LI:{l:1.} {P:a}}
-
-{LI:  {l:2.} {P:b}}
-
-{LI:   {l:3.} {P:c}}}
-`)
-
-  test("Lists (example 282)", `
-{BL:{LI:{l:-} {P:a}}
-{LI: {l:-} {P:b}}
-{LI:  {l:-} {P:c}}
-{LI:   {l:-} {P:d
-    - e}}}
-`)
-
-  test("Lists (example 283)", `
-{OL:{LI:{l:1.} {P:a}}
-
-{LI:  {l:2.} {P:b}}}
-
-    {CB:{cT:3. c}}
-`)
-
-  test("Lists (example 284)", `
-{BL:{LI:{l:-} {P:a}}
-{LI:{l:-} {P:b}}
-
-{LI:{l:-} {P:c}}}
-`)
-
-  test("Lists (example 285)", `
-{BL:{LI:{l:*} {P:a}}
-{LI:{l:*}{P:}}
-
-{LI:{l:*} {P:c}}}
-`)
-
-  test("Lists (example 286)", `
-{BL:{LI:{l:-} {P:a}}
-{LI:{l:-} {P:b}
-
-  {P:c}}
-{LI:{l:-} {P:d}}}
-`)
-
-  test("Lists (example 287)", `
-{BL:{LI:{l:-} {P:a}}
-{LI:{l:-} {P:b}
-
-  {LR:{LL:[ref]}{L::} {URL:/url}}}
-{LI:{l:-} {P:d}}}
-`)
-
-  test("Lists (example 288)", `
-{BL:{LI:{l:-} {P:a}}
-{LI:{l:-} {FC:{c:\`\`\`}
-  {cT:b
-
 }
-  {c:\`\`\`}}}
-{LI:{l:-} {P:c}}}
 `)
+  });
+
+  it("Tabs (example 2)", () => {
+    ist(parse("  \tfoo\tbaz\t\tbim\n"), r`Document {
+  CodeBlock {
+    CodeText("foo\tbaz\t\tbim")
+  }
+}
+`)
+  });
+
+  it("Tabs (example 3)", () => {
+    ist(parse("    a\ta\n    ὐ\ta\n"), r`Document {
+  CodeBlock {
+    CodeText("a\ta\n")
+    CodeText("ὐ\ta")
+  }
+}
+`)
+  });
+
+  it("Tabs (example 4)", () => {
+    ist(parse("  - foo\n\n\tbar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 2-3)
+      Paragraph("foo")
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Tabs (example 5)", () => {
+    ist(parse("- foo\n\n\t\tbar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      CodeBlock {
+        CodeText("bar")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Tabs (example 6)", () => {
+    ist(parse(">\t\tfoo\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    CodeBlock {
+      CodeText("foo")
+    }
+  }
+}
+`)
+  });
+
+  it("Tabs (example 7)", () => {
+    ist(parse("-\t\tfoo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      CodeBlock {
+        CodeText("foo")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Tabs (example 8)", () => {
+    ist(parse("    foo\n\tbar\n"), r`Document {
+  CodeBlock {
+    CodeText("foo\n")
+    CodeText("bar")
+  }
+}
+`)
+  });
+
+  it("Tabs (example 9)", () => {
+    ist(parse(" - foo\n   - bar\n\t - baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 1-2)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("-", 10-11)
+          Paragraph("bar")
+          BulletList {
+            ListItem {
+              ListMark("-", 18-19)
+              Paragraph("baz")
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Tabs (example 10)", () => {
+    ist(parse("#\tFoo\n"), r`Document {
+  Paragraph("#\tFoo")
+}
+`)
+  });
+
+  it("Tabs (example 11)", () => {
+    ist(parse("*\t*\t*\t\n"), r`Document {
+  HorizontalRule("*\t*\t*\t")
+}
+`)
+  });
+
+  it("Precedence (example 12)", () => {
+    ist(parse("- `one\n- two`\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("‘one")
+    }
+    ListItem {
+      ListMark("-", 7-8)
+      Paragraph("two‘")
+    }
+  }
+}
+`)
+  });
+
+  it("Thematic breaks (example 13)", () => {
+    ist(parse("***\n---\n___\n"), r`Document {
+  HorizontalRule("***")
+  HorizontalRule("---")
+  HorizontalRule("___")
+}
+`)
+  });
+
+  it("Thematic breaks (example 14)", () => {
+    ist(parse("+++\n"), r`Document {
+  Paragraph("+++")
+}
+`)
+  });
+
+  it("Thematic breaks (example 15)", () => {
+    ist(parse("===\n"), r`Document {
+  Paragraph("===")
+}
+`)
+  });
+
+  it("Thematic breaks (example 16)", () => {
+    ist(parse("--\n**\n__\n"), r`Document {
+  Paragraph("--\n**\n__")
+}
+`)
+  });
+
+  it("Thematic breaks (example 17)", () => {
+    ist(parse(" ***\n  ***\n   ***\n"), r`Document {
+  HorizontalRule("***")
+  HorizontalRule("***")
+  HorizontalRule("***")
+}
+`)
+  });
+
+  it("Thematic breaks (example 18)", () => {
+    ist(parse("    ***\n"), r`Document {
+  CodeBlock {
+    CodeText("***")
+  }
+}
+`)
+  });
+
+  it("Thematic breaks (example 19)", () => {
+    ist(parse("Foo\n    ***\n"), r`Document {
+  Paragraph("Foo\n    ***")
+}
+`)
+  });
+
+  it("Thematic breaks (example 20)", () => {
+    ist(parse("_____________________________________\n"), r`Document {
+  HorizontalRule("_____________________________________")
+}
+`)
+  });
+
+  it("Thematic breaks (example 21)", () => {
+    ist(parse(" - - -\n"), r`Document {
+  HorizontalRule("- - -")
+}
+`)
+  });
+
+  it("Thematic breaks (example 22)", () => {
+    ist(parse(" **  * ** * ** * **\n"), r`Document {
+  HorizontalRule("**  * ** * ** * **")
+}
+`)
+  });
+
+  it("Thematic breaks (example 23)", () => {
+    ist(parse("-     -      -      -\n"), r`Document {
+  HorizontalRule("-     -      -      -")
+}
+`)
+  });
+
+  it("Thematic breaks (example 24)", () => {
+    ist(parse("- - - -    \n"), r`Document {
+  HorizontalRule("- - - -    ")
+}
+`)
+  });
+
+  it("Thematic breaks (example 25)", () => {
+    ist(parse("_ _ _ _ a\n\na------\n\n---a---\n"), r`Document {
+  Paragraph("_ _ _ _ a")
+  Paragraph("a------")
+  Paragraph("---a---")
+}
+`)
+  });
+
+  it("Thematic breaks (example 26)", () => {
+    ist(parse(" *-*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 1-2)
+      EmphasisMark("*", 3-4)
+    }
+  }
+}
+`)
+  });
+
+  it("Thematic breaks (example 27)", () => {
+    ist(parse("- foo\n***\n- bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+  }
+  HorizontalRule("***")
+  BulletList {
+    ListItem {
+      ListMark("-", 10-11)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Thematic breaks (example 28)", () => {
+    ist(parse("Foo\n***\nbar\n"), r`Document {
+  Paragraph("Foo")
+  HorizontalRule("***")
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("Thematic breaks (example 29)", () => {
+    ist(parse("Foo\n---\nbar\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("---", 4-7)
+  }
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("Thematic breaks (example 30)", () => {
+    ist(parse("* Foo\n* * *\n* Bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("*", 0-1)
+      Paragraph("Foo")
+    }
+  }
+  HorizontalRule("* * *")
+  BulletList {
+    ListItem {
+      ListMark("*", 12-13)
+      Paragraph("Bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Thematic breaks (example 31)", () => {
+    ist(parse("- Foo\n- * * *\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("Foo")
+    }
+    ListItem {
+      ListMark("-", 6-7)
+      HorizontalRule("* * *")
+    }
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 32)", () => {
+    ist(parse("# foo\n## foo\n### foo\n#### foo\n##### foo\n###### foo\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+  }
+  ATXHeading2 {
+    HeaderMark("##", 6-8)
+  }
+  ATXHeading3 {
+    HeaderMark("###", 13-16)
+  }
+  ATXHeading4 {
+    HeaderMark("####", 21-25)
+  }
+  ATXHeading5 {
+    HeaderMark("#####", 30-35)
+  }
+  ATXHeading6 {
+    HeaderMark("######", 40-46)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 33)", () => {
+    ist(parse("####### foo\n"), r`Document {
+  Paragraph("####### foo")
+}
+`)
+  });
+
+  it("ATX headings (example 34)", () => {
+    ist(parse("#5 bolt\n\n#hashtag\n"), r`Document {
+  Paragraph("#5 bolt")
+  Paragraph("#hashtag")
+}
+`)
+  });
+
+  it("ATX headings (example 35)", () => {
+    ist(parse("\\## foo\n"), r`Document {
+  Paragraph {
+    Escape("\\#")
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 36)", () => {
+    ist(parse("# foo *bar* \\*baz\\*\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+    Emphasis {
+      EmphasisMark("*", 6-7)
+      EmphasisMark("*", 10-11)
+    }
+    Escape("\\*")
+    Escape("\\*")
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 37)", () => {
+    ist(parse("#                  foo                     \n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 38)", () => {
+    ist(parse(" ### foo\n  ## foo\n   # foo\n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 1-4)
+  }
+  ATXHeading2 {
+    HeaderMark("##", 11-13)
+  }
+  ATXHeading1 {
+    HeaderMark("#", 21-22)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 39)", () => {
+    ist(parse("    # foo\n"), r`Document {
+  CodeBlock {
+    CodeText("# foo")
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 40)", () => {
+    ist(parse("foo\n    # bar\n"), r`Document {
+  Paragraph("foo\n    # bar")
+}
+`)
+  });
+
+  it("ATX headings (example 41)", () => {
+    ist(parse("## foo ##\n  ###   bar    ###\n"), r`Document {
+  ATXHeading2 {
+    HeaderMark("##", 0-2)
+    HeaderMark("##", 7-9)
+  }
+  ATXHeading3 {
+    HeaderMark("###", 12-15)
+    HeaderMark("###", 25-28)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 42)", () => {
+    ist(parse("# foo ##################################\n##### foo ##\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+    HeaderMark("##################################", 6-40)
+  }
+  ATXHeading5 {
+    HeaderMark("#####", 41-46)
+    HeaderMark("##", 51-53)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 43)", () => {
+    ist(parse("### foo ###     \n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 0-3)
+    HeaderMark("###", 8-11)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 44)", () => {
+    ist(parse("### foo ### b\n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 0-3)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 45)", () => {
+    ist(parse("# foo#\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 46)", () => {
+    ist(parse("### foo \\###\n## foo #\\##\n# foo \\#\n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 0-3)
+    Escape("\\#")
+  }
+  ATXHeading2 {
+    HeaderMark("##", 13-15)
+    Escape("\\#")
+  }
+  ATXHeading1 {
+    HeaderMark("#", 25-26)
+    Escape("\\#")
+  }
+}
+`)
+  });
+
+  it("ATX headings (example 47)", () => {
+    ist(parse("****\n## foo\n****\n"), r`Document {
+  HorizontalRule("****")
+  ATXHeading2 {
+    HeaderMark("##", 5-7)
+  }
+  HorizontalRule("****")
+}
+`)
+  });
+
+  it("ATX headings (example 48)", () => {
+    ist(parse("Foo bar\n# baz\nBar foo\n"), r`Document {
+  Paragraph("Foo bar")
+  ATXHeading1 {
+    HeaderMark("#", 8-9)
+  }
+  Paragraph("Bar foo")
+}
+`)
+  });
+
+  it("ATX headings (example 49)", () => {
+    ist(parse("## \n#\n### ###\n"), r`Document {
+  ATXHeading2 {
+    HeaderMark("##", 0-2)
+  }
+  ATXHeading1 {
+    HeaderMark("#", 4-5)
+  }
+  ATXHeading3 {
+    HeaderMark("###", 6-9)
+    HeaderMark("###", 10-13)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 50)", () => {
+    ist(parse("Foo *bar*\n=========\n\nFoo *bar*\n---------\n"), r`Document {
+  SetextHeading1 {
+    Emphasis {
+      EmphasisMark("*", 4-5)
+      EmphasisMark("*", 8-9)
+    }
+    HeaderMark("=========", 10-19)
+  }
+  SetextHeading2 {
+    Emphasis {
+      EmphasisMark("*", 25-26)
+      EmphasisMark("*", 29-30)
+    }
+    HeaderMark("---------", 31-40)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 51)", () => {
+    ist(parse("Foo *bar\nbaz*\n====\n"), r`Document {
+  SetextHeading1 {
+    Emphasis {
+      EmphasisMark("*", 4-5)
+      EmphasisMark("*", 12-13)
+    }
+    HeaderMark("====", 14-18)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 52)", () => {
+    ist(parse("  Foo *bar\nbaz*\t\n====\n"), r`Document {
+  SetextHeading1 {
+    Emphasis {
+      EmphasisMark("*", 6-7)
+      EmphasisMark("*", 14-15)
+    }
+    HeaderMark("====", 17-21)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 53)", () => {
+    ist(parse("Foo\n-------------------------\n\nFoo\n=\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("-------------------------", 4-29)
+  }
+  SetextHeading1 {
+    HeaderMark("=", 35-36)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 54)", () => {
+    ist(parse("   Foo\n---\n\n  Foo\n-----\n\n  Foo\n  ===\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("---", 7-10)
+  }
+  SetextHeading2 {
+    HeaderMark("-----", 18-23)
+  }
+  SetextHeading1 {
+    HeaderMark("===", 33-36)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 55)", () => {
+    ist(parse("    Foo\n    ---\n\n    Foo\n---\n"), r`Document {
+  CodeBlock {
+    CodeText("Foo\n")
+    CodeText("---\n\n")
+    CodeText("Foo")
+  }
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Setext headings (example 56)", () => {
+    ist(parse("Foo\n   ----      \n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("----", 7-11)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 57)", () => {
+    ist(parse("Foo\n    ---\n"), r`Document {
+  Paragraph("Foo\n    ---")
+}
+`)
+  });
+
+  it("Setext headings (example 58)", () => {
+    ist(parse("Foo\n= =\n\nFoo\n--- -\n"), r`Document {
+  Paragraph("Foo\n= =")
+  Paragraph("Foo")
+  HorizontalRule("--- -")
+}
+`)
+  });
+
+  it("Setext headings (example 59)", () => {
+    ist(parse("Foo  \n-----\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("-----", 6-11)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 60)", () => {
+    ist(parse("Foo\\\n----\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("----", 5-9)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 61)", () => {
+    ist(parse("`Foo\n----\n`\n\n<a title=\"a lot\n---\nof dashes\"/>\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("----", 5-9)
+  }
+  Paragraph("‘")
+  SetextHeading2 {
+    HeaderMark("---", 29-32)
+  }
+  Paragraph("of dashes\"/>")
+}
+`)
+  });
+
+  it("Setext headings (example 62)", () => {
+    ist(parse("> Foo\n---\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("Foo")
+  }
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Setext headings (example 63)", () => {
+    ist(parse("> foo\nbar\n===\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo\nbar\n===")
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 64)", () => {
+    ist(parse("- Foo\n---\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("Foo")
+    }
+  }
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Setext headings (example 65)", () => {
+    ist(parse("Foo\nBar\n---\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("---", 8-11)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 66)", () => {
+    ist(parse("---\nFoo\n---\nBar\n---\nBaz\n"), r`Document {
+  HorizontalRule("---")
+  SetextHeading2 {
+    HeaderMark("---", 8-11)
+  }
+  SetextHeading2 {
+    HeaderMark("---", 16-19)
+  }
+  Paragraph("Baz")
+}
+`)
+  });
+
+  it("Setext headings (example 67)", () => {
+    ist(parse("\n====\n"), r`Document {
+  Paragraph("====")
+}
+`)
+  });
+
+  it("Setext headings (example 68)", () => {
+    ist(parse("---\n---\n"), r`Document {
+  HorizontalRule("---")
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Setext headings (example 69)", () => {
+    ist(parse("- foo\n-----\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+  }
+  HorizontalRule("-----")
+}
+`)
+  });
+
+  it("Setext headings (example 70)", () => {
+    ist(parse("    foo\n---\n"), r`Document {
+  CodeBlock {
+    CodeText("foo")
+  }
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Setext headings (example 71)", () => {
+    ist(parse("> foo\n-----\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo")
+  }
+  HorizontalRule("-----")
+}
+`)
+  });
+
+  it("Setext headings (example 72)", () => {
+    ist(parse("\\> foo\n------\n"), r`Document {
+  SetextHeading2 {
+    Escape("\\>")
+    HeaderMark("------", 7-13)
+  }
+}
+`)
+  });
+
+  it("Setext headings (example 73)", () => {
+    ist(parse("Foo\n\nbar\n---\nbaz\n"), r`Document {
+  Paragraph("Foo")
+  SetextHeading2 {
+    HeaderMark("---", 9-12)
+  }
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Setext headings (example 74)", () => {
+    ist(parse("Foo\nbar\n\n---\n\nbaz\n"), r`Document {
+  Paragraph("Foo\nbar")
+  HorizontalRule("---")
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Setext headings (example 75)", () => {
+    ist(parse("Foo\nbar\n* * *\nbaz\n"), r`Document {
+  Paragraph("Foo\nbar")
+  HorizontalRule("* * *")
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Setext headings (example 76)", () => {
+    ist(parse("Foo\nbar\n\\---\nbaz\n"), r`Document {
+  Paragraph {
+    Escape("\\-")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 77)", () => {
+    ist(parse("    a simple\n      indented code block\n"), r`Document {
+  CodeBlock {
+    CodeText("a simple\n")
+    CodeText("  indented code block")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 78)", () => {
+    ist(parse("  - foo\n\n    bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 2-3)
+      Paragraph("foo")
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 79)", () => {
+    ist(parse("1.  foo\n\n    - bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("-", 13-14)
+          Paragraph("bar")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 80)", () => {
+    ist(parse("    <a/>\n    *hi*\n\n    - one\n"), r`Document {
+  CodeBlock {
+    CodeText("<a/>\n")
+    CodeText("*hi*\n\n")
+    CodeText("- one")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 81)", () => {
+    ist(parse("    chunk1\n\n    chunk2\n  \n \n \n    chunk3\n"), r`Document {
+  CodeBlock {
+    CodeText("chunk1\n\n")
+    CodeText("chunk2\n")
+    CodeText("\n")
+    CodeText("\n")
+    CodeText("\n")
+    CodeText("chunk3")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 82)", () => {
+    ist(parse("    chunk1\n      \n      chunk2\n"), r`Document {
+  CodeBlock {
+    CodeText("chunk1\n")
+    CodeText("\n")
+    CodeText("  chunk2")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 83)", () => {
+    ist(parse("Foo\n    bar\n\n"), r`Document {
+  Paragraph("Foo\n    bar")
+}
+`)
+  });
+
+  it("Indented code blocks (example 84)", () => {
+    ist(parse("    foo\nbar\n"), r`Document {
+  CodeBlock {
+    CodeText("foo")
+  }
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("Indented code blocks (example 85)", () => {
+    ist(parse("# Heading\n    foo\nHeading\n------\n    foo\n----\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+  }
+  CodeBlock {
+    CodeText("foo")
+  }
+  SetextHeading2 {
+    HeaderMark("------", 26-32)
+  }
+  CodeBlock {
+    CodeText("foo")
+  }
+  HorizontalRule("----")
+}
+`)
+  });
+
+  it("Indented code blocks (example 86)", () => {
+    ist(parse("        foo\n    bar\n"), r`Document {
+  CodeBlock {
+    CodeText("    foo\n")
+    CodeText("bar")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 87)", () => {
+    ist(parse("\n    \n    foo\n    \n\n"), r`Document {
+  CodeBlock {
+    CodeText("foo")
+  }
+}
+`)
+  });
+
+  it("Indented code blocks (example 88)", () => {
+    ist(parse("    foo  \n"), r`Document {
+  CodeBlock {
+    CodeText("foo  ")
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 89)", () => {
+    ist(parse("```\n<\n >\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("<\n >")
+    CodeMark("‘‘‘", 9-12)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 90)", () => {
+    ist(parse("~~~\n<\n >\n~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~", 0-3)
+    CodeText("<\n >")
+    CodeMark("~~~", 9-12)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 91)", () => {
+    ist(parse("``\nfoo\n``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 7-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 92)", () => {
+    ist(parse("```\naaa\n~~~\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("aaa\n~~~")
+    CodeMark("‘‘‘", 12-15)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 93)", () => {
+    ist(parse("~~~\naaa\n```\n~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~", 0-3)
+    CodeText("aaa\n‘‘‘")
+    CodeMark("~~~", 12-15)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 94)", () => {
+    ist(parse("````\naaa\n```\n``````\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘‘", 0-4)
+    CodeText("aaa\n‘‘‘")
+    CodeMark("‘‘‘‘‘‘", 13-19)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 95)", () => {
+    ist(parse("~~~~\naaa\n~~~\n~~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~~", 0-4)
+    CodeText("aaa\n~~~")
+    CodeMark("~~~~", 13-17)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 96)", () => {
+    ist(parse("```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 97)", () => {
+    ist(parse("`````\n\n```\naaa\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘‘‘", 0-5)
+    CodeText("\n‘‘‘\naaa\n")
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 98)", () => {
+    ist(parse("> ```\n> aaa\n\nbbb\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    FencedCode {
+      CodeMark("‘‘‘", 2-5)
+      QuoteMark(">", 6-7)
+      CodeText("aaa")
+    }
+  }
+  Paragraph("bbb")
+}
+`)
+  });
+
+  it("Fenced code blocks (example 99)", () => {
+    ist(parse("```\n\n  \n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("\n  ")
+    CodeMark("‘‘‘", 8-11)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 100)", () => {
+    ist(parse("```\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeMark("‘‘‘", 4-7)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 101)", () => {
+    ist(parse(" ```\n aaa\naaa\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 1-4)
+    CodeText(" aaa\naaa")
+    CodeMark("‘‘‘", 14-17)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 102)", () => {
+    ist(parse("  ```\naaa\n  aaa\naaa\n  ```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 2-5)
+    CodeText("aaa\n  aaa\naaa")
+    CodeMark("‘‘‘", 22-25)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 103)", () => {
+    ist(parse("   ```\n   aaa\n    aaa\n  aaa\n   ```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 3-6)
+    CodeText("   aaa\n    aaa\n  aaa")
+    CodeMark("‘‘‘", 31-34)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 104)", () => {
+    ist(parse("    ```\n    aaa\n    ```\n"), r`Document {
+  CodeBlock {
+    CodeText("‘‘‘\n")
+    CodeText("aaa\n")
+    CodeText("‘‘‘")
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 105)", () => {
+    ist(parse("```\naaa\n  ```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("aaa")
+    CodeMark("‘‘‘", 10-13)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 106)", () => {
+    ist(parse("   ```\naaa\n  ```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 3-6)
+    CodeText("aaa")
+    CodeMark("‘‘‘", 13-16)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 107)", () => {
+    ist(parse("```\naaa\n    ```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("aaa\n    ‘‘‘\n")
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 108)", () => {
+    ist(parse("``` ```\naaa\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘‘", 0-3)
+      CodeMark("‘‘‘", 4-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 109)", () => {
+    ist(parse("~~~~~~\naaa\n~~~ ~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~~~~", 0-6)
+    CodeText("aaa\n~~~ ~~\n")
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 110)", () => {
+    ist(parse("foo\n```\nbar\n```\nbaz\n"), r`Document {
+  Paragraph("foo")
+  FencedCode {
+    CodeMark("‘‘‘", 4-7)
+    CodeText("bar")
+    CodeMark("‘‘‘", 12-15)
+  }
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Fenced code blocks (example 111)", () => {
+    ist(parse("foo\n---\n~~~\nbar\n~~~\n# baz\n"), r`Document {
+  SetextHeading2 {
+    HeaderMark("---", 4-7)
+  }
+  FencedCode {
+    CodeMark("~~~", 8-11)
+    CodeText("bar")
+    CodeMark("~~~", 16-19)
+  }
+  ATXHeading1 {
+    HeaderMark("#", 20-21)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 112)", () => {
+    ist(parse("```ruby\ndef foo(x)\n  return 3\nend\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeInfo("ruby")
+    CodeText("def foo(x)\n  return 3\nend")
+    CodeMark("‘‘‘", 34-37)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 113)", () => {
+    ist(parse("~~~~    ruby startline=3 $%@#$\ndef foo(x)\n  return 3\nend\n~~~~~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~~", 0-4)
+    CodeInfo("ruby startline=3 $%@#$")
+    CodeText("def foo(x)\n  return 3\nend")
+    CodeMark("~~~~~~~", 57-64)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 114)", () => {
+    ist(parse("````;\n````\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘‘", 0-4)
+    CodeInfo(";")
+    CodeMark("‘‘‘‘", 6-10)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 115)", () => {
+    ist(parse("``` aa ```\nfoo\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘‘", 0-3)
+      CodeMark("‘‘‘", 7-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 116)", () => {
+    ist(parse("~~~ aa ``` ~~~\nfoo\n~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~", 0-3)
+    CodeInfo("aa ‘‘‘ ~~~")
+    CodeText("foo")
+    CodeMark("~~~", 19-22)
+  }
+}
+`)
+  });
+
+  it("Fenced code blocks (example 117)", () => {
+    ist(parse("```\n``` aaa\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("‘‘‘ aaa")
+    CodeMark("‘‘‘", 12-15)
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 118)", () => {
+    ist(parse("<table><tr><td>\n<pre>\n**Hello**,\n\n_world_.\n</pre>\n</td></tr></table>\n"), r`Document {
+  HTMLBlock("<table><tr><td>\n<pre>\n**Hello**,")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 34-35)
+      EmphasisMark("_", 40-41)
+    }
+    HTMLTag("</pre>")
+  }
+  HTMLBlock("</td></tr></table>")
+}
+`)
+  });
+
+  it("HTML blocks (example 119)", () => {
+    ist(parse("<table>\n  <tr>\n    <td>\n           hi\n    </td>\n  </tr>\n</table>\n\nokay.\n"), r`Document {
+  HTMLBlock("<table>\n  <tr>\n    <td>\n           hi\n    </td>\n  </tr>\n</table>")
+  Paragraph("okay.")
+}
+`)
+  });
+
+  it("HTML blocks (example 120)", () => {
+    ist(parse(" <div>\n  *hello*\n         <foo><a>\n"), r`Document {
+  HTMLBlock("<div>\n  *hello*\n         <foo><a>")
+}
+`)
+  });
+
+  it("HTML blocks (example 121)", () => {
+    ist(parse("</div>\n*foo*\n"), r`Document {
+  HTMLBlock("</div>\n*foo*")
+}
+`)
+  });
+
+  it("HTML blocks (example 122)", () => {
+    ist(parse("<DIV CLASS=\"foo\">\n\n*Markdown*\n\n</DIV>\n"), r`Document {
+  HTMLBlock("<DIV CLASS=\"foo\">")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 19-20)
+      EmphasisMark("*", 28-29)
+    }
+  }
+  HTMLBlock("</DIV>")
+}
+`)
+  });
+
+  it("HTML blocks (example 123)", () => {
+    ist(parse("<div id=\"foo\"\n  class=\"bar\">\n</div>\n"), r`Document {
+  HTMLBlock("<div id=\"foo\"\n  class=\"bar\">\n</div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 124)", () => {
+    ist(parse("<div id=\"foo\" class=\"bar\n  baz\">\n</div>\n"), r`Document {
+  HTMLBlock("<div id=\"foo\" class=\"bar\n  baz\">\n</div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 125)", () => {
+    ist(parse("<div>\n*foo*\n\n*bar*\n"), r`Document {
+  HTMLBlock("<div>\n*foo*")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 13-14)
+      EmphasisMark("*", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 126)", () => {
+    ist(parse("<div id=\"foo\"\n*hi*\n"), r`Document {
+  HTMLBlock("<div id=\"foo\"\n*hi*")
+}
+`)
+  });
+
+  it("HTML blocks (example 127)", () => {
+    ist(parse("<div class\nfoo\n"), r`Document {
+  HTMLBlock("<div class\nfoo")
+}
+`)
+  });
+
+  it("HTML blocks (example 128)", () => {
+    ist(parse("<div *???-&&&-<---\n*foo*\n"), r`Document {
+  HTMLBlock("<div *???-&&&-<---\n*foo*")
+}
+`)
+  });
+
+  it("HTML blocks (example 129)", () => {
+    ist(parse("<div><a href=\"bar\">*foo*</a></div>\n"), r`Document {
+  HTMLBlock("<div><a href=\"bar\">*foo*</a></div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 130)", () => {
+    ist(parse("<table><tr><td>\nfoo\n</td></tr></table>\n"), r`Document {
+  HTMLBlock("<table><tr><td>\nfoo\n</td></tr></table>")
+}
+`)
+  });
+
+  it("HTML blocks (example 131)", () => {
+    ist(parse("<div></div>\n``` c\nint x = 33;\n```\n"), r`Document {
+  HTMLBlock("<div></div>\n‘‘‘ c\nint x = 33;\n‘‘‘")
+}
+`)
+  });
+
+  it("HTML blocks (example 132)", () => {
+    ist(parse("<a href=\"foo\">\n*bar*\n</a>\n"), r`Document {
+  HTMLBlock("<a href=\"foo\">\n*bar*\n</a>")
+}
+`)
+  });
+
+  it("HTML blocks (example 133)", () => {
+    ist(parse("<Warning>\n*bar*\n</Warning>\n"), r`Document {
+  HTMLBlock("<Warning>\n*bar*\n</Warning>")
+}
+`)
+  });
+
+  it("HTML blocks (example 134)", () => {
+    ist(parse("<i class=\"foo\">\n*bar*\n</i>\n"), r`Document {
+  HTMLBlock("<i class=\"foo\">\n*bar*\n</i>")
+}
+`)
+  });
+
+  it("HTML blocks (example 135)", () => {
+    ist(parse("</ins>\n*bar*\n"), r`Document {
+  HTMLBlock("</ins>\n*bar*")
+}
+`)
+  });
+
+  it("HTML blocks (example 136)", () => {
+    ist(parse("<del>\n*foo*\n</del>\n"), r`Document {
+  HTMLBlock("<del>\n*foo*\n</del>")
+}
+`)
+  });
+
+  it("HTML blocks (example 137)", () => {
+    ist(parse("<del>\n\n*foo*\n\n</del>\n"), r`Document {
+  HTMLBlock("<del>")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 7-8)
+      EmphasisMark("*", 11-12)
+    }
+  }
+  HTMLBlock("</del>")
+}
+`)
+  });
+
+  it("HTML blocks (example 138)", () => {
+    ist(parse("<del>*foo*</del>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<del>")
+    Emphasis {
+      EmphasisMark("*", 5-6)
+      EmphasisMark("*", 9-10)
+    }
+    HTMLTag("</del>")
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 139)", () => {
+    ist(parse("<pre language=\"haskell\"><code>\nimport Text.HTML.TagSoup\n\nmain :: IO ()\nmain = print $ parseTags tags\n</code></pre>\nokay\n"), r`Document {
+  HTMLBlock("<pre language=\"haskell\"><code>\nimport Text.HTML.TagSoup\n\nmain :: IO ()\nmain = print $ parseTags tags\n</code></pre>")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 140)", () => {
+    ist(parse("<script type=\"text/javascript\">\n// JavaScript example\n\ndocument.getElementById(\"demo\").innerHTML = \"Hello JavaScript!\";\n</script>\nokay\n"), r`Document {
+  HTMLBlock("<script type=\"text/javascript\">\n// JavaScript example\n\ndocument.getElementById(\"demo\").innerHTML = \"Hello JavaScript!\";\n</script>")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 141)", () => {
+    ist(parse("<style\n  type=\"text/css\">\nh1 {color:red;}\n\np {color:blue;}\n</style>\nokay\n"), r`Document {
+  HTMLBlock("<style\n  type=\"text/css\">\nh1 {color:red;}\n\np {color:blue;}\n</style>")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 142)", () => {
+    ist(parse("<style\n  type=\"text/css\">\n\nfoo\n"), r`Document {
+  HTMLBlock("<style\n  type=\"text/css\">\n\nfoo\n")
+}
+`)
+  });
+
+  it("HTML blocks (example 143)", () => {
+    ist(parse("> <div>\n> foo\n\nbar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    HTMLBlock {
+      QuoteMark(">", 8-9)
+    }
+  }
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("HTML blocks (example 144)", () => {
+    ist(parse("- <div>\n- foo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      HTMLBlock("<div>")
+    }
+    ListItem {
+      ListMark("-", 8-9)
+      Paragraph("foo")
+    }
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 145)", () => {
+    ist(parse("<style>p{color:red;}</style>\n*foo*\n"), r`Document {
+  HTMLBlock("<style>p{color:red;}</style>")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 29-30)
+      EmphasisMark("*", 33-34)
+    }
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 146)", () => {
+    ist(parse("<!-- foo -->*bar*\n*baz*\n"), r`Document {
+  CommentBlock("<!-- foo -->*bar*")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 18-19)
+      EmphasisMark("*", 22-23)
+    }
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 147)", () => {
+    ist(parse("<script>\nfoo\n</script>1. *bar*\n"), r`Document {
+  HTMLBlock("<script>\nfoo\n</script>1. *bar*")
+}
+`)
+  });
+
+  it("HTML blocks (example 148)", () => {
+    ist(parse("<!-- Foo\n\nbar\n   baz -->\nokay\n"), r`Document {
+  CommentBlock("<!-- Foo\n\nbar\n   baz -->")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 149)", () => {
+    ist(parse("<?php\n\n  echo '>';\n\n?>\nokay\n"), r`Document {
+  ProcessingInstructionBlock("<?php\n\n  echo '>';\n\n?>")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 150)", () => {
+    ist(parse("<!DOCTYPE html>\n"), r`Document {
+  HTMLBlock("<!DOCTYPE html>")
+}
+`)
+  });
+
+  it("HTML blocks (example 151)", () => {
+    ist(parse("<![CDATA[\nfunction matchwo(a,b)\n{\n  if (a < b && a < 0) then {\n    return 1;\n\n  } else {\n\n    return 0;\n  }\n}\n]]>\nokay\n"), r`Document {
+  HTMLBlock("<![CDATA[\nfunction matchwo(a,b)\n{\n  if (a < b && a < 0) then {\n    return 1;\n\n  } else {\n\n    return 0;\n  }\n}\n]]>")
+  Paragraph("okay")
+}
+`)
+  });
+
+  it("HTML blocks (example 152)", () => {
+    ist(parse("  <!-- foo -->\n\n    <!-- foo -->\n"), r`Document {
+  CommentBlock("<!-- foo -->")
+  CodeBlock {
+    CodeText("<!-- foo -->")
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 153)", () => {
+    ist(parse("  <div>\n\n    <div>\n"), r`Document {
+  HTMLBlock("<div>")
+  CodeBlock {
+    CodeText("<div>")
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 154)", () => {
+    ist(parse("Foo\n<div>\nbar\n</div>\n"), r`Document {
+  Paragraph("Foo")
+  HTMLBlock("<div>\nbar\n</div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 155)", () => {
+    ist(parse("<div>\nbar\n</div>\n*foo*\n"), r`Document {
+  HTMLBlock("<div>\nbar\n</div>\n*foo*")
+}
+`)
+  });
+
+  it("HTML blocks (example 156)", () => {
+    ist(parse("Foo\n<a href=\"bar\">\nbaz\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"bar\">")
+  }
+}
+`)
+  });
+
+  it("HTML blocks (example 157)", () => {
+    ist(parse("<div>\n\n*Emphasized* text.\n\n</div>\n"), r`Document {
+  HTMLBlock("<div>")
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 7-8)
+      EmphasisMark("*", 18-19)
+    }
+  }
+  HTMLBlock("</div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 158)", () => {
+    ist(parse("<div>\n*Emphasized* text.\n</div>\n"), r`Document {
+  HTMLBlock("<div>\n*Emphasized* text.\n</div>")
+}
+`)
+  });
+
+  it("HTML blocks (example 159)", () => {
+    ist(parse("<table>\n\n<tr>\n\n<td>\nHi\n</td>\n\n</tr>\n\n</table>\n"), r`Document {
+  HTMLBlock("<table>")
+  HTMLBlock("<tr>")
+  HTMLBlock("<td>\nHi\n</td>")
+  HTMLBlock("</tr>")
+  HTMLBlock("</table>")
+}
+`)
+  });
+
+  it("HTML blocks (example 160)", () => {
+    ist(parse("<table>\n\n  <tr>\n\n    <td>\n      Hi\n    </td>\n\n  </tr>\n\n</table>\n"), r`Document {
+  HTMLBlock("<table>")
+  HTMLBlock("<tr>")
+  CodeBlock {
+    CodeText("<td>\n")
+    CodeText("  Hi\n")
+    CodeText("</td>")
+  }
+  HTMLBlock("</tr>")
+  HTMLBlock("</table>")
+}
+`)
+  });
+
+  it("Link reference definitions (example 161)", () => {
+    ist(parse("[foo]: /url \"title\"\n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 21-22)
+      LinkMark("]", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 162)", () => {
+    ist(parse("   [foo]: \n      /url  \n           'the title'  \n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 8-9)
+    URL("/url")
+    LinkTitle("'the title'")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 50-51)
+      LinkMark("]", 54-55)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 163)", () => {
+    ist(parse("[Foo*bar\\]]:my_(url) 'title (with parens)'\n\n[Foo*bar\\]]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[Foo*bar\\]]")
+    LinkMark(":", 11-12)
+    URL("my_(url)")
+    LinkTitle("'title (with parens)'")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 44-45)
+      Escape("\\]")
+      LinkMark("]", 54-55)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 164)", () => {
+    ist(parse("[Foo bar]:\n<my url>\n'title'\n\n[Foo bar]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[Foo bar]")
+    LinkMark(":", 9-10)
+    URL("<my url>")
+    LinkTitle("'title'")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 29-30)
+      LinkMark("]", 37-38)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 165)", () => {
+    ist(parse("[foo]: /url '\ntitle\nline1\nline2\n'\n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+    LinkTitle("'\ntitle\nline1\nline2\n'")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 35-36)
+      LinkMark("]", 39-40)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 166)", () => {
+    ist(parse("[foo]: /url 'title\n\nwith blank line'\n\n[foo]\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  Paragraph("with blank line'")
+  Paragraph {
+    Link {
+      LinkMark("[", 38-39)
+      LinkMark("]", 42-43)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 167)", () => {
+    ist(parse("[foo]:\n/url\n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 13-14)
+      LinkMark("]", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 168)", () => {
+    ist(parse("[foo]:\n\n[foo]\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 8-9)
+      LinkMark("]", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 169)", () => {
+    ist(parse("[foo]: <>\n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("<>")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 11-12)
+      LinkMark("]", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 170)", () => {
+    ist(parse("[foo]: <bar>(baz)\n\n[foo]\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+    HTMLTag("<bar>")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 19-20)
+      LinkMark("]", 23-24)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 171)", () => {
+    ist(parse("[foo]: /url\\bar\\*baz \"foo\\\"bar\\baz\"\n\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url\\bar\\*baz")
+    LinkTitle("\"foo\\\"bar\\baz\"")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 37-38)
+      LinkMark("]", 41-42)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 172)", () => {
+    ist(parse("[foo]\n\n[foo]: url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("url")
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 173)", () => {
+    ist(parse("[foo]\n\n[foo]: first\n[foo]: second\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("first")
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 25-26)
+    URL("second")
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 174)", () => {
+    ist(parse("[FOO]: /url\n\n[Foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[FOO]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 13-14)
+      LinkMark("]", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 175)", () => {
+    ist(parse("[ΑΓΩ]: /φου\n\n[αγω]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[ΑΓΩ]")
+    LinkMark(":", 5-6)
+    URL("/φου")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 13-14)
+      LinkMark("]", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 176)", () => {
+    ist(parse("[foo]: /url\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 177)", () => {
+    ist(parse("[\nfoo\n]: /url\nbar\n"), r`Document {
+  LinkReference {
+    LinkLabel("[\nfoo\n]")
+    LinkMark(":", 7-8)
+    URL("/url")
+  }
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("Link reference definitions (example 178)", () => {
+    ist(parse("[foo]: /url \"title\" ok\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 179)", () => {
+    ist(parse("[foo]: /url\n\"title\" ok\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+  Paragraph("\"title\" ok")
+}
+`)
+  });
+
+  it("Link reference definitions (example 180)", () => {
+    ist(parse("    [foo]: /url \"title\"\n\n[foo]\n"), r`Document {
+  CodeBlock {
+    CodeText("[foo]: /url \"title\"")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 25-26)
+      LinkMark("]", 29-30)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 181)", () => {
+    ist(parse("```\n[foo]: /url\n```\n\n[foo]\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeText("[foo]: /url")
+    CodeMark("‘‘‘", 16-19)
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 21-22)
+      LinkMark("]", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 182)", () => {
+    ist(parse("Foo\n[bar]: /baz\n\n[bar]\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 4-5)
+      LinkMark("]", 8-9)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 17-18)
+      LinkMark("]", 21-22)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 183)", () => {
+    ist(parse("# [Foo]\n[foo]: /url\n> bar\n"), r`Document {
+  ATXHeading1 {
+    HeaderMark("#", 0-1)
+    Link {
+      LinkMark("[", 2-3)
+      LinkMark("]", 6-7)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 13-14)
+    URL("/url")
+  }
+  Blockquote {
+    QuoteMark(">", 20-21)
+    Paragraph("bar")
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 184)", () => {
+    ist(parse("[foo]: /url\nbar\n===\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+  SetextHeading1 {
+    HeaderMark("===", 16-19)
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 20-21)
+      LinkMark("]", 24-25)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 185)", () => {
+    ist(parse("[foo]: /url\n===\n[foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 16-17)
+      LinkMark("]", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 186)", () => {
+    ist(parse("[foo]: /foo-url \"foo\"\n[bar]: /bar-url\n  \"bar\"\n[baz]: /baz-url\n\n[foo],\n[bar],\n[baz]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/foo-url")
+    LinkTitle("\"foo\"")
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 27-28)
+    URL("/bar-url")
+    LinkTitle("\"bar\"")
+  }
+  LinkReference {
+    LinkLabel("[baz]")
+    LinkMark(":", 51-52)
+    URL("/baz-url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 63-64)
+      LinkMark("]", 67-68)
+    }
+    Link {
+      LinkMark("[", 70-71)
+      LinkMark("]", 74-75)
+    }
+    Link {
+      LinkMark("[", 77-78)
+      LinkMark("]", 81-82)
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 187)", () => {
+    ist(parse("[foo]\n\n> [foo]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  Blockquote {
+    QuoteMark(">", 7-8)
+    LinkReference {
+      LinkLabel("[foo]")
+      LinkMark(":", 14-15)
+      URL("/url")
+    }
+  }
+}
+`)
+  });
+
+  it("Link reference definitions (example 188)", () => {
+    ist(parse("[foo]: /url\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Paragraphs (example 189)", () => {
+    ist(parse("aaa\n\nbbb\n"), r`Document {
+  Paragraph("aaa")
+  Paragraph("bbb")
+}
+`)
+  });
+
+  it("Paragraphs (example 190)", () => {
+    ist(parse("aaa\nbbb\n\nccc\nddd\n"), r`Document {
+  Paragraph("aaa\nbbb")
+  Paragraph("ccc\nddd")
+}
+`)
+  });
+
+  it("Paragraphs (example 191)", () => {
+    ist(parse("aaa\n\n\nbbb\n"), r`Document {
+  Paragraph("aaa")
+  Paragraph("bbb")
+}
+`)
+  });
+
+  it("Paragraphs (example 192)", () => {
+    ist(parse("  aaa\n bbb\n"), r`Document {
+  Paragraph("aaa\n bbb")
+}
+`)
+  });
+
+  it("Paragraphs (example 193)", () => {
+    ist(parse("aaa\n             bbb\n                                       ccc\n"), r`Document {
+  Paragraph("aaa\n             bbb\n                                       ccc")
+}
+`)
+  });
+
+  it("Paragraphs (example 194)", () => {
+    ist(parse("   aaa\nbbb\n"), r`Document {
+  Paragraph("aaa\nbbb")
+}
+`)
+  });
+
+  it("Paragraphs (example 195)", () => {
+    ist(parse("    aaa\nbbb\n"), r`Document {
+  CodeBlock {
+    CodeText("aaa")
+  }
+  Paragraph("bbb")
+}
+`)
+  });
+
+  it("Paragraphs (example 196)", () => {
+    ist(parse("aaa     \nbbb     \n"), r`Document {
+  Paragraph {
+    HardBreak("     \n")
+  }
+}
+`)
+  });
+
+  it("Blank lines (example 197)", () => {
+    ist(parse("  \n\naaa\n  \n\n# aaa\n\n  \n"), r`Document {
+  Paragraph("aaa")
+  ATXHeading1 {
+    HeaderMark("#", 12-13)
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 198)", () => {
+    ist(parse("> # Foo\n> bar\n> baz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    ATXHeading1 {
+      HeaderMark("#", 2-3)
+    }
+    QuoteMark(">", 8-9)
+    Paragraph {
+      QuoteMark(">", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 199)", () => {
+    ist(parse("># Foo\n>bar\n> baz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    ATXHeading1 {
+      HeaderMark("#", 1-2)
+    }
+    QuoteMark(">", 7-8)
+    Paragraph {
+      QuoteMark(">", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 200)", () => {
+    ist(parse("   > # Foo\n   > bar\n > baz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 3-4)
+    ATXHeading1 {
+      HeaderMark("#", 5-6)
+    }
+    QuoteMark(">", 14-15)
+    Paragraph {
+      QuoteMark(">", 21-22)
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 201)", () => {
+    ist(parse("    > # Foo\n    > bar\n    > baz\n"), r`Document {
+  CodeBlock {
+    CodeText("> # Foo\n")
+    CodeText("> bar\n")
+    CodeText("> baz")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 202)", () => {
+    ist(parse("> # Foo\n> bar\nbaz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    ATXHeading1 {
+      HeaderMark("#", 2-3)
+    }
+    QuoteMark(">", 8-9)
+    Paragraph("bar\nbaz")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 203)", () => {
+    ist(parse("> bar\nbaz\n> foo\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph {
+      QuoteMark(">", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 204)", () => {
+    ist(parse("> foo\n---\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo")
+  }
+  HorizontalRule("---")
+}
+`)
+  });
+
+  it("Block quotes (example 205)", () => {
+    ist(parse("> - foo\n- bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    BulletList {
+      ListItem {
+        ListMark("-", 2-3)
+        Paragraph("foo")
+      }
+    }
+  }
+  BulletList {
+    ListItem {
+      ListMark("-", 8-9)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 206)", () => {
+    ist(parse(">     foo\n    bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    CodeBlock {
+      CodeText("foo")
+    }
+  }
+  CodeBlock {
+    CodeText("bar")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 207)", () => {
+    ist(parse("> ```\nfoo\n```\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    FencedCode {
+      CodeMark("‘‘‘", 2-5)
+    }
+  }
+  Paragraph("foo")
+  FencedCode {
+    CodeMark("‘‘‘", 10-13)
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 208)", () => {
+    ist(parse("> foo\n    - bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo\n    - bar")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 209)", () => {
+    ist(parse(">\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 210)", () => {
+    ist(parse(">\n>  \n> \n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("")
+    QuoteMark(">", 2-3)
+    QuoteMark(">", 6-7)
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 211)", () => {
+    ist(parse(">\n> foo\n>  \n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph {
+      QuoteMark(">", 2-3)
+    }
+    QuoteMark(">", 8-9)
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 212)", () => {
+    ist(parse("> foo\n\n> bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo")
+  }
+  Blockquote {
+    QuoteMark(">", 7-8)
+    Paragraph("bar")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 213)", () => {
+    ist(parse("> foo\n> bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph {
+      QuoteMark(">", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 214)", () => {
+    ist(parse("> foo\n>\n> bar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("foo")
+    QuoteMark(">", 6-7)
+    QuoteMark(">", 8-9)
+    Paragraph("bar")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 215)", () => {
+    ist(parse("foo\n> bar\n"), r`Document {
+  Paragraph("foo")
+  Blockquote {
+    QuoteMark(">", 4-5)
+    Paragraph("bar")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 216)", () => {
+    ist(parse("> aaa\n***\n> bbb\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("aaa")
+  }
+  HorizontalRule("***")
+  Blockquote {
+    QuoteMark(">", 10-11)
+    Paragraph("bbb")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 217)", () => {
+    ist(parse("> bar\nbaz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("bar\nbaz")
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 218)", () => {
+    ist(parse("> bar\n\nbaz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("bar")
+  }
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Block quotes (example 219)", () => {
+    ist(parse("> bar\n>\nbaz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Paragraph("bar")
+    QuoteMark(">", 6-7)
+  }
+  Paragraph("baz")
+}
+`)
+  });
+
+  it("Block quotes (example 220)", () => {
+    ist(parse("> > > foo\nbar\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Blockquote {
+      QuoteMark(">", 2-3)
+      Blockquote {
+        QuoteMark(">", 4-5)
+        Paragraph("foo\nbar")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 221)", () => {
+    ist(parse(">>> foo\n> bar\n>>baz\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Blockquote {
+      QuoteMark(">", 1-2)
+      Blockquote {
+        QuoteMark(">", 2-3)
+        Paragraph {
+          QuoteMark(">", 8-9)
+          QuoteMark(">", 14-15)
+          QuoteMark(">", 15-16)
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Block quotes (example 222)", () => {
+    ist(parse(">     code\n\n>    not code\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    CodeBlock {
+      CodeText("code")
+    }
+  }
+  Blockquote {
+    QuoteMark(">", 12-13)
+    Paragraph("not code")
+  }
+}
+`)
+  });
+
+  it("List items (example 223)", () => {
+    ist(parse("A paragraph\nwith two lines.\n\n    indented code\n\n> A block quote.\n"), r`Document {
+  Paragraph("A paragraph\nwith two lines.")
+  CodeBlock {
+    CodeText("indented code")
+  }
+  Blockquote {
+    QuoteMark(">", 48-49)
+    Paragraph("A block quote.")
+  }
+}
+`)
+  });
+
+  it("List items (example 224)", () => {
+    ist(parse("1.  A paragraph\n    with two lines.\n\n        indented code\n\n    > A block quote.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("A paragraph\n    with two lines.")
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Blockquote {
+        QuoteMark(">", 64-65)
+        Paragraph("A block quote.")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 225)", () => {
+    ist(parse("- one\n\n two\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("one")
+    }
+  }
+  Paragraph("two")
+}
+`)
+  });
+
+  it("List items (example 226)", () => {
+    ist(parse("- one\n\n  two\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("one")
+      Paragraph("two")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 227)", () => {
+    ist(parse(" -    one\n\n     two\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 1-2)
+      Paragraph("one")
+    }
+  }
+  CodeBlock {
+    CodeText(" two")
+  }
+}
+`)
+  });
+
+  it("List items (example 228)", () => {
+    ist(parse(" -    one\n\n      two\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 1-2)
+      Paragraph("one")
+      Paragraph("two")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 229)", () => {
+    ist(parse("   > > 1.  one\n>>\n>>     two\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 3-4)
+    Blockquote {
+      QuoteMark(">", 5-6)
+      OrderedList {
+        ListItem {
+          ListMark("1.", 7-9)
+          Paragraph("one")
+          QuoteMark(">", 15-16)
+          QuoteMark(">", 16-17)
+          QuoteMark(">", 18-19)
+          QuoteMark(">", 19-20)
+          Paragraph("two")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 230)", () => {
+    ist(parse(">>- one\n>>\n  >  > two\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    Blockquote {
+      QuoteMark(">", 1-2)
+      BulletList {
+        ListItem {
+          ListMark("-", 2-3)
+          Paragraph("one")
+          QuoteMark(">", 8-9)
+          QuoteMark(">", 9-10)
+        }
+      }
+      QuoteMark(">", 13-14)
+      QuoteMark(">", 16-17)
+      Paragraph("two")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 231)", () => {
+    ist(parse("-one\n\n2.two\n"), r`Document {
+  Paragraph("-one")
+  Paragraph("2.two")
+}
+`)
+  });
+
+  it("List items (example 232)", () => {
+    ist(parse("- foo\n\n\n  bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 233)", () => {
+    ist(parse("1.  foo\n\n    ```\n    bar\n    ```\n\n    baz\n\n    > bam\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("foo")
+      FencedCode {
+        CodeMark("‘‘‘", 13-16)
+        CodeText("bar")
+        CodeMark("‘‘‘", 29-32)
+      }
+      Paragraph("baz")
+      Blockquote {
+        QuoteMark(">", 47-48)
+        Paragraph("bam")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 234)", () => {
+    ist(parse("- Foo\n\n      bar\n\n\n      baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("Foo")
+      CodeBlock {
+        CodeText("bar\n\n\n")
+        CodeText("baz")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 235)", () => {
+    ist(parse("123456789. ok\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("123456789.", 0-10)
+      Paragraph("ok")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 236)", () => {
+    ist(parse("1234567890. not ok\n"), r`Document {
+  Paragraph("1234567890. not ok")
+}
+`)
+  });
+
+  it("List items (example 237)", () => {
+    ist(parse("0. ok\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("0.", 0-2)
+      Paragraph("ok")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 238)", () => {
+    ist(parse("003. ok\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("003.", 0-4)
+      Paragraph("ok")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 239)", () => {
+    ist(parse("-1. not ok\n"), r`Document {
+  Paragraph("-1. not ok")
+}
+`)
+  });
+
+  it("List items (example 240)", () => {
+    ist(parse("- foo\n\n      bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      CodeBlock {
+        CodeText("bar")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 241)", () => {
+    ist(parse("  10.  foo\n\n           bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("10.", 2-5)
+      Paragraph("foo")
+      CodeBlock {
+        CodeText("bar")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 242)", () => {
+    ist(parse("    indented code\n\nparagraph\n\n    more code\n"), r`Document {
+  CodeBlock {
+    CodeText("indented code")
+  }
+  Paragraph("paragraph")
+  CodeBlock {
+    CodeText("more code")
+  }
+}
+`)
+  });
+
+  it("List items (example 243)", () => {
+    ist(parse("1.     indented code\n\n   paragraph\n\n       more code\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Paragraph("paragraph")
+      CodeBlock {
+        CodeText("more code")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 244)", () => {
+    ist(parse("1.      indented code\n\n   paragraph\n\n       more code\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      CodeBlock {
+        CodeText(" indented code")
+      }
+      Paragraph("paragraph")
+      CodeBlock {
+        CodeText("more code")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 245)", () => {
+    ist(parse("   foo\n\nbar\n"), r`Document {
+  Paragraph("foo")
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("List items (example 246)", () => {
+    ist(parse("-    foo\n\n  bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+  }
+  Paragraph("bar")
+}
+`)
+  });
+
+  it("List items (example 247)", () => {
+    ist(parse("-  foo\n\n   bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 248)", () => {
+    ist(parse("-\n  foo\n-\n  ```\n  bar\n  ```\n-\n      baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("\n  foo")
+    }
+    ListItem {
+      ListMark("-", 8-9)
+      Paragraph("")
+      FencedCode {
+        CodeMark("‘‘‘", 12-15)
+        CodeText(" bar")
+        CodeMark("‘‘‘", 24-27)
+      }
+    }
+    ListItem {
+      ListMark("-", 28-29)
+      Paragraph("\n      baz")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 249)", () => {
+    ist(parse("-   \n  foo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("\n  foo")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 250)", () => {
+    ist(parse("-\n\n  foo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("")
+      Paragraph("foo")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 251)", () => {
+    ist(parse("- foo\n-\n- bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 6-7)
+      Paragraph("")
+    }
+    ListItem {
+      ListMark("-", 8-9)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 252)", () => {
+    ist(parse("- foo\n-   \n- bar\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 6-7)
+      Paragraph("")
+    }
+    ListItem {
+      ListMark("-", 11-12)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 253)", () => {
+    ist(parse("1. foo\n2.\n3. bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("2.", 7-9)
+      Paragraph("")
+    }
+    ListItem {
+      ListMark("3.", 10-12)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 254)", () => {
+    ist(parse("*\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("*", 0-1)
+      Paragraph("")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 255)", () => {
+    ist(parse("foo\n*\n\nfoo\n1.\n"), r`Document {
+  Paragraph("foo\n*")
+  Paragraph("foo\n1.")
+}
+`)
+  });
+
+  it("List items (example 256)", () => {
+    ist(parse(" 1.  A paragraph\n     with two lines.\n\n         indented code\n\n     > A block quote.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 1-3)
+      Paragraph("A paragraph\n     with two lines.")
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Blockquote {
+        QuoteMark(">", 68-69)
+        Paragraph("A block quote.")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 257)", () => {
+    ist(parse("  1.  A paragraph\n      with two lines.\n\n          indented code\n\n      > A block quote.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 2-4)
+      Paragraph("A paragraph\n      with two lines.")
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Blockquote {
+        QuoteMark(">", 72-73)
+        Paragraph("A block quote.")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 258)", () => {
+    ist(parse("   1.  A paragraph\n       with two lines.\n\n           indented code\n\n       > A block quote.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 3-5)
+      Paragraph("A paragraph\n       with two lines.")
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Blockquote {
+        QuoteMark(">", 76-77)
+        Paragraph("A block quote.")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 259)", () => {
+    ist(parse("    1.  A paragraph\n        with two lines.\n\n            indented code\n\n        > A block quote.\n"), r`Document {
+  CodeBlock {
+    CodeText("1.  A paragraph\n")
+    CodeText("    with two lines.\n\n")
+    CodeText("        indented code\n\n")
+    CodeText("    > A block quote.")
+  }
+}
+`)
+  });
+
+  it("List items (example 260)", () => {
+    ist(parse("  1.  A paragraph\nwith two lines.\n\n          indented code\n\n      > A block quote.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 2-4)
+      Paragraph("A paragraph\nwith two lines.")
+      CodeBlock {
+        CodeText("indented code")
+      }
+      Blockquote {
+        QuoteMark(">", 66-67)
+        Paragraph("A block quote.")
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 261)", () => {
+    ist(parse("  1.  A paragraph\n    with two lines.\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 2-4)
+      Paragraph("A paragraph\n    with two lines.")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 262)", () => {
+    ist(parse("> 1. > Blockquote\ncontinued here.\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    OrderedList {
+      ListItem {
+        ListMark("1.", 2-4)
+        Blockquote {
+          QuoteMark(">", 5-6)
+          Paragraph("Blockquote\ncontinued here.")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 263)", () => {
+    ist(parse("> 1. > Blockquote\n> continued here.\n"), r`Document {
+  Blockquote {
+    QuoteMark(">", 0-1)
+    OrderedList {
+      ListItem {
+        ListMark("1.", 2-4)
+        Blockquote {
+          QuoteMark(">", 5-6)
+          Paragraph {
+            QuoteMark(">", 18-19)
+          }
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 264)", () => {
+    ist(parse("- foo\n  - bar\n    - baz\n      - boo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("-", 8-9)
+          Paragraph("bar")
+          BulletList {
+            ListItem {
+              ListMark("-", 18-19)
+              Paragraph("baz")
+              BulletList {
+                ListItem {
+                  ListMark("-", 30-31)
+                  Paragraph("boo")
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 265)", () => {
+    ist(parse("- foo\n - bar\n  - baz\n   - boo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 7-8)
+      Paragraph("bar")
+    }
+    ListItem {
+      ListMark("-", 15-16)
+      Paragraph("baz")
+    }
+    ListItem {
+      ListMark("-", 24-25)
+      Paragraph("boo")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 266)", () => {
+    ist(parse("10) foo\n    - bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("10)", 0-3)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("-", 12-13)
+          Paragraph("bar")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 267)", () => {
+    ist(parse("10) foo\n   - bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("10)", 0-3)
+      Paragraph("foo")
+    }
+  }
+  BulletList {
+    ListItem {
+      ListMark("-", 11-12)
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 268)", () => {
+    ist(parse("- - foo\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      BulletList {
+        ListItem {
+          ListMark("-", 2-3)
+          Paragraph("foo")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 269)", () => {
+    ist(parse("1. - 2. foo\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      BulletList {
+        ListItem {
+          ListMark("-", 3-4)
+          OrderedList {
+            ListItem {
+              ListMark("2.", 5-7)
+              Paragraph("foo")
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("List items (example 270)", () => {
+    ist(parse("- # Foo\n- Bar\n  ---\n  baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      ATXHeading1 {
+        HeaderMark("#", 2-3)
+      }
+    }
+    ListItem {
+      ListMark("-", 8-9)
+      SetextHeading2 {
+        HeaderMark("---", 16-19)
+      }
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 271)", () => {
+    ist(parse("- foo\n- bar\n+ baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 6-7)
+      Paragraph("bar")
+    }
+  }
+  BulletList {
+    ListItem {
+      ListMark("+", 12-13)
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 272)", () => {
+    ist(parse("1. foo\n2. bar\n3) baz\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("2.", 7-9)
+      Paragraph("bar")
+    }
+  }
+  OrderedList {
+    ListItem {
+      ListMark("3)", 14-16)
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 273)", () => {
+    ist(parse("Foo\n- bar\n- baz\n"), r`Document {
+  Paragraph("Foo")
+  BulletList {
+    ListItem {
+      ListMark("-", 4-5)
+      Paragraph("bar")
+    }
+    ListItem {
+      ListMark("-", 10-11)
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 274)", () => {
+    ist(parse("The number of windows in my house is\n14.  The number of doors is 6.\n"), r`Document {
+  Paragraph("The number of windows in my house is\n14.  The number of doors is 6.")
+}
+`)
+  });
+
+  it("Lists (example 275)", () => {
+    ist(parse("The number of windows in my house is\n1.  The number of doors is 6.\n"), r`Document {
+  Paragraph("The number of windows in my house is")
+  OrderedList {
+    ListItem {
+      ListMark("1.", 37-39)
+      Paragraph("The number of doors is 6.")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 276)", () => {
+    ist(parse("- foo\n\n- bar\n\n\n- baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 7-8)
+      Paragraph("bar")
+    }
+    ListItem {
+      ListMark("-", 15-16)
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 277)", () => {
+    ist(parse("- foo\n  - bar\n    - baz\n\n\n      bim\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("-", 8-9)
+          Paragraph("bar")
+          BulletList {
+            ListItem {
+              ListMark("-", 18-19)
+              Paragraph("baz")
+              Paragraph("bim")
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 278)", () => {
+    ist(parse("- foo\n- bar\n\n<!-- -->\n\n- baz\n- bim\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+    }
+    ListItem {
+      ListMark("-", 6-7)
+      Paragraph("bar")
+    }
+  }
+  CommentBlock("<!-- -->")
+  BulletList {
+    ListItem {
+      ListMark("-", 23-24)
+      Paragraph("baz")
+    }
+    ListItem {
+      ListMark("-", 29-30)
+      Paragraph("bim")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 279)", () => {
+    ist(parse("-   foo\n\n    notcode\n\n-   foo\n\n<!-- -->\n\n    code\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("foo")
+      Paragraph("notcode")
+    }
+    ListItem {
+      ListMark("-", 22-23)
+      Paragraph("foo")
+    }
+  }
+  CommentBlock("<!-- -->")
+  CodeBlock {
+    CodeText("code")
+  }
+}
+`)
+  });
+
+  it("Lists (example 280)", () => {
+    ist(parse("- a\n - b\n  - c\n   - d\n  - e\n - f\n- g\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 5-6)
+      Paragraph("b")
+    }
+    ListItem {
+      ListMark("-", 11-12)
+      Paragraph("c")
+    }
+    ListItem {
+      ListMark("-", 18-19)
+      Paragraph("d")
+    }
+    ListItem {
+      ListMark("-", 24-25)
+      Paragraph("e")
+    }
+    ListItem {
+      ListMark("-", 29-30)
+      Paragraph("f")
+    }
+    ListItem {
+      ListMark("-", 33-34)
+      Paragraph("g")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 281)", () => {
+    ist(parse("1. a\n\n  2. b\n\n   3. c\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("2.", 8-10)
+      Paragraph("b")
+    }
+    ListItem {
+      ListMark("3.", 17-19)
+      Paragraph("c")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 282)", () => {
+    ist(parse("- a\n - b\n  - c\n   - d\n    - e\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 5-6)
+      Paragraph("b")
+    }
+    ListItem {
+      ListMark("-", 11-12)
+      Paragraph("c")
+    }
+    ListItem {
+      ListMark("-", 18-19)
+      Paragraph("d\n    - e")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 283)", () => {
+    ist(parse("1. a\n\n  2. b\n\n    3. c\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("2.", 8-10)
+      Paragraph("b")
+    }
+  }
+  CodeBlock {
+    CodeText("3. c")
+  }
+}
+`)
+  });
+
+  it("Lists (example 284)", () => {
+    ist(parse("- a\n- b\n\n- c\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 4-5)
+      Paragraph("b")
+    }
+    ListItem {
+      ListMark("-", 9-10)
+      Paragraph("c")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 285)", () => {
+    ist(parse("* a\n*\n\n* c\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("*", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("*", 4-5)
+      Paragraph("")
+    }
+    ListItem {
+      ListMark("*", 7-8)
+      Paragraph("c")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 286)", () => {
+    ist(parse("- a\n- b\n\n  c\n- d\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 4-5)
+      Paragraph("b")
+      Paragraph("c")
+    }
+    ListItem {
+      ListMark("-", 13-14)
+      Paragraph("d")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 287)", () => {
+    ist(parse("- a\n- b\n\n  [ref]: /url\n- d\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 4-5)
+      Paragraph("b")
+      LinkReference {
+        LinkLabel("[ref]")
+        LinkMark(":", 16-17)
+        URL("/url")
+      }
+    }
+    ListItem {
+      ListMark("-", 23-24)
+      Paragraph("d")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 288)", () => {
+    ist(parse("- a\n- ```\n  b\n\n\n  ```\n- c\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+    ListItem {
+      ListMark("-", 4-5)
+      FencedCode {
+        CodeMark("‘‘‘", 6-9)
+        CodeText("b\n\n")
+        CodeMark("‘‘‘", 18-21)
+      }
+    }
+    ListItem {
+      ListMark("-", 22-23)
+      Paragraph("c")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 289)", () => {
+    ist(parse("- a\n  - b\n\n    c\n- d\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+      BulletList {
+        ListItem {
+          ListMark("-", 6-7)
+          Paragraph("b")
+          Paragraph("c")
+        }
+      }
+    }
+    ListItem {
+      ListMark("-", 17-18)
+      Paragraph("d")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 290)", () => {
+    ist(parse("* a\n  > b\n  >\n* c\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("*", 0-1)
+      Paragraph("a")
+      Blockquote {
+        QuoteMark(">", 6-7)
+        Paragraph("b")
+        QuoteMark(">", 12-13)
+      }
+    }
+    ListItem {
+      ListMark("*", 14-15)
+      Paragraph("c")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 291)", () => {
+    ist(parse("- a\n  > b\n  ```\n  c\n  ```\n- d\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+      Blockquote {
+        QuoteMark(">", 6-7)
+        Paragraph("b")
+      }
+      FencedCode {
+        CodeMark("‘‘‘", 12-15)
+        CodeText("c")
+        CodeMark("‘‘‘", 22-25)
+      }
+    }
+    ListItem {
+      ListMark("-", 26-27)
+      Paragraph("d")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 292)", () => {
+    ist(parse("- a\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 293)", () => {
+    ist(parse("- a\n  - b\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+      BulletList {
+        ListItem {
+          ListMark("-", 6-7)
+          Paragraph("b")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 294)", () => {
+    ist(parse("1. ```\n   foo\n   ```\n\n   bar\n"), r`Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      FencedCode {
+        CodeMark("‘‘‘", 3-6)
+        CodeText("foo")
+        CodeMark("‘‘‘", 17-20)
+      }
+      Paragraph("bar")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 295)", () => {
+    ist(parse("* foo\n  * bar\n\n  baz\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("*", 0-1)
+      Paragraph("foo")
+      BulletList {
+        ListItem {
+          ListMark("*", 8-9)
+          Paragraph("bar")
+        }
+      }
+      Paragraph("baz")
+    }
+  }
+}
+`)
+  });
+
+  it("Lists (example 296)", () => {
+    ist(parse("- a\n  - b\n  - c\n\n- d\n  - e\n  - f\n"), r`Document {
+  BulletList {
+    ListItem {
+      ListMark("-", 0-1)
+      Paragraph("a")
+      BulletList {
+        ListItem {
+          ListMark("-", 6-7)
+          Paragraph("b")
+        }
+        ListItem {
+          ListMark("-", 12-13)
+          Paragraph("c")
+        }
+      }
+    }
+    ListItem {
+      ListMark("-", 17-18)
+      Paragraph("d")
+      BulletList {
+        ListItem {
+          ListMark("-", 23-24)
+          Paragraph("e")
+        }
+        ListItem {
+          ListMark("-", 29-30)
+          Paragraph("f")
+        }
+      }
+    }
+  }
+}
+`)
+  });
+
+  it("Inlines (example 297)", () => {
+    ist(parse("`hi`lo`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 3-4)
+    }
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 298)", () => {
+    ist(parse("\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\`\\{\\|\\}\\~\n"), r`Document {
+  Paragraph {
+    Escape("\\!")
+    Escape("\\\"")
+    Escape("\\#")
+    Escape("\\$")
+    Escape("\\%")
+    Escape("\\&")
+    Escape("\\'")
+    Escape("\\(")
+    Escape("\\)")
+    Escape("\\*")
+    Escape("\\+")
+    Escape("\\,")
+    Escape("\\-")
+    Escape("\\.")
+    Escape("\\/")
+    Escape("\\:")
+    Escape("\\;")
+    Escape("\\<")
+    Escape("\\=")
+    Escape("\\>")
+    Escape("\\?")
+    Escape("\\@")
+    Escape("\\[")
+    Escape("\\\\")
+    Escape("\\]")
+    Escape("\\^")
+    Escape("\\_")
+    Escape("\\‘")
+    Escape("\\{")
+    Escape("\\|")
+    Escape("\\}")
+    Escape("\\~")
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 299)", () => {
+    ist(parse("\\\t\\A\\a\\ \\3\\φ\\«\n"), r`Document {
+  Paragraph("\\\t\\A\\a\\ \\3\\φ\\«")
+}
+`)
+  });
+
+  it("Backslash escapes (example 300)", () => {
+    ist(parse("\\*not emphasized*\n\\<br/> not a tag\n\\[not a link](/foo)\n\\`not code`\n1\\. not a list\n\\* not a list\n\\# not a heading\n\\[foo]: /url \"not a reference\"\n\\&ouml; not a character entity\n"), r`Document {
+  Paragraph {
+    Escape("\\*")
+    Escape("\\<")
+    Escape("\\[")
+    Escape("\\‘")
+    Escape("\\.")
+    Escape("\\*")
+    Escape("\\#")
+    Escape("\\[")
+    Escape("\\&")
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 301)", () => {
+    ist(parse("\\\\*emphasis*\n"), r`Document {
+  Paragraph {
+    Escape("\\\\")
+    Emphasis {
+      EmphasisMark("*", 2-3)
+      EmphasisMark("*", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 302)", () => {
+    ist(parse("foo\\\nbar\n"), r`Document {
+  Paragraph {
+    HardBreak("\\\n")
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 303)", () => {
+    ist(parse("`` \\[\\` ``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 8-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 304)", () => {
+    ist(parse("    \\[\\]\n"), r`Document {
+  CodeBlock {
+    CodeText("\\[\\]")
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 305)", () => {
+    ist(parse("~~~\n\\[\\]\n~~~\n"), r`Document {
+  FencedCode {
+    CodeMark("~~~", 0-3)
+    CodeText("\\[\\]")
+    CodeMark("~~~", 9-12)
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 306)", () => {
+    ist(parse("<http://example.com?find=\\*>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://example.com?find=\\*")
+      LinkMark(">", 27-28)
+    }
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 307)", () => {
+    ist(parse("<a href=\"/bar\\/)\">\n"), r`Document {
+  HTMLBlock("<a href=\"/bar\\/)\">")
+}
+`)
+  });
+
+  it("Backslash escapes (example 308)", () => {
+    ist(parse("[foo](/bar\\* \"ti\\*tle\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkMark("(", 5-6)
+      URL("/bar\\*")
+      LinkTitle("\"ti\\*tle\"")
+      LinkMark(")", 22-23)
+    }
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 309)", () => {
+    ist(parse("[foo]\n\n[foo]: /bar\\* \"ti\\*tle\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("/bar\\*")
+    LinkTitle("\"ti\\*tle\"")
+  }
+}
+`)
+  });
+
+  it("Backslash escapes (example 310)", () => {
+    ist(parse("``` foo\\+bar\nfoo\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeInfo("foo\\+bar")
+    CodeText("foo")
+    CodeMark("‘‘‘", 17-20)
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 311)", () => {
+    ist(parse("&nbsp; &amp; &copy; &AElig; &Dcaron;\n&frac34; &HilbertSpace; &DifferentialD;\n&ClockwiseContourIntegral; &ngE;\n"), r`Document {
+  Paragraph {
+    Entity("&nbsp;")
+    Entity("&amp;")
+    Entity("&copy;")
+    Entity("&AElig;")
+    Entity("&Dcaron;")
+    Entity("&frac34;")
+    Entity("&HilbertSpace;")
+    Entity("&DifferentialD;")
+    Entity("&ClockwiseContourIntegral;")
+    Entity("&ngE;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 312)", () => {
+    ist(parse("&#35; &#1234; &#992; &#0;\n"), r`Document {
+  Paragraph {
+    Entity("&#35;")
+    Entity("&#1234;")
+    Entity("&#992;")
+    Entity("&#0;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 313)", () => {
+    ist(parse("&#X22; &#XD06; &#xcab;\n"), r`Document {
+  Paragraph {
+    Entity("&#X22;")
+    Entity("&#XD06;")
+    Entity("&#xcab;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 314)", () => {
+    ist(parse("&nbsp &x; &#; &#x;\n&#987654321;\n&#abcdef0;\n&ThisIsNotDefined; &hi?;\n"), r`Document {
+  Paragraph {
+    Entity("&x;")
+    Entity("&#987654321;")
+    Entity("&ThisIsNotDefined;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 315)", () => {
+    ist(parse("&copy\n"), r`Document {
+  Paragraph("&copy")
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 316)", () => {
+    ist(parse("&MadeUpEntity;\n"), r`Document {
+  Paragraph {
+    Entity("&MadeUpEntity;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 317)", () => {
+    ist(parse("<a href=\"&ouml;&ouml;.html\">\n"), r`Document {
+  HTMLBlock("<a href=\"&ouml;&ouml;.html\">")
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 318)", () => {
+    ist(parse("[foo](/f&ouml;&ouml; \"f&ouml;&ouml;\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkMark("(", 5-6)
+      URL("/f&ouml;&ouml;")
+      LinkTitle("\"f&ouml;&ouml;\"")
+      LinkMark(")", 36-37)
+    }
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 319)", () => {
+    ist(parse("[foo]\n\n[foo]: /f&ouml;&ouml; \"f&ouml;&ouml;\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("/f&ouml;&ouml;")
+    LinkTitle("\"f&ouml;&ouml;\"")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 320)", () => {
+    ist(parse("``` f&ouml;&ouml;\nfoo\n```\n"), r`Document {
+  FencedCode {
+    CodeMark("‘‘‘", 0-3)
+    CodeInfo("f&ouml;&ouml;")
+    CodeText("foo")
+    CodeMark("‘‘‘", 22-25)
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 321)", () => {
+    ist(parse("`f&ouml;&ouml;`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 322)", () => {
+    ist(parse("    f&ouml;f&ouml;\n"), r`Document {
+  CodeBlock {
+    CodeText("f&ouml;f&ouml;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 323)", () => {
+    ist(parse("&#42;foo&#42;\n*foo*\n"), r`Document {
+  Paragraph {
+    Entity("&#42;")
+    Entity("&#42;")
+    Emphasis {
+      EmphasisMark("*", 14-15)
+      EmphasisMark("*", 18-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 324)", () => {
+    ist(parse("&#42; foo\n\n* foo\n"), r`Document {
+  Paragraph {
+    Entity("&#42;")
+  }
+  BulletList {
+    ListItem {
+      ListMark("*", 11-12)
+      Paragraph("foo")
+    }
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 325)", () => {
+    ist(parse("foo&#10;&#10;bar\n"), r`Document {
+  Paragraph {
+    Entity("&#10;")
+    Entity("&#10;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 326)", () => {
+    ist(parse("&#9;foo\n"), r`Document {
+  Paragraph {
+    Entity("&#9;")
+  }
+}
+`)
+  });
+
+  it("Entity and numeric character references (example 327)", () => {
+    ist(parse("[a](url &quot;tit&quot;)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 2-3)
+    }
+    Entity("&quot;")
+    Entity("&quot;")
+  }
+}
+`)
+  });
+
+  it("Code spans (example 328)", () => {
+    ist(parse("`foo`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 329)", () => {
+    ist(parse("`` foo ` bar ``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 13-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 330)", () => {
+    ist(parse("` `` `\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 331)", () => {
+    ist(parse("`  ``  `\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 332)", () => {
+    ist(parse("` a`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 3-4)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 333)", () => {
+    ist(parse("` b `\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 334)", () => {
+    ist(parse("` `\n`  `\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 2-3)
+    }
+    InlineCode {
+      CodeMark("‘", 4-5)
+      CodeMark("‘", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 335)", () => {
+    ist(parse("``\nfoo\nbar  \nbaz\n``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 17-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 336)", () => {
+    ist(parse("``\nfoo \n``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 8-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 337)", () => {
+    ist(parse("`foo   bar \nbaz`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 338)", () => {
+    ist(parse("`foo\\`bar`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 339)", () => {
+    ist(parse("``foo`bar``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 0-2)
+      CodeMark("‘‘", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 340)", () => {
+    ist(parse("` foo `` bar `\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 13-14)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 341)", () => {
+    ist(parse("*foo`*`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 4-5)
+      CodeMark("‘", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 342)", () => {
+    ist(parse("[not a `link](/foo`)\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 7-8)
+      CodeMark("‘", 18-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 343)", () => {
+    ist(parse("`<a href=\"`\">`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 344)", () => {
+    ist(parse("<a href=\"`\">`\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"‘\">")
+  }
+}
+`)
+  });
+
+  it("Code spans (example 345)", () => {
+    ist(parse("`<http://foo.bar.`baz>`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 346)", () => {
+    ist(parse("<http://foo.bar.`baz>`\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://foo.bar.‘baz")
+      LinkMark(">", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Code spans (example 347)", () => {
+    ist(parse("```foo``\n"), r`Document {
+  Paragraph("‘‘‘foo‘‘")
+}
+`)
+  });
+
+  it("Code spans (example 348)", () => {
+    ist(parse("`foo\n"), r`Document {
+  Paragraph("‘foo")
+}
+`)
+  });
+
+  it("Code spans (example 349)", () => {
+    ist(parse("`foo``bar``\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘‘", 4-6)
+      CodeMark("‘‘", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 350)", () => {
+    ist(parse("*foo bar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 351)", () => {
+    ist(parse("a * foo bar*\n"), r`Document {
+  Paragraph("a * foo bar*")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 352)", () => {
+    ist(parse("a*\"foo\"*\n"), r`Document {
+  Paragraph("a*\"foo\"*")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 353)", () => {
+    ist(parse("* a *\n"), r`Document {
+  Paragraph("* a *")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 354)", () => {
+    ist(parse("foo*bar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 3-4)
+      EmphasisMark("*", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 355)", () => {
+    ist(parse("5*6*78\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 1-2)
+      EmphasisMark("*", 3-4)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 356)", () => {
+    ist(parse("_foo bar_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      EmphasisMark("_", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 357)", () => {
+    ist(parse("_ foo bar_\n"), r`Document {
+  Paragraph("_ foo bar_")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 358)", () => {
+    ist(parse("a_\"foo\"_\n"), r`Document {
+  Paragraph("a_\"foo\"_")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 359)", () => {
+    ist(parse("foo_bar_\n"), r`Document {
+  Paragraph("foo_bar_")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 360)", () => {
+    ist(parse("5_6_78\n"), r`Document {
+  Paragraph("5_6_78")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 361)", () => {
+    ist(parse("пристаням_стремятся_\n"), r`Document {
+  Paragraph("пристаням_стремятся_")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 362)", () => {
+    ist(parse("aa_\"bb\"_cc\n"), r`Document {
+  Paragraph("aa_\"bb\"_cc")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 363)", () => {
+    ist(parse("foo-_(bar)_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 4-5)
+      EmphasisMark("_", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 364)", () => {
+    ist(parse("_foo*\n"), r`Document {
+  Paragraph("_foo*")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 365)", () => {
+    ist(parse("*foo bar *\n"), r`Document {
+  Paragraph("*foo bar *")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 366)", () => {
+    ist(parse("*foo bar\n*\n"), r`Document {
+  Paragraph("*foo bar\n*")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 367)", () => {
+    ist(parse("*(*foo)\n"), r`Document {
+  Paragraph("*(*foo)")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 368)", () => {
+    ist(parse("*(*foo*)*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      Emphasis {
+        EmphasisMark("*", 2-3)
+        EmphasisMark("*", 6-7)
+      }
+      EmphasisMark("*", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 369)", () => {
+    ist(parse("*foo*bar\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 370)", () => {
+    ist(parse("_foo bar _\n"), r`Document {
+  Paragraph("_foo bar _")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 371)", () => {
+    ist(parse("_(_foo)\n"), r`Document {
+  Paragraph("_(_foo)")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 372)", () => {
+    ist(parse("_(_foo_)_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      Emphasis {
+        EmphasisMark("_", 2-3)
+        EmphasisMark("_", 6-7)
+      }
+      EmphasisMark("_", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 373)", () => {
+    ist(parse("_foo_bar\n"), r`Document {
+  Paragraph("_foo_bar")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 374)", () => {
+    ist(parse("_пристаням_стремятся\n"), r`Document {
+  Paragraph("_пристаням_стремятся")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 375)", () => {
+    ist(parse("_foo_bar_baz_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      EmphasisMark("_", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 376)", () => {
+    ist(parse("_(bar)_.\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      EmphasisMark("_", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 377)", () => {
+    ist(parse("**foo bar**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      EmphasisMark("**", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 378)", () => {
+    ist(parse("** foo bar**\n"), r`Document {
+  Paragraph("** foo bar**")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 379)", () => {
+    ist(parse("a**\"foo\"**\n"), r`Document {
+  Paragraph("a**\"foo\"**")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 380)", () => {
+    ist(parse("foo**bar**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 3-5)
+      EmphasisMark("**", 8-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 381)", () => {
+    ist(parse("__foo bar__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      EmphasisMark("__", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 382)", () => {
+    ist(parse("__ foo bar__\n"), r`Document {
+  Paragraph("__ foo bar__")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 383)", () => {
+    ist(parse("__\nfoo bar__\n"), r`Document {
+  Paragraph("__\nfoo bar__")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 384)", () => {
+    ist(parse("a__\"foo\"__\n"), r`Document {
+  Paragraph("a__\"foo\"__")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 385)", () => {
+    ist(parse("foo__bar__\n"), r`Document {
+  Paragraph("foo__bar__")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 386)", () => {
+    ist(parse("5__6__78\n"), r`Document {
+  Paragraph("5__6__78")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 387)", () => {
+    ist(parse("пристаням__стремятся__\n"), r`Document {
+  Paragraph("пристаням__стремятся__")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 388)", () => {
+    ist(parse("__foo, __bar__, baz__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      StrongEmphasis {
+        EmphasisMark("__", 7-9)
+        EmphasisMark("__", 12-14)
+      }
+      EmphasisMark("__", 19-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 389)", () => {
+    ist(parse("foo-__(bar)__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 4-6)
+      EmphasisMark("__", 11-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 390)", () => {
+    ist(parse("**foo bar **\n"), r`Document {
+  Paragraph("**foo bar **")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 391)", () => {
+    ist(parse("**(**foo)\n"), r`Document {
+  Paragraph("**(**foo)")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 392)", () => {
+    ist(parse("*(**foo**)*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 2-4)
+        EmphasisMark("**", 7-9)
+      }
+      EmphasisMark("*", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 393)", () => {
+    ist(parse("**Gomphocarpus (*Gomphocarpus physocarpus*, syn.\n*Asclepias physocarpa*)**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 16-17)
+        EmphasisMark("*", 41-42)
+      }
+      Emphasis {
+        EmphasisMark("*", 49-50)
+        EmphasisMark("*", 70-71)
+      }
+      EmphasisMark("**", 72-74)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 394)", () => {
+    ist(parse("**foo \"*bar*\" foo**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 7-8)
+        EmphasisMark("*", 11-12)
+      }
+      EmphasisMark("**", 17-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 395)", () => {
+    ist(parse("**foo**bar\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      EmphasisMark("**", 5-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 396)", () => {
+    ist(parse("__foo bar __\n"), r`Document {
+  Paragraph("__foo bar __")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 397)", () => {
+    ist(parse("__(__foo)\n"), r`Document {
+  Paragraph("__(__foo)")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 398)", () => {
+    ist(parse("_(__foo__)_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      StrongEmphasis {
+        EmphasisMark("__", 2-4)
+        EmphasisMark("__", 7-9)
+      }
+      EmphasisMark("_", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 399)", () => {
+    ist(parse("__foo__bar\n"), r`Document {
+  Paragraph("__foo__bar")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 400)", () => {
+    ist(parse("__пристаням__стремятся\n"), r`Document {
+  Paragraph("__пристаням__стремятся")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 401)", () => {
+    ist(parse("__foo__bar__baz__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      EmphasisMark("__", 15-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 402)", () => {
+    ist(parse("__(bar)__.\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      EmphasisMark("__", 7-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 403)", () => {
+    ist(parse("*foo [bar](/url)*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      Link {
+        LinkMark("[", 5-6)
+        LinkMark("]", 9-10)
+        LinkMark("(", 10-11)
+        URL("/url")
+        LinkMark(")", 15-16)
+      }
+      EmphasisMark("*", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 404)", () => {
+    ist(parse("*foo\nbar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 405)", () => {
+    ist(parse("_foo __bar__ baz_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      StrongEmphasis {
+        EmphasisMark("__", 5-7)
+        EmphasisMark("__", 10-12)
+      }
+      EmphasisMark("_", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 406)", () => {
+    ist(parse("_foo _bar_ baz_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      Emphasis {
+        EmphasisMark("_", 5-6)
+        EmphasisMark("_", 9-10)
+      }
+      EmphasisMark("_", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 407)", () => {
+    ist(parse("__foo_ bar_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      Emphasis {
+        EmphasisMark("_", 1-2)
+        EmphasisMark("_", 5-6)
+      }
+      EmphasisMark("_", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 408)", () => {
+    ist(parse("*foo *bar**\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      Emphasis {
+        EmphasisMark("*", 5-6)
+        EmphasisMark("*", 9-10)
+      }
+      EmphasisMark("*", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 409)", () => {
+    ist(parse("*foo **bar** baz*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 5-7)
+        EmphasisMark("**", 10-12)
+      }
+      EmphasisMark("*", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 410)", () => {
+    ist(parse("*foo**bar**baz*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 4-6)
+        EmphasisMark("**", 9-11)
+      }
+      EmphasisMark("*", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 411)", () => {
+    ist(parse("*foo**bar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 9-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 412)", () => {
+    ist(parse("***foo** bar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 1-3)
+        EmphasisMark("**", 6-8)
+      }
+      EmphasisMark("*", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 413)", () => {
+    ist(parse("*foo **bar***\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 5-7)
+        EmphasisMark("**", 10-12)
+      }
+      EmphasisMark("*", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 414)", () => {
+    ist(parse("*foo**bar***\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 4-6)
+        EmphasisMark("**", 9-11)
+      }
+      EmphasisMark("*", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 415)", () => {
+    ist(parse("foo***bar***baz\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 3-4)
+      StrongEmphasis {
+        EmphasisMark("**", 4-6)
+        EmphasisMark("**", 9-11)
+      }
+      EmphasisMark("*", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 416)", () => {
+    ist(parse("foo******bar*********baz\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 3-5)
+      StrongEmphasis {
+        EmphasisMark("**", 5-7)
+        StrongEmphasis {
+          EmphasisMark("**", 7-9)
+          EmphasisMark("**", 12-14)
+        }
+        EmphasisMark("**", 14-16)
+      }
+      EmphasisMark("**", 16-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 417)", () => {
+    ist(parse("*foo **bar *baz* bim** bop*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 5-7)
+        Emphasis {
+          EmphasisMark("*", 11-12)
+          EmphasisMark("*", 15-16)
+        }
+        EmphasisMark("**", 20-22)
+      }
+      EmphasisMark("*", 26-27)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 418)", () => {
+    ist(parse("*foo [*bar*](/url)*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      Link {
+        LinkMark("[", 5-6)
+        Emphasis {
+          EmphasisMark("*", 6-7)
+          EmphasisMark("*", 10-11)
+        }
+        LinkMark("]", 11-12)
+        LinkMark("(", 12-13)
+        URL("/url")
+        LinkMark(")", 17-18)
+      }
+      EmphasisMark("*", 18-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 419)", () => {
+    ist(parse("** is not an empty emphasis\n"), r`Document {
+  Paragraph("** is not an empty emphasis")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 420)", () => {
+    ist(parse("**** is not an empty strong emphasis\n"), r`Document {
+  Paragraph("**** is not an empty strong emphasis")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 421)", () => {
+    ist(parse("**foo [bar](/url)**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Link {
+        LinkMark("[", 6-7)
+        LinkMark("]", 10-11)
+        LinkMark("(", 11-12)
+        URL("/url")
+        LinkMark(")", 16-17)
+      }
+      EmphasisMark("**", 17-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 422)", () => {
+    ist(parse("**foo\nbar**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      EmphasisMark("**", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 423)", () => {
+    ist(parse("__foo _bar_ baz__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      Emphasis {
+        EmphasisMark("_", 6-7)
+        EmphasisMark("_", 10-11)
+      }
+      EmphasisMark("__", 15-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 424)", () => {
+    ist(parse("__foo __bar__ baz__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      StrongEmphasis {
+        EmphasisMark("__", 6-8)
+        EmphasisMark("__", 11-13)
+      }
+      EmphasisMark("__", 17-19)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 425)", () => {
+    ist(parse("____foo__ bar__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      StrongEmphasis {
+        EmphasisMark("__", 2-4)
+        EmphasisMark("__", 7-9)
+      }
+      EmphasisMark("__", 13-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 426)", () => {
+    ist(parse("**foo **bar****\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      StrongEmphasis {
+        EmphasisMark("**", 6-8)
+        EmphasisMark("**", 11-13)
+      }
+      EmphasisMark("**", 13-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 427)", () => {
+    ist(parse("**foo *bar* baz**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        EmphasisMark("*", 10-11)
+      }
+      EmphasisMark("**", 15-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 428)", () => {
+    ist(parse("**foo*bar*baz**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 5-6)
+        EmphasisMark("*", 9-10)
+      }
+      EmphasisMark("**", 13-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 429)", () => {
+    ist(parse("***foo* bar**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 2-3)
+        EmphasisMark("*", 6-7)
+      }
+      EmphasisMark("**", 11-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 430)", () => {
+    ist(parse("**foo *bar***\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        EmphasisMark("*", 10-11)
+      }
+      EmphasisMark("**", 11-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 431)", () => {
+    ist(parse("**foo *bar **baz**\nbim* bop**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        StrongEmphasis {
+          EmphasisMark("**", 11-13)
+          EmphasisMark("**", 16-18)
+        }
+        EmphasisMark("*", 22-23)
+      }
+      EmphasisMark("**", 27-29)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 432)", () => {
+    ist(parse("**foo [*bar*](/url)**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      Link {
+        LinkMark("[", 6-7)
+        Emphasis {
+          EmphasisMark("*", 7-8)
+          EmphasisMark("*", 11-12)
+        }
+        LinkMark("]", 12-13)
+        LinkMark("(", 13-14)
+        URL("/url")
+        LinkMark(")", 18-19)
+      }
+      EmphasisMark("**", 19-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 433)", () => {
+    ist(parse("__ is not an empty emphasis\n"), r`Document {
+  Paragraph("__ is not an empty emphasis")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 434)", () => {
+    ist(parse("____ is not an empty strong emphasis\n"), r`Document {
+  Paragraph("____ is not an empty strong emphasis")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 435)", () => {
+    ist(parse("foo ***\n"), r`Document {
+  Paragraph("foo ***")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 436)", () => {
+    ist(parse("foo *\\**\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 4-5)
+      Escape("\\*")
+      EmphasisMark("*", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 437)", () => {
+    ist(parse("foo *_*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 4-5)
+      EmphasisMark("*", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 438)", () => {
+    ist(parse("foo *****\n"), r`Document {
+  Paragraph("foo *****")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 439)", () => {
+    ist(parse("foo **\\***\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 4-6)
+      Escape("\\*")
+      EmphasisMark("**", 8-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 440)", () => {
+    ist(parse("foo **_**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 4-6)
+      EmphasisMark("**", 7-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 441)", () => {
+    ist(parse("**foo*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 1-2)
+      EmphasisMark("*", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 442)", () => {
+    ist(parse("*foo**\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 443)", () => {
+    ist(parse("***foo**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 1-3)
+      EmphasisMark("**", 6-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 444)", () => {
+    ist(parse("****foo*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 3-4)
+      EmphasisMark("*", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 445)", () => {
+    ist(parse("**foo***\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      EmphasisMark("**", 5-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 446)", () => {
+    ist(parse("*foo****\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 447)", () => {
+    ist(parse("foo ___\n"), r`Document {
+  Paragraph("foo ___")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 448)", () => {
+    ist(parse("foo _\\__\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 4-5)
+      Escape("\\_")
+      EmphasisMark("_", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 449)", () => {
+    ist(parse("foo _*_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 4-5)
+      EmphasisMark("_", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 450)", () => {
+    ist(parse("foo _____\n"), r`Document {
+  Paragraph("foo _____")
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 451)", () => {
+    ist(parse("foo __\\___\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 4-6)
+      Escape("\\_")
+      EmphasisMark("__", 8-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 452)", () => {
+    ist(parse("foo __*__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 4-6)
+      EmphasisMark("__", 7-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 453)", () => {
+    ist(parse("__foo_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 1-2)
+      EmphasisMark("_", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 454)", () => {
+    ist(parse("_foo__\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      EmphasisMark("_", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 455)", () => {
+    ist(parse("___foo__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 1-3)
+      EmphasisMark("__", 6-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 456)", () => {
+    ist(parse("____foo_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 3-4)
+      EmphasisMark("_", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 457)", () => {
+    ist(parse("__foo___\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      EmphasisMark("__", 5-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 458)", () => {
+    ist(parse("_foo____\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      EmphasisMark("_", 4-5)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 459)", () => {
+    ist(parse("**foo**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      EmphasisMark("**", 5-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 460)", () => {
+    ist(parse("*_foo_*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      Emphasis {
+        EmphasisMark("_", 1-2)
+        EmphasisMark("_", 5-6)
+      }
+      EmphasisMark("*", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 461)", () => {
+    ist(parse("__foo__\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      EmphasisMark("__", 5-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 462)", () => {
+    ist(parse("_*foo*_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      Emphasis {
+        EmphasisMark("*", 1-2)
+        EmphasisMark("*", 5-6)
+      }
+      EmphasisMark("_", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 463)", () => {
+    ist(parse("****foo****\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      StrongEmphasis {
+        EmphasisMark("**", 2-4)
+        EmphasisMark("**", 7-9)
+      }
+      EmphasisMark("**", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 464)", () => {
+    ist(parse("____foo____\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("__", 0-2)
+      StrongEmphasis {
+        EmphasisMark("__", 2-4)
+        EmphasisMark("__", 7-9)
+      }
+      EmphasisMark("__", 9-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 465)", () => {
+    ist(parse("******foo******\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 0-2)
+      StrongEmphasis {
+        EmphasisMark("**", 2-4)
+        StrongEmphasis {
+          EmphasisMark("**", 4-6)
+          EmphasisMark("**", 9-11)
+        }
+        EmphasisMark("**", 11-13)
+      }
+      EmphasisMark("**", 13-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 466)", () => {
+    ist(parse("***foo***\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("**", 1-3)
+        EmphasisMark("**", 6-8)
+      }
+      EmphasisMark("*", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 467)", () => {
+    ist(parse("_____foo_____\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      StrongEmphasis {
+        EmphasisMark("__", 1-3)
+        StrongEmphasis {
+          EmphasisMark("__", 3-5)
+          EmphasisMark("__", 8-10)
+        }
+        EmphasisMark("__", 10-12)
+      }
+      EmphasisMark("_", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 468)", () => {
+    ist(parse("*foo _bar* baz_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      EmphasisMark("*", 9-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 469)", () => {
+    ist(parse("*foo __bar *baz bim__ bam*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      StrongEmphasis {
+        EmphasisMark("__", 5-7)
+        EmphasisMark("__", 19-21)
+      }
+      EmphasisMark("*", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 470)", () => {
+    ist(parse("**foo **bar baz**\n"), r`Document {
+  Paragraph {
+    StrongEmphasis {
+      EmphasisMark("**", 6-8)
+      EmphasisMark("**", 15-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 471)", () => {
+    ist(parse("*foo *bar baz*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 5-6)
+      EmphasisMark("*", 13-14)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 472)", () => {
+    ist(parse("*[bar*](/url)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 1-2)
+      LinkMark("]", 6-7)
+      LinkMark("(", 7-8)
+      URL("/url")
+      LinkMark(")", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 473)", () => {
+    ist(parse("_foo [bar_](/url)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 5-6)
+      LinkMark("]", 10-11)
+      LinkMark("(", 11-12)
+      URL("/url")
+      LinkMark(")", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 474)", () => {
+    ist(parse("*<img src=\"foo\" title=\"*\"/>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<img src=\"foo\" title=\"*\"/>")
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 475)", () => {
+    ist(parse("**<a href=\"**\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"**\">")
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 476)", () => {
+    ist(parse("__<a href=\"__\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"__\">")
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 477)", () => {
+    ist(parse("*a `*`*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      InlineCode {
+        CodeMark("‘", 3-4)
+        CodeMark("‘", 5-6)
+      }
+      EmphasisMark("*", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 478)", () => {
+    ist(parse("_a `_`_\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("_", 0-1)
+      InlineCode {
+        CodeMark("‘", 3-4)
+        CodeMark("‘", 5-6)
+      }
+      EmphasisMark("_", 6-7)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 479)", () => {
+    ist(parse("**a<http://foo.bar/?q=**>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 3-4)
+      URL("http://foo.bar/?q=**")
+      LinkMark(">", 24-25)
+    }
+  }
+}
+`)
+  });
+
+  it("Emphasis and strong emphasis (example 480)", () => {
+    ist(parse("__a<http://foo.bar/?q=__>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 3-4)
+      URL("http://foo.bar/?q=__")
+      LinkMark(">", 24-25)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 481)", () => {
+    ist(parse("[link](/uri \"title\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/uri")
+      LinkTitle("\"title\"")
+      LinkMark(")", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 482)", () => {
+    ist(parse("[link](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/uri")
+      LinkMark(")", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 483)", () => {
+    ist(parse("[link]()\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      LinkMark(")", 7-8)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 484)", () => {
+    ist(parse("[link](<>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("<>")
+      LinkMark(")", 9-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 485)", () => {
+    ist(parse("[link](/my uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 486)", () => {
+    ist(parse("[link](</my uri>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("</my uri>")
+      LinkMark(")", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 487)", () => {
+    ist(parse("[link](foo\nbar)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 488)", () => {
+    ist(parse("[link](<foo\nbar>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+    HTMLTag("<foo\nbar>")
+  }
+}
+`)
+  });
+
+  it("Links (example 489)", () => {
+    ist(parse("[a](<b)c>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 2-3)
+      LinkMark("(", 3-4)
+      URL("<b)c>")
+      LinkMark(")", 9-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 490)", () => {
+    ist(parse("[link](<foo\\>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("<foo\\>")
+      LinkMark(")", 13-14)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 491)", () => {
+    ist(parse("[a](<b)c\n[a](<b)c>\n[a](<b>c)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 2-3)
+    }
+    Link {
+      LinkMark("[", 9-10)
+      LinkMark("]", 11-12)
+    }
+    Link {
+      LinkMark("[", 19-20)
+      LinkMark("]", 21-22)
+    }
+    HTMLTag("<b>")
+  }
+}
+`)
+  });
+
+  it("Links (example 492)", () => {
+    ist(parse("[link](\\(foo\\))\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("\\(foo\\)")
+      LinkMark(")", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 493)", () => {
+    ist(parse("[link](foo(and(bar)))\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("foo(and(bar))")
+      LinkMark(")", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 494)", () => {
+    ist(parse("[link](foo\\(and\\(bar\\))\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("foo\\(and\\(bar\\)")
+      LinkMark(")", 22-23)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 495)", () => {
+    ist(parse("[link](<foo(and(bar)>)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("<foo(and(bar)>")
+      LinkMark(")", 21-22)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 496)", () => {
+    ist(parse("[link](foo\\)\\:)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("foo\\)\\:")
+      LinkMark(")", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 497)", () => {
+    ist(parse("[link](#fragment)\n\n[link](http://example.com#fragment)\n\n[link](http://example.com?foo=3#frag)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("#fragment")
+      LinkMark(")", 16-17)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 19-20)
+      LinkMark("]", 24-25)
+      LinkMark("(", 25-26)
+      URL("http://example.com#fragment")
+      LinkMark(")", 53-54)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 56-57)
+      LinkMark("]", 61-62)
+      LinkMark("(", 62-63)
+      URL("http://example.com?foo=3#frag")
+      LinkMark(")", 92-93)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 498)", () => {
+    ist(parse("[link](foo\\bar)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("foo\\bar")
+      LinkMark(")", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 499)", () => {
+    ist(parse("[link](foo%20b&auml;)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("foo%20b&auml;")
+      LinkMark(")", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 500)", () => {
+    ist(parse("[link](\"title\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("\"title\"")
+      LinkMark(")", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 501)", () => {
+    ist(parse("[link](/url \"title\")\n[link](/url 'title')\n[link](/url (title))\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/url")
+      LinkTitle("\"title\"")
+      LinkMark(")", 19-20)
+    }
+    Link {
+      LinkMark("[", 21-22)
+      LinkMark("]", 26-27)
+      LinkMark("(", 27-28)
+      URL("/url")
+      LinkTitle("'title'")
+      LinkMark(")", 40-41)
+    }
+    Link {
+      LinkMark("[", 42-43)
+      LinkMark("]", 47-48)
+      LinkMark("(", 48-49)
+      URL("/url")
+      LinkTitle("(title)")
+      LinkMark(")", 61-62)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 502)", () => {
+    ist(parse("[link](/url \"title \\\"&quot;\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/url")
+      LinkTitle("\"title \\\"&quot;\"")
+      LinkMark(")", 28-29)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 503)", () => {
+    ist(parse("[link](/url \"title\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/url \"title\"")
+      LinkMark(")", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 504)", () => {
+    ist(parse("[link](/url \"title \"and\" title\")\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 505)", () => {
+    ist(parse("[link](/url 'title \"and\" title')\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/url")
+      LinkTitle("'title \"and\" title'")
+      LinkMark(")", 31-32)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 506)", () => {
+    ist(parse("[link](   /uri\n  \"title\"  )\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/uri")
+      LinkTitle("\"title\"")
+      LinkMark(")", 26-27)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 507)", () => {
+    ist(parse("[link] (/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 508)", () => {
+    ist(parse("[link [foo [bar]]](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 11-12)
+      LinkMark("]", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 509)", () => {
+    ist(parse("[link] bar](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 5-6)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 510)", () => {
+    ist(parse("[link [bar](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 6-7)
+      LinkMark("]", 10-11)
+      LinkMark("(", 11-12)
+      URL("/uri")
+      LinkMark(")", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 511)", () => {
+    ist(parse("[link \\[bar](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Escape("\\[")
+      LinkMark("]", 11-12)
+      LinkMark("(", 12-13)
+      URL("/uri")
+      LinkMark(")", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 512)", () => {
+    ist(parse("[link *foo **bar** `#`*](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        StrongEmphasis {
+          EmphasisMark("**", 11-13)
+          EmphasisMark("**", 16-18)
+        }
+        InlineCode {
+          CodeMark("‘", 19-20)
+          CodeMark("‘", 21-22)
+        }
+        EmphasisMark("*", 22-23)
+      }
+      LinkMark("]", 23-24)
+      LinkMark("(", 24-25)
+      URL("/uri")
+      LinkMark(")", 29-30)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 513)", () => {
+    ist(parse("[![moon](moon.jpg)](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Image {
+        LinkMark("![", 1-3)
+        LinkMark("]", 7-8)
+        LinkMark("(", 8-9)
+        URL("moon.jpg")
+        LinkMark(")", 17-18)
+      }
+      LinkMark("]", 18-19)
+      LinkMark("(", 19-20)
+      URL("/uri")
+      LinkMark(")", 24-25)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 514)", () => {
+    ist(parse("[foo [bar](/uri)](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 5-6)
+      LinkMark("]", 9-10)
+      LinkMark("(", 10-11)
+      URL("/uri")
+      LinkMark(")", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 515)", () => {
+    ist(parse("[foo *[bar [baz](/uri)](/uri)*](/uri)\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 5-6)
+      Link {
+        LinkMark("[", 11-12)
+        LinkMark("]", 15-16)
+        LinkMark("(", 16-17)
+        URL("/uri")
+        LinkMark(")", 21-22)
+      }
+      EmphasisMark("*", 29-30)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 516)", () => {
+    ist(parse("![[[foo](uri1)](uri2)](uri3)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Link {
+        LinkMark("[", 3-4)
+        LinkMark("]", 7-8)
+        LinkMark("(", 8-9)
+        URL("uri1")
+        LinkMark(")", 13-14)
+      }
+      LinkMark("]", 21-22)
+      LinkMark("(", 22-23)
+      URL("uri3")
+      LinkMark(")", 27-28)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 517)", () => {
+    ist(parse("*[foo*](/uri)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 1-2)
+      LinkMark("]", 6-7)
+      LinkMark("(", 7-8)
+      URL("/uri")
+      LinkMark(")", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 518)", () => {
+    ist(parse("[foo *bar](baz*)\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 9-10)
+      LinkMark("(", 10-11)
+      URL("baz*")
+      LinkMark(")", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 519)", () => {
+    ist(parse("*foo [bar* baz]\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 5-6)
+      LinkMark("]", 14-15)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 520)", () => {
+    ist(parse("[foo <bar attr=\"](baz)\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<bar attr=\"](baz)\">")
+  }
+}
+`)
+  });
+
+  it("Links (example 521)", () => {
+    ist(parse("[foo`](/uri)`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 4-5)
+      CodeMark("‘", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 522)", () => {
+    ist(parse("[foo<http://example.com/?search=](uri)>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 4-5)
+      URL("http://example.com/?search=](uri)")
+      LinkMark(">", 38-39)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 523)", () => {
+    ist(parse("[foo][bar]\n\n[bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[bar]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 17-18)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 524)", () => {
+    ist(parse("[link [foo [bar]]][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 11-12)
+      LinkMark("]", 15-16)
+    }
+    Link {
+      LinkMark("[", 18-19)
+      LinkMark("]", 22-23)
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 30-31)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 525)", () => {
+    ist(parse("[link \\[bar][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Escape("\\[")
+      LinkMark("]", 11-12)
+      LinkLabel("[ref]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 24-25)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 526)", () => {
+    ist(parse("[link *foo **bar** `#`*][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        StrongEmphasis {
+          EmphasisMark("**", 11-13)
+          EmphasisMark("**", 16-18)
+        }
+        InlineCode {
+          CodeMark("‘", 19-20)
+          CodeMark("‘", 21-22)
+        }
+        EmphasisMark("*", 22-23)
+      }
+      LinkMark("]", 23-24)
+      LinkLabel("[ref]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 36-37)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 527)", () => {
+    ist(parse("[![moon](moon.jpg)][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Image {
+        LinkMark("![", 1-3)
+        LinkMark("]", 7-8)
+        LinkMark("(", 8-9)
+        URL("moon.jpg")
+        LinkMark(")", 17-18)
+      }
+      LinkMark("]", 18-19)
+      LinkLabel("[ref]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 31-32)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 528)", () => {
+    ist(parse("[foo [bar](/uri)][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 5-6)
+      LinkMark("]", 9-10)
+      LinkMark("(", 10-11)
+      URL("/uri")
+      LinkMark(")", 15-16)
+    }
+    Link {
+      LinkMark("[", 17-18)
+      LinkMark("]", 21-22)
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 29-30)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 529)", () => {
+    ist(parse("[foo *bar [baz][ref]*][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 5-6)
+      Link {
+        LinkMark("[", 10-11)
+        LinkMark("]", 14-15)
+        LinkLabel("[ref]")
+      }
+      EmphasisMark("*", 20-21)
+    }
+    Link {
+      LinkMark("[", 22-23)
+      LinkMark("]", 26-27)
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 34-35)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 530)", () => {
+    ist(parse("*[foo*][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 1-2)
+      LinkMark("]", 6-7)
+      LinkLabel("[ref]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 19-20)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 531)", () => {
+    ist(parse("[foo *bar][ref]\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 9-10)
+      LinkLabel("[ref]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 22-23)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 532)", () => {
+    ist(parse("[foo <bar attr=\"][ref]\">\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    HTMLTag("<bar attr=\"][ref]\">")
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 31-32)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 533)", () => {
+    ist(parse("[foo`][ref]`\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 4-5)
+      CodeMark("‘", 11-12)
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 19-20)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 534)", () => {
+    ist(parse("[foo<http://example.com/?search=][ref]>\n\n[ref]: /uri\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 4-5)
+      URL("http://example.com/?search=][ref]")
+      LinkMark(">", 38-39)
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref]")
+    LinkMark(":", 46-47)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 535)", () => {
+    ist(parse("[foo][BaR]\n\n[bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[BaR]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 17-18)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 536)", () => {
+    ist(parse("[Толпой][Толпой] is a Russian word.\n\n[ТОЛПОЙ]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 7-8)
+      LinkLabel("[Толпой]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ТОЛПОЙ]")
+    LinkMark(":", 45-46)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Links (example 537)", () => {
+    ist(parse("[Foo\n  bar]: /url\n\n[Baz][Foo bar]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[Foo\n  bar]")
+    LinkMark(":", 11-12)
+    URL("/url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 19-20)
+      LinkMark("]", 23-24)
+      LinkLabel("[Foo bar]")
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 538)", () => {
+    ist(parse("[foo] [bar]\n\n[bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+    Link {
+      LinkMark("[", 6-7)
+      LinkMark("]", 10-11)
+    }
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 18-19)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 539)", () => {
+    ist(parse("[foo]\n[bar]\n\n[bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+    Link {
+      LinkMark("[", 6-7)
+      LinkMark("]", 10-11)
+    }
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 18-19)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 540)", () => {
+    ist(parse("[foo]: /url1\n\n[foo]: /url2\n\n[bar][foo]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 5-6)
+    URL("/url1")
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 19-20)
+    URL("/url2")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 28-29)
+      LinkMark("]", 32-33)
+      LinkLabel("[foo]")
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 541)", () => {
+    ist(parse("[bar][foo\\!]\n\n[foo!]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[foo\\!]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo!]")
+    LinkMark(":", 20-21)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Links (example 542)", () => {
+    ist(parse("[foo][ref[]\n\n[ref[]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  Paragraph("[ref[]: /uri")
+}
+`)
+  });
+
+  it("Links (example 543)", () => {
+    ist(parse("[foo][ref[bar]]\n\n[ref[bar]]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+    Link {
+      LinkMark("[", 9-10)
+      LinkMark("]", 13-14)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 21-22)
+      LinkMark("]", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 544)", () => {
+    ist(parse("[[[foo]]]\n\n[[[foo]]]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 2-3)
+      LinkMark("]", 6-7)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 13-14)
+      LinkMark("]", 17-18)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 545)", () => {
+    ist(parse("[foo][ref\\[]\n\n[ref\\[]: /uri\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[ref\\[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[ref\\[]")
+    LinkMark(":", 21-22)
+    URL("/uri")
+  }
+}
+`)
+  });
+
+  it("Links (example 546)", () => {
+    ist(parse("[bar\\\\]: /uri\n\n[bar\\\\]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[bar\\\\]")
+    LinkMark(":", 7-8)
+    URL("/uri")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 15-16)
+      Escape("\\\\")
+      LinkMark("]", 21-22)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 547)", () => {
+    ist(parse("[]\n\n[]: /uri\n"), r`Document {
+  Paragraph("[]")
+  Paragraph("[]: /uri")
+}
+`)
+  });
+
+  it("Links (example 548)", () => {
+    ist(parse("[\n ]\n\n[\n ]: /uri\n"), r`Document {
+  Paragraph("[\n ]")
+  Paragraph("[\n ]: /uri")
+}
+`)
+  });
+
+  it("Links (example 549)", () => {
+    ist(parse("[foo][]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 550)", () => {
+    ist(parse("[*foo* bar][]\n\n[*foo* bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Emphasis {
+        EmphasisMark("*", 1-2)
+        EmphasisMark("*", 5-6)
+      }
+      LinkMark("]", 10-11)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[*foo* bar]")
+    LinkMark(":", 26-27)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 551)", () => {
+    ist(parse("[Foo][]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 552)", () => {
+    ist(parse("[foo] \n[]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 16-17)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 553)", () => {
+    ist(parse("[foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 554)", () => {
+    ist(parse("[*foo* bar]\n\n[*foo* bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      Emphasis {
+        EmphasisMark("*", 1-2)
+        EmphasisMark("*", 5-6)
+      }
+      LinkMark("]", 10-11)
+    }
+  }
+  LinkReference {
+    LinkLabel("[*foo* bar]")
+    LinkMark(":", 24-25)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 555)", () => {
+    ist(parse("[[*foo* bar]]\n\n[*foo* bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 1-2)
+      Emphasis {
+        EmphasisMark("*", 2-3)
+        EmphasisMark("*", 6-7)
+      }
+      LinkMark("]", 11-12)
+    }
+  }
+  LinkReference {
+    LinkLabel("[*foo* bar]")
+    LinkMark(":", 26-27)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 556)", () => {
+    ist(parse("[[bar [foo]\n\n[foo]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 6-7)
+      LinkMark("]", 10-11)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 18-19)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Links (example 557)", () => {
+    ist(parse("[Foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 12-13)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 558)", () => {
+    ist(parse("[foo] bar\n\n[foo]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 16-17)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Links (example 559)", () => {
+    ist(parse("\\[foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Escape("\\[")
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 13-14)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Links (example 560)", () => {
+    ist(parse("[foo*]: /url\n\n*[foo*]\n"), r`Document {
+  LinkReference {
+    LinkLabel("[foo*]")
+    LinkMark(":", 6-7)
+    URL("/url")
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 15-16)
+      LinkMark("]", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Links (example 561)", () => {
+    ist(parse("[foo][bar]\n\n[foo]: /url1\n[bar]: /url2\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[bar]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 17-18)
+    URL("/url1")
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 30-31)
+    URL("/url2")
+  }
+}
+`)
+  });
+
+  it("Links (example 562)", () => {
+    ist(parse("[foo][]\n\n[foo]: /url1\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url1")
+  }
+}
+`)
+  });
+
+  it("Links (example 563)", () => {
+    ist(parse("[foo]()\n\n[foo]: /url1\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkMark("(", 5-6)
+      LinkMark(")", 6-7)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url1")
+  }
+}
+`)
+  });
+
+  it("Links (example 564)", () => {
+    ist(parse("[foo](not a link)\n\n[foo]: /url1\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 24-25)
+    URL("/url1")
+  }
+}
+`)
+  });
+
+  it("Links (example 565)", () => {
+    ist(parse("[foo][bar][baz]\n\n[baz]: /url\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[bar]")
+    }
+    Link {
+      LinkMark("[", 10-11)
+      LinkMark("]", 14-15)
+    }
+  }
+  LinkReference {
+    LinkLabel("[baz]")
+    LinkMark(":", 22-23)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Links (example 566)", () => {
+    ist(parse("[foo][bar][baz]\n\n[baz]: /url1\n[bar]: /url2\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[bar]")
+    }
+    Link {
+      LinkMark("[", 10-11)
+      LinkMark("]", 14-15)
+    }
+  }
+  LinkReference {
+    LinkLabel("[baz]")
+    LinkMark(":", 22-23)
+    URL("/url1")
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 35-36)
+    URL("/url2")
+  }
+}
+`)
+  });
+
+  it("Links (example 567)", () => {
+    ist(parse("[foo][bar][baz]\n\n[baz]: /url1\n[foo]: /url2\n"), r`Document {
+  Paragraph {
+    Link {
+      LinkMark("[", 0-1)
+      LinkMark("]", 4-5)
+      LinkLabel("[bar]")
+    }
+    Link {
+      LinkMark("[", 10-11)
+      LinkMark("]", 14-15)
+    }
+  }
+  LinkReference {
+    LinkLabel("[baz]")
+    LinkMark(":", 22-23)
+    URL("/url1")
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 35-36)
+    URL("/url2")
+  }
+}
+`)
+  });
+
+  it("Images (example 568)", () => {
+    ist(parse("![foo](/url \"title\")\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("/url")
+      LinkTitle("\"title\"")
+      LinkMark(")", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 569)", () => {
+    ist(parse("![foo *bar*]\n\n[foo *bar*]: train.jpg \"train & tracks\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        EmphasisMark("*", 10-11)
+      }
+      LinkMark("]", 11-12)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo *bar*]")
+    LinkMark(":", 25-26)
+    URL("train.jpg")
+    LinkTitle("\"train & tracks\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 570)", () => {
+    ist(parse("![foo ![bar](/url)](/url2)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Image {
+        LinkMark("![", 6-8)
+        LinkMark("]", 11-12)
+        LinkMark("(", 12-13)
+        URL("/url")
+        LinkMark(")", 17-18)
+      }
+      LinkMark("]", 18-19)
+      LinkMark("(", 19-20)
+      URL("/url2")
+      LinkMark(")", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 571)", () => {
+    ist(parse("![foo [bar](/url)](/url2)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Link {
+        LinkMark("[", 6-7)
+        LinkMark("]", 10-11)
+        LinkMark("(", 11-12)
+        URL("/url")
+        LinkMark(")", 16-17)
+      }
+      LinkMark("]", 17-18)
+      LinkMark("(", 18-19)
+      URL("/url2")
+      LinkMark(")", 24-25)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 572)", () => {
+    ist(parse("![foo *bar*][]\n\n[foo *bar*]: train.jpg \"train & tracks\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        EmphasisMark("*", 10-11)
+      }
+      LinkMark("]", 11-12)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo *bar*]")
+    LinkMark(":", 27-28)
+    URL("train.jpg")
+    LinkTitle("\"train & tracks\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 573)", () => {
+    ist(parse("![foo *bar*][foobar]\n\n[FOOBAR]: train.jpg \"train & tracks\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Emphasis {
+        EmphasisMark("*", 6-7)
+        EmphasisMark("*", 10-11)
+      }
+      LinkMark("]", 11-12)
+      LinkLabel("[foobar]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[FOOBAR]")
+    LinkMark(":", 30-31)
+    URL("train.jpg")
+    LinkTitle("\"train & tracks\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 574)", () => {
+    ist(parse("![foo](train.jpg)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("train.jpg")
+      LinkMark(")", 16-17)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 575)", () => {
+    ist(parse("My ![foo bar](/path/to/train.jpg  \"title\"   )\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 3-5)
+      LinkMark("]", 12-13)
+      LinkMark("(", 13-14)
+      URL("/path/to/train.jpg")
+      LinkTitle("\"title\"")
+      LinkMark(")", 44-45)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 576)", () => {
+    ist(parse("![foo](<url>)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkMark("(", 6-7)
+      URL("<url>")
+      LinkMark(")", 12-13)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 577)", () => {
+    ist(parse("![](/url)\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 2-3)
+      LinkMark("(", 3-4)
+      URL("/url")
+      LinkMark(")", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 578)", () => {
+    ist(parse("![foo][bar]\n\n[bar]: /url\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkLabel("[bar]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[bar]")
+    LinkMark(":", 18-19)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Images (example 579)", () => {
+    ist(parse("![foo][bar]\n\n[BAR]: /url\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkLabel("[bar]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[BAR]")
+    LinkMark(":", 18-19)
+    URL("/url")
+  }
+}
+`)
+  });
+
+  it("Images (example 580)", () => {
+    ist(parse("![foo][]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 15-16)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 581)", () => {
+    ist(parse("![*foo* bar][]\n\n[*foo* bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Emphasis {
+        EmphasisMark("*", 2-3)
+        EmphasisMark("*", 6-7)
+      }
+      LinkMark("]", 11-12)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[*foo* bar]")
+    LinkMark(":", 27-28)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 582)", () => {
+    ist(parse("![Foo][]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+      LinkLabel("[]")
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 15-16)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 583)", () => {
+    ist(parse("![foo] \n[]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 17-18)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 584)", () => {
+    ist(parse("![foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 13-14)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 585)", () => {
+    ist(parse("![*foo* bar]\n\n[*foo* bar]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Emphasis {
+        EmphasisMark("*", 2-3)
+        EmphasisMark("*", 6-7)
+      }
+      LinkMark("]", 11-12)
+    }
+  }
+  LinkReference {
+    LinkLabel("[*foo* bar]")
+    LinkMark(":", 25-26)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 586)", () => {
+    ist(parse("![[foo]]\n\n[[foo]]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      Link {
+        LinkMark("[", 2-3)
+        LinkMark("]", 6-7)
+      }
+      LinkMark("]", 7-8)
+    }
+  }
+  Paragraph {
+    Link {
+      LinkMark("[", 11-12)
+      LinkMark("]", 15-16)
+    }
+  }
+}
+`)
+  });
+
+  it("Images (example 587)", () => {
+    ist(parse("![Foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Image {
+      LinkMark("![", 0-2)
+      LinkMark("]", 5-6)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 13-14)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 588)", () => {
+    ist(parse("!\\[foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Escape("\\[")
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Images (example 589)", () => {
+    ist(parse("\\![foo]\n\n[foo]: /url \"title\"\n"), r`Document {
+  Paragraph {
+    Escape("\\!")
+    Link {
+      LinkMark("[", 2-3)
+      LinkMark("]", 6-7)
+    }
+  }
+  LinkReference {
+    LinkLabel("[foo]")
+    LinkMark(":", 14-15)
+    URL("/url")
+    LinkTitle("\"title\"")
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 590)", () => {
+    ist(parse("<http://foo.bar.baz>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://foo.bar.baz")
+      LinkMark(">", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 591)", () => {
+    ist(parse("<http://foo.bar.baz/test?q=hello&id=22&boolean>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://foo.bar.baz/test?q=hello&id=22&boolean")
+      LinkMark(">", 46-47)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 592)", () => {
+    ist(parse("<irc://foo.bar:2233/baz>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("irc://foo.bar:2233/baz")
+      LinkMark(">", 23-24)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 593)", () => {
+    ist(parse("<MAILTO:FOO@BAR.BAZ>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("MAILTO:FOO@BAR.BAZ")
+      LinkMark(">", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 594)", () => {
+    ist(parse("<a+b+c:d>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("a+b+c:d")
+      LinkMark(">", 8-9)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 595)", () => {
+    ist(parse("<made-up-scheme://foo,bar>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("made-up-scheme://foo,bar")
+      LinkMark(">", 25-26)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 596)", () => {
+    ist(parse("<http://../>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://../")
+      LinkMark(">", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 597)", () => {
+    ist(parse("<localhost:5001/foo>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("localhost:5001/foo")
+      LinkMark(">", 19-20)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 598)", () => {
+    ist(parse("<http://foo.bar/baz bim>\n"), r`Document {
+  Paragraph("<http://foo.bar/baz bim>")
+}
+`)
+  });
+
+  it("Autolinks (example 599)", () => {
+    ist(parse("<http://example.com/\\[\\>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("http://example.com/\\[\\")
+      LinkMark(">", 23-24)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 600)", () => {
+    ist(parse("<foo@bar.example.com>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("foo@bar.example.com")
+      LinkMark(">", 20-21)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 601)", () => {
+    ist(parse("<foo+special@Bar.baz-bar0.com>\n"), r`Document {
+  Paragraph {
+    Autolink {
+      LinkMark("<", 0-1)
+      URL("foo+special@Bar.baz-bar0.com")
+      LinkMark(">", 29-30)
+    }
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 602)", () => {
+    ist(parse("<foo\\+@bar.example.com>\n"), r`Document {
+  Paragraph {
+    Escape("\\+")
+  }
+}
+`)
+  });
+
+  it("Autolinks (example 603)", () => {
+    ist(parse("<>\n"), r`Document {
+  Paragraph("<>")
+}
+`)
+  });
+
+  it("Autolinks (example 604)", () => {
+    ist(parse("< http://foo.bar >\n"), r`Document {
+  Paragraph("< http://foo.bar >")
+}
+`)
+  });
+
+  it("Autolinks (example 605)", () => {
+    ist(parse("<m:abc>\n"), r`Document {
+  Paragraph("<m:abc>")
+}
+`)
+  });
+
+  it("Autolinks (example 606)", () => {
+    ist(parse("<foo.bar.baz>\n"), r`Document {
+  Paragraph("<foo.bar.baz>")
+}
+`)
+  });
+
+  it("Autolinks (example 607)", () => {
+    ist(parse("http://example.com\n"), r`Document {
+  Paragraph("http://example.com")
+}
+`)
+  });
+
+  it("Autolinks (example 608)", () => {
+    ist(parse("foo@bar.example.com\n"), r`Document {
+  Paragraph("foo@bar.example.com")
+}
+`)
+  });
+
+  it("Raw HTML (example 609)", () => {
+    ist(parse("<a><bab><c2c>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a>")
+    HTMLTag("<bab>")
+    HTMLTag("<c2c>")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 610)", () => {
+    ist(parse("<a/><b2/>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a/>")
+    HTMLTag("<b2/>")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 611)", () => {
+    ist(parse("<a  /><b2\ndata=\"foo\" >\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a  />")
+    HTMLTag("<b2\ndata=\"foo\" >")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 612)", () => {
+    ist(parse("<a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 />\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 />")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 613)", () => {
+    ist(parse("Foo <responsive-image src=\"foo.jpg\" />\n"), r`Document {
+  Paragraph {
+    HTMLTag("<responsive-image src=\"foo.jpg\" />")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 614)", () => {
+    ist(parse("<33> <__>\n"), r`Document {
+  Paragraph("<33> <__>")
+}
+`)
+  });
+
+  it("Raw HTML (example 615)", () => {
+    ist(parse("<a h*#ref=\"hi\">\n"), r`Document {
+  Paragraph("<a h*#ref=\"hi\">")
+}
+`)
+  });
+
+  it("Raw HTML (example 616)", () => {
+    ist(parse("<a href=\"hi'> <a href=hi'>\n"), r`Document {
+  Paragraph("<a href=\"hi'> <a href=hi'>")
+}
+`)
+  });
+
+  it("Raw HTML (example 617)", () => {
+    ist(parse("< a><\nfoo><bar/ >\n<foo bar=baz\nbim!bop />\n"), r`Document {
+  Paragraph {
+    HTMLTag("< a>")
+    HTMLTag("<\nfoo>")
+    HTMLTag("<bar/ >")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 618)", () => {
+    ist(parse("<a href='bar'title=title>\n"), r`Document {
+  Paragraph("<a href='bar'title=title>")
+}
+`)
+  });
+
+  it("Raw HTML (example 619)", () => {
+    ist(parse("</a></foo >\n"), r`Document {
+  Paragraph {
+    HTMLTag("</a>")
+    HTMLTag("</foo >")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 620)", () => {
+    ist(parse("</a href=\"foo\">\n"), r`Document {
+  Paragraph("</a href=\"foo\">")
+}
+`)
+  });
+
+  it("Raw HTML (example 621)", () => {
+    ist(parse("foo <!-- this is a\ncomment - with hyphen -->\n"), r`Document {
+  Paragraph {
+    Comment("<!-- this is a\ncomment - with hyphen -->")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 622)", () => {
+    ist(parse("foo <!-- not a comment -- two hyphens -->\n"), r`Document {
+  Paragraph("foo <!-- not a comment -- two hyphens -->")
+}
+`)
+  });
+
+  it("Raw HTML (example 623)", () => {
+    ist(parse("foo <!--> foo -->\n\nfoo <!-- foo--->\n"), r`Document {
+  Paragraph("foo <!--> foo -->")
+  Paragraph("foo <!-- foo--->")
+}
+`)
+  });
+
+  it("Raw HTML (example 624)", () => {
+    ist(parse("foo <?php echo $a; ?>\n"), r`Document {
+  Paragraph {
+    ProcessingInstruction("<?php echo $a; ?>")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 625)", () => {
+    ist(parse("foo <!ELEMENT br EMPTY>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<!ELEMENT br EMPTY>")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 626)", () => {
+    ist(parse("foo <![CDATA[>&<]]>\n"), r`Document {
+  Paragraph {
+    HTMLTag("<![CDATA[>&<]]>")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 627)", () => {
+    ist(parse("foo <a href=\"&ouml;\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"&ouml;\">")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 628)", () => {
+    ist(parse("foo <a href=\"\\*\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"\\*\">")
+  }
+}
+`)
+  });
+
+  it("Raw HTML (example 629)", () => {
+    ist(parse("<a href=\"\\\"\">\n"), r`Document {
+  Paragraph {
+    Escape("\\\"")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 630)", () => {
+    ist(parse("foo  \nbaz\n"), r`Document {
+  Paragraph {
+    HardBreak("  \n")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 631)", () => {
+    ist(parse("foo\\\nbaz\n"), r`Document {
+  Paragraph {
+    HardBreak("\\\n")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 632)", () => {
+    ist(parse("foo       \nbaz\n"), r`Document {
+  Paragraph {
+    HardBreak("       \n")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 633)", () => {
+    ist(parse("foo  \n     bar\n"), r`Document {
+  Paragraph {
+    HardBreak("  \n")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 634)", () => {
+    ist(parse("foo\\\n     bar\n"), r`Document {
+  Paragraph {
+    HardBreak("\\\n")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 635)", () => {
+    ist(parse("*foo  \nbar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      HardBreak("  \n")
+      EmphasisMark("*", 10-11)
+    }
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 636)", () => {
+    ist(parse("*foo\\\nbar*\n"), r`Document {
+  Paragraph {
+    Emphasis {
+      EmphasisMark("*", 0-1)
+      HardBreak("\\\n")
+      EmphasisMark("*", 9-10)
+    }
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 637)", () => {
+    ist(parse("`code \nspan`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 638)", () => {
+    ist(parse("`code\\\nspan`\n"), r`Document {
+  Paragraph {
+    InlineCode {
+      CodeMark("‘", 0-1)
+      CodeMark("‘", 11-12)
+    }
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 639)", () => {
+    ist(parse("<a href=\"foo  \nbar\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"foo  \nbar\">")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 640)", () => {
+    ist(parse("<a href=\"foo\\\nbar\">\n"), r`Document {
+  Paragraph {
+    HTMLTag("<a href=\"foo\\\nbar\">")
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 641)", () => {
+    ist(parse("foo\\\n"), r`Document {
+  Paragraph("foo\\")
+}
+`)
+  });
+
+  it("Hard line breaks (example 642)", () => {
+    ist(parse("foo  \n"), r`Document {
+  Paragraph("foo  ")
+}
+`)
+  });
+
+  it("Hard line breaks (example 643)", () => {
+    ist(parse("### foo\\\n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 0-3)
+  }
+}
+`)
+  });
+
+  it("Hard line breaks (example 644)", () => {
+    ist(parse("### foo  \n"), r`Document {
+  ATXHeading3 {
+    HeaderMark("###", 0-3)
+  }
+}
+`)
+  });
+
+  it("Soft line breaks (example 645)", () => {
+    ist(parse("foo\nbaz\n"), r`Document {
+  Paragraph("foo\nbaz")
+}
+`)
+  });
+
+  it("Soft line breaks (example 646)", () => {
+    ist(parse("foo \n baz\n"), r`Document {
+  Paragraph("foo \n baz")
+}
+`)
+  });
+
+  it("Textual content (example 647)", () => {
+    ist(parse("hello $.;'there\n"), r`Document {
+  Paragraph("hello $.;'there")
+}
+`)
+  });
+
+  it("Textual content (example 648)", () => {
+    ist(parse("Foo χρῆν\n"), r`Document {
+  Paragraph("Foo χρῆν")
+}
+`)
+  });
+
+  it("Textual content (example 649)", () => {
+    ist(parse("Multiple     spaces\n"), r`Document {
+  Paragraph("Multiple     spaces")
+}
+`)
+  });
 
-  test("Lists (example 289)", `
-{BL:{LI:{l:-} {P:a}
-  {BL:{LI:{l:-} {P:b}
-
-    {P:c}}}}
-{LI:{l:-} {P:d}}}
-`)
-
-  test("Lists (example 290)", `
-{BL:{LI:{l:*} {P:a}
-  {Q:{q:>} {P:b}
-  {q:>}}}
-{LI:{l:*} {P:c}}}
-`)
-
-  test("Lists (example 291)", `
-{BL:{LI:{l:-} {P:a}
-  {Q:{q:>} {P:b}}
-  {FC:{c:\`\`\`}
-  {cT:c}
-  {c:\`\`\`}}}
-{LI:{l:-} {P:d}}}
-`)
-
-  test("Lists (example 292)", `
-{BL:{LI:{l:-} {P:a}}}
-`)
-
-  test("Lists (example 293)", `
-{BL:{LI:{l:-} {P:a}
-  {BL:{LI:{l:-} {P:b}}}}}
-`)
-
-  test("Lists (example 294)", `
-{OL:{LI:{l:1.} {FC:{c:\`\`\`}
-   {cT:foo}
-   {c:\`\`\`}}
-
-   {P:bar}}}
-`)
-
-  test("Lists (example 295)", `
-{BL:{LI:{l:*} {P:foo}
-  {BL:{LI:{l:*} {P:bar}}}
-
-  {P:baz}}}
-`)
-
-  test("Lists (example 296)", `
-{BL:{LI:{l:-} {P:a}
-  {BL:{LI:{l:-} {P:b}}
-  {LI:{l:-} {P:c}}}}
-
-{LI:{l:-} {P:d}
-  {BL:{LI:{l:-} {P:e}}
-  {LI:{l:-} {P:f}}}}}
-`)
-
-  test("Backslash escapes (example 297)", `
-{P:{Esc:\\!}{Esc:\\"}{Esc:\\#}{Esc:\\$}{Esc:\\%}{Esc:\\&}{Esc:\\'}{Esc:\\(}{Esc:\\)}{Esc:\\*}{Esc:\\+}{Esc:\\,}{Esc:\\-}{Esc:\\.}{Esc:\\/}{Esc:\\:}{Esc:\\;}{Esc:\\<}{Esc:\\=}{Esc:\\>}{Esc:\\?}{Esc:\\@}{Esc:\\[}{Esc:\\\\}{Esc:\\]}{Esc:\\^}{Esc:\\_}{Esc:\\\`}{Esc:\\|}{Esc:\\~}}
-`)
-
-  test("Backslash escapes (example 299)", `
-{P:\\   \\A\\a\\ \\3\\φ\\«}
-`)
-
-  test("Backslash escapes (example 300)", `
-{P:{Esc:\\*}not emphasized*
-{Esc:\\<}br/> not a tag
-{Esc:\\[}not a link](/foo)
-{Esc:\\\`}not code\`
-1{Esc:\\.} not a list
-{Esc:\\*} not a list
-{Esc:\\#} not a heading
-{Esc:\\[}foo]: /url "not a reference"
-{Esc:\\&}ouml; not a character entity}
-`)
-
-  test("Backslash escapes (example 301)", `
-{P:{Esc:\\\\}{Em:{e:*}emphasis{e:*}}}
-`)
-
-  test("Backslash escapes (example 302)", `
-{P:foo{BR:\\
-}bar}
-`)
-
-  test("Backslash escapes (example 303)", `
-{P:{C:{c:\`\`} \\[\\\` {c:\`\`}}}
-`)
-
-  test("Backslash escapes (example 304)", `
-    {CB:{cT:\\[\\]}}
-`)
-
-  test("Backslash escapes (example 305)", `
-{FC:{c:~~~}
-{cT:\\[\\]}
-{c:~~~}}
-`)
-
-  test("Backslash escapes (example 306)", `
-{P:{Al:{L:<}{URL:http://example.com?find=\\*}{L:>}}}
-`)
-
-  test("Backslash escapes (example 307)", `
-{HB:<a href="/bar\\/)">}
-`)
-
-  test("Backslash escapes (example 308)", `
-{P:{Ln:{L:[}foo{L:]}{L:(}{URL:/bar\\*} {LT:"ti\\*tle"}{L:)}}}
-`)
-
-  test("Backslash escapes (example 309)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/bar\\*} {LT:"ti\\*tle"}}
-`)
-
-  test("Backslash escapes (example 310)", `
-{FC:{c:\`\`\`} {cI:foo\\+bar}
-{cT:foo}
-{c:\`\`\`}}
-`)
-
-  test("Inlines (example 298)", `
-{P:{C:{c:\`}hi{c:\`}}lo\`}
-`)
-
-  test("Entity and numeric character references (example 311)", `
-{P:{Ent:&nbsp;} {Ent:&amp;} {Ent:&copy;} {Ent:&AElig;} {Ent:&Dcaron;}
-{Ent:&frac34;} {Ent:&HilbertSpace;} {Ent:&DifferentialD;}
-{Ent:&ClockwiseContourIntegral;} {Ent:&ngE;}}
-`)
-
-  test("Entity and numeric character references (example 312)", `
-{P:{Ent:&#35;} {Ent:&#1234;} {Ent:&#992;} {Ent:&#0;}}
-`)
-
-  test("Entity and numeric character references (example 313)", `
-{P:{Ent:&#X22;} {Ent:&#XD06;} {Ent:&#xcab;}}
-`)
-
-  // Our implementation doesn't check for invalid entity names
-  test("Entity and numeric character references (example 314)", `
-{P:&nbsp {Ent:&x;} &#; &#x;
-{Ent:&#987654321;}
-&#abcdef0;
-{Ent:&ThisIsNotDefined;} &hi?;}
-`)
-
-  test("Entity and numeric character references (example 315)", `
-{P:&copy}
-`)
-
-  // Again, not checking for made-up entity names.
-  test("Entity and numeric character references (example 316)", `
-{P:{Ent:&MadeUpEntity;}}
-`)
-
-  test("Entity and numeric character references (example 317)", `
-{HB:<a href="&ouml;&ouml;.html">}
-`)
-
-  test("Entity and numeric character references (example 318)", `
-{P:{Ln:{L:[}foo{L:]}{L:(}{URL:/f&ouml;&ouml;} {LT:"f&ouml;&ouml;"}{L:)}}}
-`)
-
-  test("Entity and numeric character references (example 319)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/f&ouml;&ouml;} {LT:"f&ouml;&ouml;"}}
-`)
-
-  test("Entity and numeric character references (example 320)", `
-{FC:{c:\`\`\`} {cI:f&ouml;&ouml;}
-{cT:foo}
-{c:\`\`\`}}
-`)
-
-  test("Entity and numeric character references (example 321)", `
-{P:{C:{c:\`}f&ouml;&ouml;{c:\`}}}
-`)
-
-  test("Entity and numeric character references (example 322)", `
-    {CB:{cT:f&ouml;f&ouml;}}
-`)
-
-  test("Entity and numeric character references (example 323)", `
-{P:{Ent:&#42;}foo{Ent:&#42;}
-{Em:{e:*}foo{e:*}}}
-`)
-
-  test("Entity and numeric character references (example 324)", `
-{P:{Ent:&#42;} foo}
-
-{BL:{LI:{l:*} {P:foo}}}
-`)
-
-  test("Entity and numeric character references (example 325)", `
-{P:foo{Ent:&#10;}{Ent:&#10;}bar}
-`)
-
-  test("Entity and numeric character references (example 326)", `
-{P:{Ent:&#9;}foo}
-`)
-
-  test("Entity and numeric character references (example 327)", `
-{P:{Ln:{L:[}a{L:]}}(url {Ent:&quot;}tit{Ent:&quot;})}
-`)
-
-  test("Code spans (example 328)", `
-{P:{C:{c:\`}foo{c:\`}}}
-`)
-
-  test("Code spans (example 329)", `
-{P:{C:{c:\`\`} foo \` bar {c:\`\`}}}
-`)
-
-  test("Code spans (example 330)", `
-{P:{C:{c:\`} \`\` {c:\`}}}
-`)
-
-  test("Code spans (example 331)", `
-{P:{C:{c:\`}  \`\`  {c:\`}}}
-`)
-
-  test("Code spans (example 332)", `
-{P:{C:{c:\`} a{c:\`}}}
-`)
-
-  test("Code spans (example 333)", `
-{P:{C:{c:\`} b {c:\`}}}
-`)
-
-  test("Code spans (example 334)", `
-{P:{C:{c:\`} {c:\`}}
-{C:{c:\`}  {c:\`}}}
-`)
-
-  test("Code spans (example 335)", `
-{P:{C:{c:\`\`}
-foo
-bar  
-baz
-{c:\`\`}}}
-`)
-
-  test("Code spans (example 336)", `
-{P:{C:{c:\`\`}
-foo 
-{c:\`\`}}}
-`)
-
-  test("Code spans (example 337)", `
-{P:{C:{c:\`}foo   bar 
-baz{c:\`}}}
-`)
-
-  test("Code spans (example 338)", `
-{P:{C:{c:\`}foo\\{c:\`}}bar\`}
-`)
-
-  test("Code spans (example 339)", `
-{P:{C:{c:\`\`}foo\`bar{c:\`\`}}}
-`)
-
-  test("Code spans (example 340)", `
-{P:{C:{c:\`} foo \`\` bar {c:\`}}}
-`)
-
-  test("Code spans (example 341)", `
-{P:*foo{C:{c:\`}*{c:\`}}}
-`)
-
-  test("Code spans (example 342)", `
-{P:[not a {C:{c:\`}link](/foo{c:\`}})}
-`)
-
-  test("Code spans (example 343)", `
-{P:{C:{c:\`}<a href="{c:\`}}">\`}
-`)
-
-  test("Code spans (example 344)", `
-{P:{HT:<a href="\`">}\`}
-`)
-
-  test("Code spans (example 345)", `
-{P:{C:{c:\`}<http://foo.bar.{c:\`}}baz>\`}
-`)
-
-  test("Code spans (example 346)", `
-{P:{Al:{L:<}{URL:http://foo.bar.\`baz}{L:>}}\`}
-`)
-
-  test("Code spans (example 347)", `
-{P:\`\`\`foo\`\`}
-`)
-
-  test("Code spans (example 348)", `
-{P:\`foo}
-`)
-
-  test("Code spans (example 349)", `
-{P:\`foo{C:{c:\`\`}bar{c:\`\`}}}
-`)
-
-  test("Emphasis and strong emphasis (example 350)", `
-{P:{Em:{e:*}foo bar{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 351)", `
-{P:a * foo bar*}
-`)
-
-  test("Emphasis and strong emphasis (example 352)", `
-{P:a*"foo"*}
-`)
-
-  test("Emphasis and strong emphasis (example 353)", `
-{P:* a *}
-`)
-
-  test("Emphasis and strong emphasis (example 354)", `
-{P:foo{Em:{e:*}bar{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 355)", `
-{P:5{Em:{e:*}6{e:*}}78}
-`)
-
-  test("Emphasis and strong emphasis (example 356)", `
-{P:{Em:{e:_}foo bar{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 357)", `
-{P:_ foo bar_}
-`)
-
-  test("Emphasis and strong emphasis (example 358)", `
-{P:a_"foo"_}
-`)
-
-  test("Emphasis and strong emphasis (example 359)", `
-{P:foo_bar_}
-`)
-
-  test("Emphasis and strong emphasis (example 360)", `
-{P:5_6_78}
-`)
-
-  test("Emphasis and strong emphasis (example 361)", `
-{P:пристаням_стремятся_}
-`)
-
-  test("Emphasis and strong emphasis (example 362)", `
-{P:aa_"bb"_cc}
-`)
-
-  test("Emphasis and strong emphasis (example 363)", `
-{P:foo-{Em:{e:_}(bar){e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 364)", `
-{P:_foo*}
-`)
-
-  test("Emphasis and strong emphasis (example 365)", `
-{P:*foo bar *}
-`)
-
-  test("Emphasis and strong emphasis (example 366)", `
-{P:*foo bar
-*}
-`)
-
-  test("Emphasis and strong emphasis (example 367)", `
-{P:*(*foo)}
-`)
-
-  test("Emphasis and strong emphasis (example 368)", `
-{P:{Em:{e:*}({Em:{e:*}foo{e:*}}){e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 369)", `
-{P:{Em:{e:*}foo{e:*}}bar}
-`)
-
-  test("Emphasis and strong emphasis (example 370)", `
-{P:_foo bar _}
-`)
-
-  test("Emphasis and strong emphasis (example 371)", `
-{P:_(_foo)}
-`)
-
-  test("Emphasis and strong emphasis (example 372)", `
-{P:{Em:{e:_}({Em:{e:_}foo{e:_}}){e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 373)", `
-{P:_foo_bar}
-`)
-
-  test("Emphasis and strong emphasis (example 374)", `
-{P:_пристаням_стремятся}
-`)
-
-  test("Emphasis and strong emphasis (example 375)", `
-{P:{Em:{e:_}foo_bar_baz{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 376)", `
-{P:{Em:{e:_}(bar){e:_}}.}
-`)
-
-  test("Emphasis and strong emphasis (example 377)", `
-{P:{St:{e:**}foo bar{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 378)", `
-{P:** foo bar**}
-`)
-
-  test("Emphasis and strong emphasis (example 379)", `
-{P:a**"foo"**}
-`)
-
-  test("Emphasis and strong emphasis (example 380)", `
-{P:foo{St:{e:**}bar{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 381)", `
-{P:{St:{e:__}foo bar{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 382)", `
-{P:__ foo bar__}
-`)
-
-  test("Emphasis and strong emphasis (example 383)", `
-{P:__
-foo bar__}
-`)
-
-  test("Emphasis and strong emphasis (example 384)", `
-{P:a__"foo"__}
-`)
-
-  test("Emphasis and strong emphasis (example 385)", `
-{P:foo__bar__}
-`)
-
-  test("Emphasis and strong emphasis (example 386)", `
-{P:5__6__78}
-`)
-
-  test("Emphasis and strong emphasis (example 387)", `
-{P:пристаням__стремятся__}
-`)
-
-  test("Emphasis and strong emphasis (example 388)", `
-{P:{St:{e:__}foo, {St:{e:__}bar{e:__}}, baz{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 389)", `
-{P:foo-{St:{e:__}(bar){e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 390)", `
-{P:**foo bar **}
-`)
-
-  test("Emphasis and strong emphasis (example 391)", `
-{P:**(**foo)}
-`)
-
-  test("Emphasis and strong emphasis (example 392)", `
-{P:{Em:{e:*}({St:{e:**}foo{e:**}}){e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 393)", `
-{P:{St:{e:**}Gomphocarpus ({Em:{e:*}Gomphocarpus physocarpus{e:*}}, syn.
-{Em:{e:*}Asclepias physocarpa{e:*}}){e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 394)", `
-{P:{St:{e:**}foo "{Em:{e:*}bar{e:*}}" foo{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 395)", `
-{P:{St:{e:**}foo{e:**}}bar}
-`)
-
-  test("Emphasis and strong emphasis (example 396)", `
-{P:__foo bar __}
-`)
-
-  test("Emphasis and strong emphasis (example 397)", `
-{P:__(__foo)}
-`)
-
-  test("Emphasis and strong emphasis (example 398)", `
-{P:{Em:{e:_}({St:{e:__}foo{e:__}}){e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 399)", `
-{P:__foo__bar}
-`)
-
-  test("Emphasis and strong emphasis (example 400)", `
-{P:__пристаням__стремятся}
-`)
-
-  test("Emphasis and strong emphasis (example 401)", `
-{P:{St:{e:__}foo__bar__baz{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 402)", `
-{P:{St:{e:__}(bar){e:__}}.}
-`)
-
-  test("Emphasis and strong emphasis (example 403)", `
-{P:{Em:{e:*}foo {Ln:{L:[}bar{L:]}{L:(}{URL:/url}{L:)}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 404)", `
-{P:{Em:{e:*}foo
-bar{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 405)", `
-{P:{Em:{e:_}foo {St:{e:__}bar{e:__}} baz{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 406)", `
-{P:{Em:{e:_}foo {Em:{e:_}bar{e:_}} baz{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 407)", `
-{P:{Em:{e:_}{Em:{e:_}foo{e:_}} bar{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 408)", `
-{P:{Em:{e:*}foo {Em:{e:*}bar{e:*}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 409)", `
-{P:{Em:{e:*}foo {St:{e:**}bar{e:**}} baz{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 410)", `
-{P:{Em:{e:*}foo{St:{e:**}bar{e:**}}baz{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 411)", `
-{P:{Em:{e:*}foo**bar{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 412)", `
-{P:{Em:{e:*}{St:{e:**}foo{e:**}} bar{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 413)", `
-{P:{Em:{e:*}foo {St:{e:**}bar{e:**}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 414)", `
-{P:{Em:{e:*}foo{St:{e:**}bar{e:**}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 415)", `
-{P:foo{Em:{e:*}{St:{e:**}bar{e:**}}{e:*}}baz}
-`)
-
-  test("Emphasis and strong emphasis (example 416)", `
-{P:foo{St:{e:**}{St:{e:**}{St:{e:**}bar{e:**}}{e:**}}{e:**}}***baz}
-`)
-
-  test("Emphasis and strong emphasis (example 417)", `
-{P:{Em:{e:*}foo {St:{e:**}bar {Em:{e:*}baz{e:*}} bim{e:**}} bop{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 418)", `
-{P:{Em:{e:*}foo {Ln:{L:[}{Em:{e:*}bar{e:*}}{L:]}{L:(}{URL:/url}{L:)}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 419)", `
-{P:** is not an empty emphasis}
-`)
-
-  test("Emphasis and strong emphasis (example 420)", `
-{P:**** is not an empty strong emphasis}
-`)
-
-  test("Emphasis and strong emphasis (example 421)", `
-{P:{St:{e:**}foo {Ln:{L:[}bar{L:]}{L:(}{URL:/url}{L:)}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 422)", `
-{P:{St:{e:**}foo
-bar{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 423)", `
-{P:{St:{e:__}foo {Em:{e:_}bar{e:_}} baz{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 424)", `
-{P:{St:{e:__}foo {St:{e:__}bar{e:__}} baz{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 425)", `
-{P:{St:{e:__}{St:{e:__}foo{e:__}} bar{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 426)", `
-{P:{St:{e:**}foo {St:{e:**}bar{e:**}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 427)", `
-{P:{St:{e:**}foo {Em:{e:*}bar{e:*}} baz{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 428)", `
-{P:{St:{e:**}foo{Em:{e:*}bar{e:*}}baz{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 429)", `
-{P:{St:{e:**}{Em:{e:*}foo{e:*}} bar{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 430)", `
-{P:{St:{e:**}foo {Em:{e:*}bar{e:*}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 431)", `
-{P:{St:{e:**}foo {Em:{e:*}bar {St:{e:**}baz{e:**}}
-bim{e:*}} bop{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 432)", `
-{P:{St:{e:**}foo {Ln:{L:[}{Em:{e:*}bar{e:*}}{L:]}{L:(}{URL:/url}{L:)}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 433)", `
-{P:__ is not an empty emphasis}
-`)
-
-  test("Emphasis and strong emphasis (example 434)", `
-{P:____ is not an empty strong emphasis}
-`)
-
-  test("Emphasis and strong emphasis (example 435)", `
-{P:foo ***}
-`)
-
-  test("Emphasis and strong emphasis (example 436)", `
-{P:foo {Em:{e:*}{Esc:\\*}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 437)", `
-{P:foo {Em:{e:*}_{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 438)", `
-{P:foo *****}
-`)
-
-  test("Emphasis and strong emphasis (example 439)", `
-{P:foo {St:{e:**}{Esc:\\*}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 440)", `
-{P:foo {St:{e:**}_{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 441)", `
-{P:*{Em:{e:*}foo{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 442)", `
-{P:{Em:{e:*}foo{e:*}}*}
-`)
-
-  test("Emphasis and strong emphasis (example 443)", `
-{P:*{St:{e:**}foo{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 444)", `
-{P:***{Em:{e:*}foo{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 445)", `
-{P:{St:{e:**}foo{e:**}}*}
-`)
-
-  test("Emphasis and strong emphasis (example 446)", `
-{P:{Em:{e:*}foo{e:*}}***}
-`)
-
-  test("Emphasis and strong emphasis (example 447)", `
-{P:foo ___}
-`)
-
-  test("Emphasis and strong emphasis (example 448)", `
-{P:foo {Em:{e:_}{Esc:\\_}{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 449)", `
-{P:foo {Em:{e:_}*{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 450)", `
-{P:foo _____}
-`)
-
-  test("Emphasis and strong emphasis (example 451)", `
-{P:foo {St:{e:__}{Esc:\\_}{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 452)", `
-{P:foo {St:{e:__}*{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 453)", `
-{P:_{Em:{e:_}foo{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 454)", `
-{P:{Em:{e:_}foo{e:_}}_}
-`)
-
-  test("Emphasis and strong emphasis (example 455)", `
-{P:_{St:{e:__}foo{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 456)", `
-{P:___{Em:{e:_}foo{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 457)", `
-{P:{St:{e:__}foo{e:__}}_}
-`)
-
-  test("Emphasis and strong emphasis (example 458)", `
-{P:{Em:{e:_}foo{e:_}}___}
-`)
-
-  test("Emphasis and strong emphasis (example 459)", `
-{P:{St:{e:**}foo{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 460)", `
-{P:{Em:{e:*}{Em:{e:_}foo{e:_}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 461)", `
-{P:{St:{e:__}foo{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 462)", `
-{P:{Em:{e:_}{Em:{e:*}foo{e:*}}{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 463)", `
-{P:{St:{e:**}{St:{e:**}foo{e:**}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 464)", `
-{P:{St:{e:__}{St:{e:__}foo{e:__}}{e:__}}}
-`)
-
-  test("Emphasis and strong emphasis (example 465)", `
-{P:{St:{e:**}{St:{e:**}{St:{e:**}foo{e:**}}{e:**}}{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 466)", `
-{P:{Em:{e:*}{St:{e:**}foo{e:**}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 467)", `
-{P:{Em:{e:_}{St:{e:__}{St:{e:__}foo{e:__}}{e:__}}{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 468)", `
-{P:{Em:{e:*}foo _bar{e:*}} baz_}
-`)
-
-  test("Emphasis and strong emphasis (example 469)", `
-{P:{Em:{e:*}foo {St:{e:__}bar *baz bim{e:__}} bam{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 470)", `
-{P:**foo {St:{e:**}bar baz{e:**}}}
-`)
-
-  test("Emphasis and strong emphasis (example 471)", `
-{P:*foo {Em:{e:*}bar baz{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 472)", `
-{P:*{Ln:{L:[}bar*{L:]}{L:(}{URL:/url}{L:)}}}
-`)
-
-  test("Emphasis and strong emphasis (example 473)", `
-{P:_foo {Ln:{L:[}bar_{L:]}{L:(}{URL:/url}{L:)}}}
-`)
-
-  test("Emphasis and strong emphasis (example 474)", `
-{P:*{HT:<img src="foo" title="*"/>}}
-`)
-
-  test("Emphasis and strong emphasis (example 475)", `
-{P:**{HT:<a href="**">}}
-`)
-
-  test("Emphasis and strong emphasis (example 476)", `
-{P:__{HT:<a href="__">}}
-`)
-
-  test("Emphasis and strong emphasis (example 477)", `
-{P:{Em:{e:*}a {C:{c:\`}*{c:\`}}{e:*}}}
-`)
-
-  test("Emphasis and strong emphasis (example 478)", `
-{P:{Em:{e:_}a {C:{c:\`}_{c:\`}}{e:_}}}
-`)
-
-  test("Emphasis and strong emphasis (example 479)", `
-{P:**a{Al:{L:<}{URL:http://foo.bar/?q=**}{L:>}}}
-`)
-
-  test("Emphasis and strong emphasis (example 480)", `
-{P:__a{Al:{L:<}{URL:http://foo.bar/?q=__}{L:>}}}
-`)
-
-  test("Links (example 481)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/uri} {LT:"title"}{L:)}}}
-`)
-
-  test("Links (example 482)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 483)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{L:)}}}
-`)
-
-  test("Links (example 484)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:<>}{L:)}}}
-`)
-
-  test("Links (example 485)", `
-{P:{Ln:{L:[}link{L:]}}(/my uri)}
-`)
-
-  test("Links (example 486)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:</my uri>}{L:)}}}
-`)
-
-  test("Links (example 487)", `
-{P:{Ln:{L:[}link{L:]}}(foo
-bar)}
-`)
-
-  // Many of these don't align with the output in the spec because our
-  // implementation doesn't check for an existing link reference when
-  // accepting non-inline links.
-
-  test("Links (example 488)", `
-{P:{Ln:{L:[}link{L:]}}({HT:<foo
-bar>})}
-`)
-
-  test("Links (example 489)", `
-{P:{Ln:{L:[}a{L:]}{L:(}{URL:<b)c>}{L:)}}}
-`)
-
-  test("Links (example 490)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:<foo\\>}{L:)}}}
-`)
-
-  test("Links (example 491)", `
-{P:{Ln:{L:[}a{L:]}}(<b)c
-{Ln:{L:[}a{L:]}}(<b)c>
-{Ln:{L:[}a{L:]}}({HT:<b>}c)}
-`)
-
-  test("Links (example 492)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:\\(foo\\)}{L:)}}}
-`)
-
-  test("Links (example 493)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:foo(and(bar))}{L:)}}}
-`)
-
-  test("Links (example 494)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:foo\\(and\\(bar\\)}{L:)}}}
-`)
-
-  test("Links (example 495)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:<foo(and(bar)>}{L:)}}}
-`)
-
-  test("Links (example 496)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:foo\\)\\:}{L:)}}}
-`)
-
-  test("Links (example 497)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:#fragment}{L:)}}}
-
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:http://example.com#fragment}{L:)}}}
-
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:http://example.com?foo=3#frag}{L:)}}}
-`)
-
-  test("Links (example 498)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:foo\\bar}{L:)}}}
-`)
-
-  test("Links (example 499)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:foo%20b&auml;}{L:)}}}
-`)
-
-  test("Links (example 500)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:"title"}{L:)}}}
-`)
-
-  test("Links (example 501)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/url} {LT:"title"}{L:)}}
-{Ln:{L:[}link{L:]}{L:(}{URL:/url} {LT:'title'}{L:)}}
-{Ln:{L:[}link{L:]}{L:(}{URL:/url} {LT:(title)}{L:)}}}
-`)
-
-  test("Links (example 502)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/url} {LT:"title \\"&quot;"}{L:)}}}
-`)
-
-  test("Links (example 503)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/url "title"}{L:)}}}
-`)
-
-  test("Links (example 504)", `
-{P:{Ln:{L:[}link{L:]}}(/url "title "and" title")}
-`)
-
-  test("Links (example 505)", `
-{P:{Ln:{L:[}link{L:]}{L:(}{URL:/url} {LT:'title "and" title'}{L:)}}}
-`)
-
-  test("Links (example 506)", `
-{P:{Ln:{L:[}link{L:]}{L:(}   {URL:/uri}
-  {LT:"title"}  {L:)}}}
-`)
-
-  test("Links (example 507)", `
-{P:{Ln:{L:[}link{L:]}} (/uri)}
-`)
-
-  test("Links (example 508)", `
-{P:[link [foo {Ln:{L:[}bar{L:]}}]](/uri)}
-`)
-
-  test("Links (example 509)", `
-{P:{Ln:{L:[}link{L:]}} bar](/uri)}
-`)
-
-  test("Links (example 510)", `
-{P:[link {Ln:{L:[}bar{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 511)", `
-{P:{Ln:{L:[}link {Esc:\\[}bar{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 512)", `
-{P:{Ln:{L:[}link {Em:{e:*}foo {St:{e:**}bar{e:**}} {C:{c:\`}#{c:\`}}{e:*}}{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 513)", `
-{P:{Ln:{L:[}{Im:{L:![}moon{L:]}{L:(}{URL:moon.jpg}{L:)}}{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 514)", `
-{P:[foo {Ln:{L:[}bar{L:]}{L:(}{URL:/uri}{L:)}}](/uri)}
-`)
-
-  test("Links (example 515)", `
-{P:[foo {Em:{e:*}[bar {Ln:{L:[}baz{L:]}{L:(}{URL:/uri}{L:)}}](/uri){e:*}}](/uri)}
-`)
-
-  test("Links (example 516)", `
-{P:{Im:{L:![}[{Ln:{L:[}foo{L:]}{L:(}{URL:uri1}{L:)}}](uri2){L:]}{L:(}{URL:uri3}{L:)}}}
-`)
-
-  test("Links (example 517)", `
-{P:*{Ln:{L:[}foo*{L:]}{L:(}{URL:/uri}{L:)}}}
-`)
-
-  test("Links (example 518)", `
-{P:{Ln:{L:[}foo *bar{L:]}{L:(}{URL:baz*}{L:)}}}
-`)
-
-  // Not the spirit of the test, because the shortcut link is still
-  // accepted.
-  test("Links (example 519)", `
-{P:*foo {Ln:{L:[}bar* baz{L:]}}}
-`)
-
-  test("Links (example 520)", `
-{P:[foo {HT:<bar attr="](baz)">}}
-`)
-
-  test("Links (example 521)", `
-{P:[foo{C:{c:\`}](/uri){c:\`}}}
-`)
-
-  test("Links (example 522)", `
-{P:[foo{Al:{L:<}{URL:http://example.com/?search=](uri)}{L:>}}}
-`)
-
-  test("Links (example 523)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[bar]}}}
-
-{LR:{LL:[bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  // This has a different shape than the original test case, because
-  // we accept the innermost link.
-  test("Links (example 524)", `
-{P:[link [foo {Ln:{L:[}bar{L:]}}]]{Ln:{L:[}ref{L:]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 525)", `
-{P:{Ln:{L:[}link {Esc:\\[}bar{L:]}{LL:[ref]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 526)", `
-{P:{Ln:{L:[}link {Em:{e:*}foo {St:{e:**}bar{e:**}} {C:{c:\`}#{c:\`}}{e:*}}{L:]}{LL:[ref]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 527)", `
-{P:{Ln:{L:[}{Im:{L:![}moon{L:]}{L:(}{URL:moon.jpg}{L:)}}{L:]}{LL:[ref]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 528)", `
-{P:[foo {Ln:{L:[}bar{L:]}{L:(}{URL:/uri}{L:)}}]{Ln:{L:[}ref{L:]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 529)", `
-{P:[foo {Em:{e:*}bar {Ln:{L:[}baz{L:]}{LL:[ref]}}{e:*}}]{Ln:{L:[}ref{L:]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 530)", `
-{P:*{Ln:{L:[}foo*{L:]}{LL:[ref]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 531)", `
-{P:{Ln:{L:[}foo *bar{L:]}{LL:[ref]}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 532)", `
-{P:[foo {HT:<bar attr="][ref]">}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 533)", `
-{P:[foo{C:{c:\`}][ref]{c:\`}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 534)", `
-{P:[foo{Al:{L:<}{URL:http://example.com/?search=][ref]}{L:>}}}
-
-{LR:{LL:[ref]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 535)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[BaR]}}}
-
-{LR:{LL:[bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 536)", `
-{P:{Ln:{L:[}Толпой{L:]}{LL:[Толпой]}} is a Russian word.}
-
-{LR:{LL:[ТОЛПОЙ]}{L::} {URL:/url}}
-`)
-
-  test("Links (example 537)", `
-{LR:{LL:[Foo
-  bar]}{L::} {URL:/url}}
-
-{P:{Ln:{L:[}Baz{L:]}{LL:[Foo bar]}}}
-`)
-
-  test("Links (example 538)", `
-{P:{Ln:{L:[}foo{L:]}} {Ln:{L:[}bar{L:]}}}
-
-{LR:{LL:[bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 539)", `
-{P:{Ln:{L:[}foo{L:]}}
-{Ln:{L:[}bar{L:]}}}
-
-{LR:{LL:[bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 540)", `
-{LR:{LL:[foo]}{L::} {URL:/url1}}
-
-{LR:{LL:[foo]}{L::} {URL:/url2}}
-
-{P:{Ln:{L:[}bar{L:]}{LL:[foo]}}}
-`)
-
-  test("Links (example 541)", `
-{P:{Ln:{L:[}bar{L:]}{LL:[foo\\!]}}}
-
-{LR:{LL:[foo!]}{L::} {URL:/url}}
-`)
-
-  test("Links (example 542)", `
-{P:{Ln:{L:[}foo{L:]}}[ref[]}
-
-{P:[ref[]: /uri}
-`)
-
-  test("Links (example 543)", `
-{P:{Ln:{L:[}foo{L:]}}[ref{Ln:{L:[}bar{L:]}}]}
-
-{P:[ref{Ln:{L:[}bar{L:]}}]: /uri}
-`)
-
-  test("Links (example 544)", `
-{P:[[{Ln:{L:[}foo{L:]}}]]}
-
-{P:[[{Ln:{L:[}foo{L:]}}]]: /url}
-`)
-
-  test("Links (example 545)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[ref\\[]}}}
-
-{LR:{LL:[ref\\[]}{L::} {URL:/uri}}
-`)
-
-  test("Links (example 546)", `
-{LR:{LL:[bar\\\\]}{L::} {URL:/uri}}
-
-{P:{Ln:{L:[}bar{Esc:\\\\}{L:]}}}
-`)
-
-  test("Links (example 547)", `
-{P:[]}
-
-{P:[]: /uri}
-`)
-
-  test("Links (example 548)", `
-{P:[
- ]}
-
-{P:[
- ]: /uri}
-`)
-
-  test("Links (example 549)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 550)", `
-{P:{Ln:{L:[}{Em:{e:*}foo{e:*}} bar{L:]}{LL:[]}}}
-
-{LR:{LL:[*foo* bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 551)", `
-{P:{Ln:{L:[}Foo{L:]}{LL:[]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 552)", `
-{P:{Ln:{L:[}foo{L:]}} 
-[]}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 553)", `
-{P:{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 554)", `
-{P:{Ln:{L:[}{Em:{e:*}foo{e:*}} bar{L:]}}}
-
-{LR:{LL:[*foo* bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 555)", `
-{P:[{Ln:{L:[}{Em:{e:*}foo{e:*}} bar{L:]}}]}
-
-{LR:{LL:[*foo* bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 556)", `
-{P:[[bar {Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url}}
-`)
-
-  test("Links (example 557)", `
-{P:{Ln:{L:[}Foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 558)", `
-{P:{Ln:{L:[}foo{L:]}} bar}
-
-{LR:{LL:[foo]}{L::} {URL:/url}}
-`)
-
-  test("Links (example 559)", `
-{P:{Esc:\\[}foo]}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Links (example 560)", `
-{LR:{LL:[foo*]}{L::} {URL:/url}}
-
-{P:*{Ln:{L:[}foo*{L:]}}}
-`)
-
-  test("Links (example 561)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[bar]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url1}}
-{LR:{LL:[bar]}{L::} {URL:/url2}}
-`)
-
-  test("Links (example 562)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url1}}
-`)
-
-  test("Links (example 563)", `
-{P:{Ln:{L:[}foo{L:]}{L:(}{L:)}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url1}}
-`)
-
-  test("Links (example 564)", `
-{P:{Ln:{L:[}foo{L:]}}(not a link)}
-
-{LR:{LL:[foo]}{L::} {URL:/url1}}
-`)
-
-  // Not really testing what it is supposed to, because the first two
-  // bracket pairs are blindly accepted as link.
-  test("Links (example 565)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[bar]}}{Ln:{L:[}baz{L:]}}}
-
-{LR:{LL:[baz]}{L::} {URL:/url}}
-`)
-
-  test("Links (example 566)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[bar]}}{Ln:{L:[}baz{L:]}}}
-
-{LR:{LL:[baz]}{L::} {URL:/url1}}
-{LR:{LL:[bar]}{L::} {URL:/url2}}
-`)
-
-  test("Links (example 567)", `
-{P:{Ln:{L:[}foo{L:]}{LL:[bar]}}{Ln:{L:[}baz{L:]}}}
-
-{LR:{LL:[baz]}{L::} {URL:/url1}}
-{LR:{LL:[foo]}{L::} {URL:/url2}}
-`)
-
-  test("Images (example 568)", `
-{P:{Im:{L:![}foo{L:]}{L:(}{URL:/url} {LT:"title"}{L:)}}}
-`)
-
-  test("Images (example 569)", `
-{P:{Im:{L:![}foo {Em:{e:*}bar{e:*}}{L:]}}}
-
-{LR:{LL:[foo *bar*]}{L::} {URL:train.jpg} {LT:"train & tracks"}}
-`)
-
-  test("Images (example 570)", `
-{P:{Im:{L:![}foo {Im:{L:![}bar{L:]}{L:(}{URL:/url}{L:)}}{L:]}{L:(}{URL:/url2}{L:)}}}
-`)
-
-  test("Images (example 571)", `
-{P:{Im:{L:![}foo {Ln:{L:[}bar{L:]}{L:(}{URL:/url}{L:)}}{L:]}{L:(}{URL:/url2}{L:)}}}
-`)
-
-  test("Images (example 572)", `
-{P:{Im:{L:![}foo {Em:{e:*}bar{e:*}}{L:]}{LL:[]}}}
-
-{LR:{LL:[foo *bar*]}{L::} {URL:train.jpg} {LT:"train & tracks"}}
-`)
-
-  test("Images (example 573)", `
-{P:{Im:{L:![}foo {Em:{e:*}bar{e:*}}{L:]}{LL:[foobar]}}}
-
-{LR:{LL:[FOOBAR]}{L::} {URL:train.jpg} {LT:"train & tracks"}}
-`)
-
-  test("Images (example 574)", `
-{P:{Im:{L:![}foo{L:]}{L:(}{URL:train.jpg}{L:)}}}
-`)
-
-  test("Images (example 575)", `
-{P:My {Im:{L:![}foo bar{L:]}{L:(}{URL:/path/to/train.jpg}  {LT:"title"}   {L:)}}}
-`)
-
-  test("Images (example 576)", `
-{P:{Im:{L:![}foo{L:]}{L:(}{URL:<url>}{L:)}}}
-`)
-
-  test("Images (example 577)", `
-{P:{Im:{L:![}{L:]}{L:(}{URL:/url}{L:)}}}
-`)
-
-  test("Images (example 578)", `
-{P:{Im:{L:![}foo{L:]}{LL:[bar]}}}
-
-{LR:{LL:[bar]}{L::} {URL:/url}}
-`)
-
-  test("Images (example 579)", `
-{P:{Im:{L:![}foo{L:]}{LL:[bar]}}}
-
-{LR:{LL:[BAR]}{L::} {URL:/url}}
-`)
-
-  test("Images (example 580)", `
-{P:{Im:{L:![}foo{L:]}{LL:[]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 581)", `
-{P:{Im:{L:![}{Em:{e:*}foo{e:*}} bar{L:]}{LL:[]}}}
-
-{LR:{LL:[*foo* bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 582)", `
-{P:{Im:{L:![}Foo{L:]}{LL:[]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 583)", `
-{P:{Im:{L:![}foo{L:]}} 
-[]}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 584)", `
-{P:{Im:{L:![}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 585)", `
-{P:{Im:{L:![}{Em:{e:*}foo{e:*}} bar{L:]}}}
-
-{LR:{LL:[*foo* bar]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 586)", `
-{P:{Im:{L:![}{Ln:{L:[}foo{L:]}}{L:]}}}
-
-{P:[{Ln:{L:[}foo{L:]}}]: /url "title"}
-`)
-
-  test("Images (example 587)", `
-{P:{Im:{L:![}Foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 588)", `
-{P:!{Esc:\\[}foo]}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Images (example 589)", `
-{P:{Esc:\\!}{Ln:{L:[}foo{L:]}}}
-
-{LR:{LL:[foo]}{L::} {URL:/url} {LT:"title"}}
-`)
-
-  test("Autolinks (example 590)", `
-{P:{Al:{L:<}{URL:http://foo.bar.baz}{L:>}}}
-`)
-
-  test("Autolinks (example 591)", `
-{P:{Al:{L:<}{URL:http://foo.bar.baz/test?q=hello&id=22&boolean}{L:>}}}
-`)
-
-  test("Autolinks (example 592)", `
-{P:{Al:{L:<}{URL:irc://foo.bar:2233/baz}{L:>}}}
-`)
-
-  test("Autolinks (example 593)", `
-{P:{Al:{L:<}{URL:MAILTO:FOO@BAR.BAZ}{L:>}}}
-`)
-
-  test("Autolinks (example 594)", `
-{P:{Al:{L:<}{URL:a+b+c:d}{L:>}}}
-`)
-
-  test("Autolinks (example 595)", `
-{P:{Al:{L:<}{URL:made-up-scheme://foo,bar}{L:>}}}
-`)
-
-  test("Autolinks (example 596)", `
-{P:{Al:{L:<}{URL:http://../}{L:>}}}
-`)
-
-  test("Autolinks (example 597)", `
-{P:{Al:{L:<}{URL:localhost:5001/foo}{L:>}}}
-`)
-
-  test("Autolinks (example 598)", `
-{P:<http://foo.bar/baz bim>}
-`)
-
-  test("Autolinks (example 599)", `
-{P:{Al:{L:<}{URL:http://example.com/\\[\\}{L:>}}}
-`)
-
-  test("Autolinks (example 600)", `
-{P:{Al:{L:<}{URL:foo@bar.example.com}{L:>}}}
-`)
-
-  test("Autolinks (example 601)", `
-{P:{Al:{L:<}{URL:foo+special@Bar.baz-bar0.com}{L:>}}}
-`)
-
-  test("Autolinks (example 602)", `
-{P:<foo{Esc:\\+}@bar.example.com>}
-`)
-
-  test("Autolinks (example 603)", `
-{P:<>}
-`)
-
-  test("Autolinks (example 604)", `
-{P:< http://foo.bar >}
-`)
-
-  test("Autolinks (example 605)", `
-{P:<m:abc>}
-`)
-
-  test("Autolinks (example 606)", `
-{P:<foo.bar.baz>}
-`)
-
-  test("Autolinks (example 607)", `
-{P:http://example.com}
-`)
-
-  test("Autolinks (example 608)", `
-{P:foo@bar.example.com}
-`)
-
-  test("Raw HTML (example 609)", `
-{P:{HT:<a>}{HT:<bab>}{HT:<c2c>}}
-`)
-
-  test("Raw HTML (example 610)", `
-{P:{HT:<a/>}{HT:<b2/>}}
-`)
-
-  test("Raw HTML (example 611)", `
-{P:{HT:<a  />}{HT:<b2
-data="foo" >}}
-`)
-
-  test("Raw HTML (example 612)", `
-{P:{HT:<a foo="bar" bam = 'baz <em>"</em>'
-_boolean zoop:33=zoop:33 />}}
-`)
-
-  test("Raw HTML (example 613)", `
-{P:Foo {HT:<responsive-image src="foo.jpg" />}}
-`)
-
-  test("Raw HTML (example 614)", `
-{P:<33> <__>}
-`)
-
-  test("Raw HTML (example 615)", `
-{P:<a h*#ref="hi">}
-`)
-
-  test("Raw HTML (example 616)", `
-{P:<a href="hi'> <a href=hi'>}
-`)
-
-  test("Raw HTML (example 617)", `
-{P:{HT:< a>}{HT:<
-foo>}{HT:<bar/ >}
-<foo bar=baz
-bim!bop />}
-`)
-
-  test("Raw HTML (example 618)", `
-{P:<a href='bar'title=title>}
-`)
-
-  test("Raw HTML (example 619)", `
-{P:{HT:</a>}{HT:</foo >}}
-`)
-
-  test("Raw HTML (example 620)", `
-{P:</a href="foo">}
-`)
-
-  test("Raw HTML (example 621)", `
-{P:foo {CM:<!-- this is a
-comment - with hyphen -->}}
-`)
-
-  test("Raw HTML (example 622)", `
-{P:foo <!-- not a comment -- two hyphens -->}
-`)
-
-  test("Raw HTML (example 623)", `
-{P:foo <!--> foo -->}
-
-{P:foo <!-- foo--->}
-`)
-
-  test("Raw HTML (example 624)", `
-{P:foo {Pi:<?php echo $a; ?>}}
-`)
-
-  test("Raw HTML (example 625)", `
-{P:foo {HT:<!ELEMENT br EMPTY>}}
-`)
-
-  test("Raw HTML (example 626)", `
-{P:foo {HT:<![CDATA[>&<]]>}}
-`)
-
-  test("Raw HTML (example 627)", `
-{P:foo {HT:<a href="&ouml;">}}
-`)
-
-  test("Raw HTML (example 628)", `
-{P:foo {HT:<a href="\\*">}}
-`)
-
-  test("Raw HTML (example 629)", `
-{P:<a href="{Esc:\\"}">}
-`)
-
-  test("Hard line breaks (example 630)", `
-{P:foo{BR:  
-}baz}
-`)
-
-  test("Hard line breaks (example 631)", `
-{P:foo{BR:\\
-}baz}
-`)
-
-  test("Hard line breaks (example 632)", `
-{P:foo{BR:       
-}baz}
-`)
-
-  test("Hard line breaks (example 633)", `
-{P:foo{BR:  
-}     bar}
-`)
-
-  test("Hard line breaks (example 634)", `
-{P:foo{BR:\\
-}     bar}
-`)
-
-  test("Hard line breaks (example 635)", `
-{P:{Em:{e:*}foo{BR:  
-}bar{e:*}}}
-`)
-
-  test("Hard line breaks (example 636)", `
-{P:{Em:{e:*}foo{BR:\\
-}bar{e:*}}}
-`)
-
-  test("Hard line breaks (example 637)", `
-{P:{C:{c:\`}code 
-span{c:\`}}}
-`)
-
-  test("Hard line breaks (example 638)", `
-{P:{C:{c:\`}code\\
-span{c:\`}}}
-`)
-
-  test("Hard line breaks (example 639)", `
-{P:{HT:<a href="foo  
-bar">}}
-`)
-
-  test("Hard line breaks (example 640)", `
-{P:{HT:<a href="foo\\
-bar">}}
-`)
-
-  test("Hard line breaks (example 641)", `
-{P:foo\\}
-`)
-
-  test("Hard line breaks (example 642)", `
-{P:foo  }
-`)
-
-  test("Hard line breaks (example 643)", `
-{H3:{h:###} foo\\}
-`)
-
-  test("Hard line breaks (example 644)", `
-{H3:{h:###} foo  }
-`)
-
-  test("Soft line breaks (example 645)", `
-{P:foo
-baz}
-`)
-
-  test("Soft line breaks (example 646)", `
-{P:foo 
- baz}
-`)
-
-  test("Textual content (example 647)", `
-{P:hello $.;'there}
-`)
-
-  test("Textual content (example 648)", `
-{P:Foo χρῆν}
-`)
-
-  test("Textual content (example 649)", `
-{P:Multiple     spaces}
-`)
 })
 
 describe("Custom Markdown tests", () => {
   // (Not ideal that the 3rd mark is inside the previous item, but
   // this'd require quite a big overhaul to fix.)
-  test("Quote markers don't end up inside inner list items", `
-{Q:{q:>} {BL:{LI:{l:-} {P:Hello}}
-{q:>} {LI:{l:-} {P:Two}
-{q:>}}
-{q:>} {LI:{l:-} {P:Three}}}}
-`)
+  it("Quote markers don't end up inside inner list items", () => {
+    ist(parse(`
+> - Hello
+> - Two
+>
+> - Three`), `Document {
+  Blockquote {
+    QuoteMark(">", 1-2)
+    BulletList {
+      ListItem {
+        ListMark("-", 3-4)
+        Paragraph("Hello")
+      }
+      QuoteMark(">", 11-12)
+      ListItem {
+        ListMark("-", 13-14)
+        Paragraph("Two")
+        QuoteMark(">", 19-20)
+      }
+      QuoteMark(">", 21-22)
+      ListItem {
+        ListMark("-", 23-24)
+        Paragraph("Three")
+      }
+    }
+  }
+}
+`);
+  });
 
-  test("Nested bullet lists don't break ordered list parsing", `
-{OL:{LI:{l:1.} {P:A}
-   {BL:{LI:{l:*} {P:A1}}
-   {LI:{l:*} {P:A2}}}}
-{LI:{l:2.} {P:B}}}
-`)
+  it("Nested bullet lists don't break ordered list parsing", () => {
+    ist(parse(`1. A
+     * A1
+     * A2
+  2. B`), `Document {
+  OrderedList {
+    ListItem {
+      ListMark("1.", 0-2)
+      Paragraph("A")
+      BulletList {
+        ListItem {
+          ListMark("*", 10-11)
+          Paragraph("A1")
+        }
+        ListItem {
+          ListMark("*", 20-21)
+          Paragraph("A2")
+        }
+      }
+    }
+    ListItem {
+      ListMark("2.", 27-29)
+      Paragraph("B")
+    }
+  }
+}
+`);
+  });
 
   it("Doesn't get confused by tabs indenting a list item", () => {
     let doc = ` - a\n\t\tb`
