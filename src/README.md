@@ -1,6 +1,6 @@
 <!-- /README.md is generated from /src/README.md -->
 
-# lezer-markdown
+# @lezer/markdown
 
 This is an incremental Markdown ([CommonMark](https://commonmark.org/)
 with support for extension) parser that integrates well with the
