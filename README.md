@@ -570,6 +570,11 @@ document-relative positions.</p>
 and <code>close</code> indicate whether this delimiter is opening, closing,
 or both. Returns the end of the delimiter, for convenient
 returning from <a href="#user-content-inlineparser.parse">parse functions</a>.</p>
+</dd><dt id="user-content-inlinecontext.hasopenlink">
+  <code><strong><a href="#user-content-inlinecontext.hasopenlink">hasOpenLink</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+
+<dd><p>Returns true when there is an unmatched link or image opening
+token before the current position.</p>
 </dd><dt id="user-content-inlinecontext.addelement">
   <code><strong><a href="#user-content-inlinecontext.addelement">addElement</a></strong>(<a id="user-content-inlinecontext.addelement^elt" href="#user-content-inlinecontext.addelement^elt">elt</a>: <a href="#user-content-element">Element</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
