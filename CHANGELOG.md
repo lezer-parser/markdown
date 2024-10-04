@@ -102,7 +102,7 @@ It is now possible to include highlighting information when defining nodes in ex
 
 ### Bug fixes
 
-Fix a bug where GFM tables occuring directly below a paragraph weren't recognized.
+Fix a bug where GFM tables occurring directly below a paragraph weren't recognized.
 
 ## 0.15.5 (2022-02-18)
 

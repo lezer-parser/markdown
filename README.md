@@ -416,7 +416,7 @@ paragraph-style blocks should conform to this interface.</p>
 
 <dd><p>Update the parser's state for the next line, and optionally
 finish the block. This is not called for the first line (the
-object is contructed at that line), but for any further lines.
+object is constructed at that line), but for any further lines.
 When it returns <code>true</code>, the block is finished. It is okay for
 the function to <a href="#user-content-blockcontext.nextline">consume</a> the current
 line or any subsequent lines when returning true.</p>
