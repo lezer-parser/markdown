@@ -1,6 +1,6 @@
 <!-- /README.md is generated from /src/README.md -->
 
-# lezer-markdown
+# @lezer/markdown
 
 This is an incremental Markdown ([CommonMark](https://commonmark.org/)
 with support for extension) parser that integrates well with the
@@ -416,7 +416,7 @@ paragraph-style blocks should conform to this interface.</p>
 
 <dd><p>Update the parser's state for the next line, and optionally
 finish the block. This is not called for the first line (the
-object is contructed at that line), but for any further lines.
+object is constructed at that line), but for any further lines.
 When it returns <code>true</code>, the block is finished. It is okay for
 the function to <a href="#user-content-blockcontext.nextline">consume</a> the current
 line or any subsequent lines when returning true.</p>
@@ -570,6 +570,11 @@ document-relative positions.</p>
 and <code>close</code> indicate whether this delimiter is opening, closing,
 or both. Returns the end of the delimiter, for convenient
 returning from <a href="#user-content-inlineparser.parse">parse functions</a>.</p>
+</dd><dt id="user-content-inlinecontext.hasopenlink">
+  <code><strong><a href="#user-content-inlinecontext.hasopenlink">hasOpenLink</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a></code></dt>
+
+<dd><p>Returns true when there is an unmatched link or image opening
+token before the current position.</p>
 </dd><dt id="user-content-inlinecontext.addelement">
   <code><strong><a href="#user-content-inlinecontext.addelement">addElement</a></strong>(<a id="user-content-inlinecontext.addelement^elt" href="#user-content-inlinecontext.addelement^elt">elt</a>: <a href="#user-content-element">Element</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 

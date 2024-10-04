@@ -1060,7 +1060,7 @@ export interface BlockParser {
 export interface LeafBlockParser {
   /// Update the parser's state for the next line, and optionally
   /// finish the block. This is not called for the first line (the
-  /// object is contructed at that line), but for any further lines.
+  /// object is constructed at that line), but for any further lines.
   /// When it returns `true`, the block is finished. It is okay for
   /// the function to [consume](#BlockContext.nextLine) the current
   /// line or any subsequent lines when returning true.
