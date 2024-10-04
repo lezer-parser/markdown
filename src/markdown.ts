@@ -643,7 +643,7 @@ export class BlockContext implements PartialParse {
   private fragments: FragmentCursor | null
   private to: number
   /// For reused nodes on gaps, we can't directly put the original
-  /// node into the tree, since that may be bitter than its parent.
+  /// node into the tree, since that may be bigger than its parent.
   /// When this happens, we create a dummy tree that is replaced by
   /// the proper node in `injectGaps` @internal
   reusePlaceholders: Map<Tree, Tree> = new Map
