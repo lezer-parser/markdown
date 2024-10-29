@@ -162,7 +162,7 @@ export const TaskList: MarkdownConfig = {
   }]
 }
 
-const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]+@)|(mailto:|xmpp:)/gy
+const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]{,100}@)|(mailto:|xmpp:)/gy
 const urlRE = /[\w-]+(\.[\w-]+)+(\/[^\s<]*)?/gy
 const lastTwoDomainWords = /[\w-]+\.[\w-]+($|\/)/
 const emailRE = /[\w.+-]+@[\w-]+(\.[\w.-]+)+/gy
@@ -208,6 +208,7 @@ export const Autolink: MarkdownConfig = {
     name: "Autolink",
     parse(cx, next, absPos) {
       let pos = absPos - cx.offset
+      if (pos && /\w/.test(cx.text[pos - 1])) return -1
       autolinkRE.lastIndex = pos
       let m = autolinkRE.exec(cx.text), end = -1
       if (!m) return -1
