@@ -1,3 +1,9 @@
+## 1.3.2 (2024-10-29)
+
+### Bug fixes
+
+Fix a quadratic slowdown in the Autolink extension on parsing text containing extremely long words.
+
 ## 1.3.1 (2024-09-02)
 
 ### Bug fixes
