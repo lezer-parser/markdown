@@ -788,6 +788,12 @@ export class BlockContext implements PartialParse {
     }
   }
 
+  /// Retrieve the text of the line after the current one, without
+  /// actually moving the context's current line forward.
+  peekLine() {
+    return this.scanLine(this.absoluteLineEnd + 1).text
+  }
+
   private moveRangeI() {
     while (this.rangeI < this.ranges.length - 1 && this.absoluteLineStart >= this.ranges[this.rangeI].to) {
       this.rangeI++
@@ -796,6 +802,7 @@ export class BlockContext implements PartialParse {
   }
 
   /// @internal
+  /// Collect the text for the next line.
   scanLine(start: number) {
     let r = scanLineResult
     r.end = start
@@ -820,6 +827,8 @@ export class BlockContext implements PartialParse {
   }
 
   /// @internal
+  /// Populate this.line with the content of the next line. Skip
+  /// leading characters covered by composite blocks.
   readLine() {
     let {line} = this, {text, end} = this.scanLine(this.absoluteLineStart)
     this.absoluteLineEnd = end

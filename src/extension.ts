@@ -30,6 +30,8 @@ export const Strikethrough: MarkdownConfig = {
   }]
 }
 
+// Parse a line as a table row and return the row count. When `elts`
+// is given, push syntax elements for the content onto it.
 function parseRow(cx: BlockContext, line: string, startI = 0, elts?: Element[], offset = 0) {
   let count = 0, first = true, cellStart = -1, cellEnd = -1, esc = false
   let parseCell = () => {
@@ -125,7 +127,7 @@ export const Table: MarkdownConfig = {
     leaf(_, leaf) { return hasPipe(leaf.content, 0) ? new TableParser : null },
     endLeaf(cx, line, leaf) {
       if (leaf.parsers.some(p => p instanceof TableParser) || !hasPipe(line.text, line.basePos)) return false
-      let next = cx.scanLine(cx.absoluteLineEnd + 1).text
+      let next = cx.peekLine()
       return delimiterLine.test(next) && parseRow(cx, line.text, line.basePos) == parseRow(cx, next, line.basePos)
     },
     before: "SetextHeading"
