@@ -1,3 +1,13 @@
+## 1.4.0 (2025-01-07)
+
+### Bug fixes
+
+Fix a regression in the autolink extension that made it fail to match some kinds of email addresses.
+
+### New features
+
+The new `BlockContext.peekLine` method can be used to scan the line ahead of the current one.
+
 ## 1.3.2 (2024-10-29)
 
 ### Bug fixes
