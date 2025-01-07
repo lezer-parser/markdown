@@ -164,7 +164,7 @@ export const TaskList: MarkdownConfig = {
   }]
 }
 
-const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]{,100}@)|(mailto:|xmpp:)/gy
+const autolinkRE = /(www\.)|(https?:\/\/)|([\w.+-]{1,100}@)|(mailto:|xmpp:)/gy
 const urlRE = /[\w-]+(\.[\w-]+)+(\/[^\s<]*)?/gy
 const lastTwoDomainWords = /[\w-]+\.[\w-]+($|\/)/
 const emailRE = /[\w.+-]+@[\w-]+(\.[\w.-]+)+/gy
