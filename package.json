@@ -25,15 +25,16 @@
   },
   "dependencies": {
     "@lezer/common": "^1.0.0",
-    "@lezer/highlight": "^1.0.0"
+    "@lezer/highlight": "^1.0.0",
+    "@marijn/buildtool": "^0.1.6"
   },
   "repository": {
     "type" : "git",
     "url" : "https://github.com/lezer-parser/markdown.git"
   },
   "scripts": {
-    "watch": "rollup -w -c rollup.config.js",
-    "prepare": "rollup -c rollup.config.js",
+    "watch": "node build.js --watch",
+    "prepare": "node build.js",
     "test": "mocha",
     "build-readme": "node bin/build-readme.cjs"
   }
