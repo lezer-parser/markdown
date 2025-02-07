@@ -1,3 +1,9 @@
+## 1.4.1 (2025-02-07)
+
+### Bug fixes
+
+Make sure TypeScript's new resolution styles can find the type declarations for the CommonJS files.
+
 ## 1.4.0 (2025-01-07)
 
 ### Bug fixes
