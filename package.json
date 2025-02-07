@@ -16,17 +16,13 @@
     "ist": "^1.1.1",
     "mocha": "^10.2.0",
     "@lezer/html": "^1.0.0",
-    "rollup": "^2.52.2",
-    "rollup-plugin-typescript2": "^0.34.1",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.4",
     "getdocs-ts": "^0.1.0",
-    "builddocs": "^1.0.0"
+    "builddocs": "^1.0.0",
+    "@marijn/buildtool": "^0.1.6"
   },
   "dependencies": {
     "@lezer/common": "^1.0.0",
-    "@lezer/highlight": "^1.0.0",
-    "@marijn/buildtool": "^0.1.6"
+    "@lezer/highlight": "^1.0.0"
   },
   "repository": {
     "type" : "git",
