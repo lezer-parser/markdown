@@ -100,9 +100,8 @@ parser</a>) to this parser.</p>
 </dl>
 <dl>
 <dt id="user-content-markdownextension">
-  <code>
-    type
-    <strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
+  <code>type</code>
+  <code><strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
 </dt>
 
 <dd><p>To make it possible to group extensions together into bigger
@@ -292,6 +291,11 @@ depth is passed, return the type of the innermost parent.</p>
 the line directly, or leaf block parser
 <a href="#user-content-leafblockparser.nextline"><code>nextLine</code></a> methods when they
 consume the current line (and return true).</p>
+</dd><dt id="user-content-blockcontext.peekline">
+  <code><strong><a href="#user-content-blockcontext.peekline">peekLine</a></strong>() → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a></code></dt>
+
+<dd><p>Retrieve the text of the line after the current one, without
+actually moving the context's current line forward.</p>
 </dd><dt id="user-content-blockcontext.prevlineend">
   <code><strong><a href="#user-content-blockcontext.prevlineend">prevLineEnd</a></strong>() → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
