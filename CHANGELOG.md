@@ -1,3 +1,9 @@
+## 1.4.2 (2025-02-24)
+
+### Bug fixes
+
+Move some dependencies to dev dependencies.
+
 ## 1.4.1 (2025-02-07)
 
 ### Bug fixes
