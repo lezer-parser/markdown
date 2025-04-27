@@ -1,3 +1,9 @@
+## 1.4.3 (2025-04-27)
+
+### Bug fixes
+
+Run the HTML parser on HTML comment blocks, since those may include non-comment content at their end.
+
 ## 1.4.2 (2025-02-24)
 
 ### Bug fixes
