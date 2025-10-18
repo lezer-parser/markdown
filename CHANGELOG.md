@@ -1,3 +1,9 @@
+## 1.5.0 (2025-10-18)
+
+### New features
+
+A `getDelimiterAt` method on inline contexts makes it possible to get information about opening delimiters.
+
 ## 1.4.3 (2025-04-27)
 
 ### Bug fixes

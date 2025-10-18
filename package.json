@@ -1,6 +1,6 @@
 {
   "name": "@lezer/markdown",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "Incremental Markdown parser that consumes and emits Lezer trees",
   "main": "dist/index.cjs",
   "type": "module",
