@@ -1760,6 +1760,15 @@ export class InlineContext {
     return content
   }
 
+  /// Return the delimiter at the given index. Mostly useful to get
+  /// additional info out of a delimiter index returned by
+  /// [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter).
+  /// Returns null if there is no delimiter at this index.
+  getDelimiterAt(index: number): {from: number, to: number, type: DelimiterType} | null {
+    let part = this.parts[index]
+    return part instanceof InlineDelimiter ? part : null
+  }
+
   /// Skip space after the given (document) position, returning either
   /// the position of the next non-space character or the end of the
   /// section.
