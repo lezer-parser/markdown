@@ -1744,7 +1744,7 @@ export class InlineContext {
   findOpeningDelimiter(type: DelimiterType) {
     for (let i = this.parts.length - 1; i >= 0; i--) {
       let part = this.parts[i]
-      if (part instanceof InlineDelimiter && part.type == type) return i
+      if (part instanceof InlineDelimiter && part.type == type && part.side === 1) return i
     }
     return null
   }
