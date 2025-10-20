@@ -1,3 +1,9 @@
+## 1.5.1 (2025-10-20)
+
+### Bug fixes
+
+Fix an issue where `findOpeningDelimiter` could return the position of a close delimiter.
+
 ## 1.5.0 (2025-10-18)
 
 ### New features
