@@ -132,7 +132,7 @@ export class Line {
   forward() {
     if (this.basePos > this.pos) this.forwardInner()
   }
-  
+
   /// @internal
   forwardInner() {
     let newPos = this.skipSpace(this.basePos)
@@ -713,7 +713,7 @@ export class BlockContext implements PartialParse {
       }
       break
     }
-      
+
     let leaf = new LeafBlock(this.lineStart + line.pos, line.text.slice(line.pos))
     for (let parse of this.parser.leafBlockParsers) if (parse) {
       let parser = parse!(this, leaf)
@@ -966,22 +966,22 @@ function injectGaps(
 /// types](https://lezer.codemirror.net/docs/ref/#common.NodeType).
 export interface NodeSpec {
   /// The node's name.
-  name: string,
+  name: string
   /// Should be set to true if this type represents a block node.
-  block?: boolean,
+  block?: boolean
   /// If this is a composite block, this should hold a function that,
   /// at the start of a new line where that block is active, checks
   /// whether the composite block should continue (return value) and
   /// optionally [adjusts](#Line.moveBase) the line's base position
   /// and [registers](#Line.addMarker) nodes for any markers involved
   /// in the block's syntax.
-  composite?(cx: BlockContext, line: Line, value: number): boolean,
+  composite?(cx: BlockContext, line: Line, value: number): boolean
   /// Add highlighting tag information for this node. The value of
   /// this property may either by a tag or array of tags to assign
   /// directly to this node, or an object in the style of
   /// [`styleTags`](https://lezer.codemirror.net/docs/ref/#highlight.styleTags)'s
   /// argument to assign more complicated rules.
-  style?: Tag | readonly Tag[] | {[selector: string]: Tag | readonly Tag[]},
+  style?: Tag | readonly Tag[] | {[selector: string]: Tag | readonly Tag[]}
 }
 
 /// Inline parsers are called for every character of parts of the
@@ -989,24 +989,24 @@ export interface NodeSpec {
 export interface InlineParser {
   /// This parser's name, which can be used by other parsers to
   /// [indicate](#InlineParser.before) a relative precedence.
-  name: string,
+  name: string
   /// The parse function. Gets the next character and its position as
   /// arguments. Should return -1 if it doesn't handle the character,
   /// or add some [element](#InlineContext.addElement) or
   /// [delimiter](#InlineContext.addDelimiter) and return the end
   /// position of the content it parsed if it can.
-  parse(cx: InlineContext, next: number, pos: number): number,
+  parse(cx: InlineContext, next: number, pos: number): number
   /// When given, this parser will be installed directly before the
   /// parser with the given name. The default configuration defines
   /// inline parsers with names Escape, Entity, InlineCode, HTMLTag,
   /// Emphasis, HardBreak, Link, and Image. When no `before` or
   /// `after` property is given, the parser is added to the end of the
   /// list.
-  before?: string,
+  before?: string
   /// When given, the parser will be installed directly _after_ the
   /// parser with the given name.
   after?: string
-}  
+}
 
 /// Block parsers handle block-level structure. There are three
 /// general types of block parsers:
@@ -1035,7 +1035,7 @@ export interface InlineParser {
 export interface BlockParser {
   /// The name of the parser. Can be used by other block parsers to
   /// [specify](#BlockParser.before) precedence.
-  name: string,
+  name: string
   /// The eager parse function, which can look at the block's first
   /// line and return `false` to do nothing, `true` if it has parsed
   /// (and [moved past](#BlockContext.nextLine) a block), or `null` if
@@ -1058,10 +1058,10 @@ export interface BlockParser {
   /// defines block parsers with names LinkReference, IndentedCode,
   /// FencedCode, Blockquote, HorizontalRule, BulletList, OrderedList,
   /// ATXHeading, HTMLBlock, and SetextHeading.
-  before?: string,
+  before?: string
   /// When given, the parser will be installed directly _after_ the
   /// parser with the given name.
-  after?: string,
+  after?: string
 }
 
 /// Objects that are used to [override](#BlockParser.leaf)
@@ -1087,13 +1087,13 @@ export interface LeafBlockParser {
 /// [configure](#MarkdownParser.configure) the Markdown parser.
 export interface MarkdownConfig {
   /// Node props to add to the parser's node set.
-  props?: readonly NodePropSource[],
+  props?: readonly NodePropSource[]
   /// Define new [node types](#NodeSpec) for use in parser extensions.
-  defineNodes?: readonly (string | NodeSpec)[],
+  defineNodes?: readonly (string | NodeSpec)[]
   /// Define additional [block parsing](#BlockParser) logic.
-  parseBlock?: readonly BlockParser[],
+  parseBlock?: readonly BlockParser[]
   /// Define new [inline parsing](#InlineParser) logic.
-  parseInline?: readonly InlineParser[],
+  parseInline?: readonly InlineParser[]
   /// Remove the named parsers from the configuration.
   remove?: readonly string[]
   /// Add a parse wrapper (such as a [mixed-language
@@ -1320,7 +1320,7 @@ class Buffer {
       length
     })
   }
-}  
+}
 
 /// Elements are used to compose syntax nodes during parsing.
 export class Element {
@@ -1388,7 +1388,7 @@ export interface DelimiterType {
   /// When this isn't given, you need to match the delimiter eagerly
   /// using the [`findOpeningDelimiter`](#InlineContext.findOpeningDelimiter)
   /// and [`takeContent`](#InlineContext.takeContent) methods.
-  resolve?: string,
+  resolve?: string
   /// If the delimiter itself should, when matched, create a syntax
   /// node, set this to the name of the syntax node.
   mark?: string
