@@ -597,6 +597,13 @@ given index (which you should get from
 <a href="#user-content-inlinecontext.findopeningdelimiter"><code>findOpeningDelimiter</code></a>,
 resolve delimiters inside of them, and return them as an array
 of elements.</p>
+</dd><dt id="user-content-inlinecontext.getdelimiterat">
+  <code><strong><a href="#user-content-inlinecontext.getdelimiterat">getDelimiterAt</a></strong>(<a id="user-content-inlinecontext.getdelimiterat^index" href="#user-content-inlinecontext.getdelimiterat^index">index</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → {from: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, to: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, type: <a href="#user-content-delimitertype">DelimiterType</a>} | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
+
+<dd><p>Return the delimiter at the given index. Mostly useful to get
+additional info out of a delimiter index returned by
+<a href="#user-content-inlinecontext.findopeningdelimiter"><code>findOpeningDelimiter</code></a>.
+Returns null if there is no delimiter at this index.</p>
 </dd><dt id="user-content-inlinecontext.skipspace">
   <code><strong><a href="#user-content-inlinecontext.skipspace">skipSpace</a></strong>(<a id="user-content-inlinecontext.skipspace^from" href="#user-content-inlinecontext.skipspace^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
 
@@ -607,6 +614,14 @@ section.</p>
   <code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^type" href="#user-content-inlinecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-inlinecontext.elt^from" href="#user-content-inlinecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^to" href="#user-content-inlinecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-inlinecontext.elt^children" href="#user-content-inlinecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code><div><code><strong><a href="#user-content-inlinecontext.elt">elt</a></strong>(<a id="user-content-inlinecontext.elt^tree" href="#user-content-inlinecontext.elt^tree">tree</a>: <a href="https://lezer.codemirror.net/docs/ref/#common.Tree">Tree</a>, <a id="user-content-inlinecontext.elt^at" href="#user-content-inlinecontext.elt^at">at</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="#user-content-element">Element</a></code></div></dt>
 
 <dd><p>Create an <a href="#user-content-element"><code>Element</code></a> for a syntax node.</p>
+</dd><dt id="user-content-inlinecontext^linkstart">
+  <code>static <strong><a href="#user-content-inlinecontext^linkstart">linkStart</a></strong>: <a href="#user-content-delimitertype">DelimiterType</a></code></dt>
+
+<dd><p>The opening delimiter type used by the standard link parser.</p>
+</dd><dt id="user-content-inlinecontext^imagestart">
+  <code>static <strong><a href="#user-content-inlinecontext^imagestart">imageStart</a></strong>: <a href="#user-content-delimitertype">DelimiterType</a></code></dt>
+
+<dd><p>Opening delimiter type used for standard images.</p>
 </dd></dl>
 
 </dd>

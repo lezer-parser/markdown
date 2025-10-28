@@ -1781,6 +1781,12 @@ export class InlineContext {
     if (typeof type == "string") return elt(this.parser.getNodeType(type), from, to!, children)
     return new TreeElement(type, from)
   }
+
+  /// The opening delimiter type used by the standard link parser.
+  static linkStart = LinkStart
+
+  /// Opening delimiter type used for standard images.
+  static imageStart = ImageStart
 }
 
 function injectMarks(elements: readonly (Element | TreeElement)[], marks: Element[]) {
