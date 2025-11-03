@@ -836,7 +836,12 @@ export class BlockContext implements PartialParse {
     for (; line.depth < this.stack.length; line.depth++) {
       let cx = this.stack[line.depth], handler = this.parser.skipContextMarkup[cx.type]
       if (!handler) throw new Error("Unhandled block context " + Type[cx.type])
-      if (!handler(cx, this, line)) break
+      let marks = this.line.markers.length
+      if (!handler(cx, this, line)) {
+        if (this.line.markers.length > marks)
+          cx.end = this.line.markers[this.line.markers.length - 1].to
+        break
+      }
       line.forward()
     }
   }
@@ -1014,7 +1019,9 @@ export interface InlineParser {
 /// - Composite block parsers, which handle things like lists and
 ///   blockquotes. These define a [`parse`](#BlockParser.parse) method
 ///   that [starts](#BlockContext.startComposite) a composite block
-///   and returns null when it recognizes its syntax.
+///   and returns null when it recognizes its syntax. The node type
+///   used by such a block must define a
+///   [`composite`](#NodeSpec.composite) function as well.
 ///
 /// - Eager leaf block parsers, used for things like code or HTML
 ///   blocks. These can unambiguously recognize their content from its
@@ -1039,7 +1046,7 @@ export interface BlockParser {
   /// The eager parse function, which can look at the block's first
   /// line and return `false` to do nothing, `true` if it has parsed
   /// (and [moved past](#BlockContext.nextLine) a block), or `null` if
-  /// it has started a composite block.
+  /// it has [started](#BlockContext.startComposite) a composite block.
   parse?(cx: BlockContext, line: Line): BlockResult
   /// A leaf parse function. If no [regular](#BlockParser.parse) parse
   /// functions match for a given line, its content will be
