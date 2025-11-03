@@ -1,3 +1,13 @@
+## 1.6.0 (2025-11-03)
+
+### Bug fixes
+
+When a composite block adds a node while ending, make sure the composite node covers that end token.
+
+### New features
+
+Export the opening delimiters used for standard links and images, so that extension code can look for them.
+
 ## 1.5.1 (2025-10-20)
 
 ### Bug fixes
