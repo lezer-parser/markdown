@@ -73,7 +73,7 @@ export class SpecParser {
       }
     }
     if (stack.length) throw new Error(`Unclosed node in ${specName}`)
-    return {tree: Tree.build({buffer, nodeSet: this.parser.nodeSet, topID: this.type("Document"), length: doc.length}), doc}
+    return {tree: Tree.build({buffer, nodeSet: this.parser.nodeSet, topID: this.type("Document")!, length: doc.length}), doc}
   }
 }
 
