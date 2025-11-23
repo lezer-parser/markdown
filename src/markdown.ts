@@ -840,6 +840,7 @@ export class BlockContext implements PartialParse {
       if (!handler(cx, this, line)) {
         if (this.line.markers.length > marks)
           cx.end = this.line.markers[this.line.markers.length - 1].to
+          line.forward()
         break
       }
       line.forward()
