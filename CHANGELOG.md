@@ -1,3 +1,9 @@
+## 1.6.1 (2025-12-06)
+
+### Bug fixes
+
+Fix an issue where, if a composite node handler added a marker before returning false, that token was parsed twice.
+
 ## 1.6.0 (2025-11-03)
 
 ### Bug fixes
