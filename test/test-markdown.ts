@@ -3555,6 +3555,12 @@ describe("Custom Markdown tests", () => {
 {LI:{l:2.} {P:B}}}
 `)
 
+  test("Creates a code node for blank-line fenced blocks", `
+{FC:{c:\`\`\`}
+{cT:
+}{c:\`\`\`}}
+`)
+
   it("Doesn't get confused by tabs indenting a list item", () => {
     let doc = ` - a\n\t\tb`
     if (parser.parse(doc).length > doc.length) throw new RangeError("Wrong tree length")

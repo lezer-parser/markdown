@@ -21,7 +21,7 @@
     "@marijn/buildtool": "^0.1.6"
   },
   "dependencies": {
-    "@lezer/common": "^1.0.0",
+    "@lezer/common": "^1.5.0",
     "@lezer/highlight": "^1.0.0"
   },
   "repository": {

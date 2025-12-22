@@ -412,20 +412,22 @@ const DefaultBlockParsers: {[name: string]: ((cx: BlockContext, line: Line) => B
     if (infoFrom < infoTo)
       marks.push(elt(Type.CodeInfo, cx.lineStart + infoFrom, cx.lineStart + infoTo))
 
-    for (let first = true; cx.nextLine() && line.depth >= cx.stack.length; first = false) {
+    for (let first = true, empty = true, hasLine = false; cx.nextLine() && line.depth >= cx.stack.length; first = false) {
       let i = line.pos
       if (line.indent - line.baseIndent < 4)
         while (i < line.text.length && line.text.charCodeAt(i) == ch) i++
       if (i - line.pos >= len && line.skipSpace(i) == line.text.length) {
         for (let m of line.markers) marks.push(m)
+        if (empty && hasLine) addCodeText(marks, cx.lineStart - 1, cx.lineStart)
         marks.push(elt(Type.CodeMark, cx.lineStart + line.pos, cx.lineStart + i))
         cx.nextLine()
         break
       } else {
-        if (!first) addCodeText(marks, cx.lineStart - 1, cx.lineStart)
+        hasLine = true
+        if (!first) { addCodeText(marks, cx.lineStart - 1, cx.lineStart); empty = false }
         for (let m of line.markers) marks.push(m)
         let textStart = cx.lineStart + line.basePos, textEnd = cx.lineStart + line.text.length
-        if (textStart < textEnd) addCodeText(marks, textStart, textEnd)
+        if (textStart < textEnd) { addCodeText(marks, textStart, textEnd); empty = false }
       }
     }
     cx.addNode(cx.buffer.writeElements(marks, -from)
