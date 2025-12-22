@@ -1,3 +1,9 @@
+## 1.6.2 (2025-12-22)
+
+### Bug fixes
+
+Nested parses in fenced blocks are now marked as bracketed.
+
 ## 1.6.1 (2025-12-06)
 
 ### Bug fixes
