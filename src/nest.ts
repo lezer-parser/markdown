@@ -36,7 +36,7 @@ export function parseCode(config: {
       }
       let parser = codeParser(info)
       if (parser)
-        return {parser, overlay: node => node.type.id == Type.CodeText}
+        return {parser, overlay: node => node.type.id == Type.CodeText, bracketed: id == Type.FencedCode}
     } else if (htmlParser && (id == Type.HTMLBlock || id == Type.HTMLTag || id == Type.CommentBlock)) {
       return {parser: htmlParser, overlay: leftOverSpace(node.node, node.from, node.to)}
     }
