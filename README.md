@@ -100,8 +100,9 @@ parser</a>) to this parser.</p>
 </dl>
 <dl>
 <dt id="user-content-markdownextension">
-  <code>type</code>
-  <code><strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
+  <code>
+    type
+    <strong><a href="#user-content-markdownextension">MarkdownExtension</a></strong> = <a href="#user-content-markdownconfig">MarkdownConfig</a> | readonly <a href="#user-content-markdownextension">MarkdownExtension</a>[]</code>
 </dt>
 
 <dd><p>To make it possible to group extensions together into bigger
@@ -339,7 +340,9 @@ general types of block parsers:</p>
 <p>Composite block parsers, which handle things like lists and
 blockquotes. These define a <a href="#user-content-blockparser.parse"><code>parse</code></a> method
 that <a href="#user-content-blockcontext.startcomposite">starts</a> a composite block
-and returns null when it recognizes its syntax.</p>
+and returns null when it recognizes its syntax. The node type
+used by such a block must define a
+<a href="#user-content-nodespec.composite"><code>composite</code></a> function as well.</p>
 </li>
 <li>
 <p>Eager leaf block parsers, used for things like code or HTML
@@ -372,7 +375,7 @@ observe that block.</p>
 <dd><p>The eager parse function, which can look at the block's first
 line and return <code>false</code> to do nothing, <code>true</code> if it has parsed
 (and <a href="#user-content-blockcontext.nextline">moved past</a> a block), or <code>null</code> if
-it has started a composite block.</p>
+it has <a href="#user-content-blockcontext.startcomposite">started</a> a composite block.</p>
 </dd><dt id="user-content-blockparser.leaf">
   <code><strong><a href="#user-content-blockparser.leaf">leaf</a></strong>&#8288;?: fn(<a id="user-content-blockparser.leaf^cx" href="#user-content-blockparser.leaf^cx">cx</a>: <a href="#user-content-blockcontext">BlockContext</a>, <a id="user-content-blockparser.leaf^leaf" href="#user-content-blockparser.leaf^leaf">leaf</a>: <a href="#user-content-leafblock">LeafBlock</a>) → <a href="#user-content-leafblockparser">LeafBlockParser</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a></code></dt>
 
