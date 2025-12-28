@@ -1104,6 +1104,8 @@ export interface MarkdownConfig {
   parseBlock?: readonly BlockParser[]
   /// Define new [inline parsing](#InlineParser) logic.
   parseInline?: readonly InlineParser[]
+  /// Define custom delimiter resolution logic.
+  delimiterResolvers?: readonly ((cx: InlineContext) => void)[]
   /// Remove the named parsers from the configuration.
   remove?: readonly string[]
   /// Add a parse wrapper (such as a [mixed-language
@@ -1140,6 +1142,8 @@ export class MarkdownParser extends Parser {
     /// @internal
     readonly inlineParsers: readonly (((cx: InlineContext, next: number, pos: number) => number) | undefined)[],
     /// @internal
+    readonly delimiterResolvers: readonly ((cx: InlineContext) => void)[],
+    /// @internal
     readonly inlineNames: readonly string[],
     /// @internal
     readonly wrappers: readonly ParseWrapper[]
@@ -1160,9 +1164,10 @@ export class MarkdownParser extends Parser {
     if (!config) return this
     let {nodeSet, skipContextMarkup} = this
     let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
-        blockNames = this.blockNames.slice(), inlineParsers = this.inlineParsers.slice(),
-        inlineNames = this.inlineNames.slice(), endLeafBlock = this.endLeafBlock.slice(),
-        wrappers = this.wrappers
+        blockNames = this.blockNames.slice(), endLeafBlock = this.endLeafBlock.slice()
+    let inlineParsers = this.inlineParsers.slice(), inlineNames = this.inlineNames.slice()
+    let delimiterResolvers = this.delimiterResolvers.slice()
+    let wrappers = this.wrappers
 
     if (nonEmpty(config.defineNodes)) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
@@ -1232,11 +1237,12 @@ export class MarkdownParser extends Parser {
     }
 
     if (config.wrap) wrappers = wrappers.concat(config.wrap)
+    if (config.delimiterResolvers) delimiterResolvers = delimiterResolvers.concat(config.delimiterResolvers)
 
     return new MarkdownParser(nodeSet,
                               blockParsers, leafBlockParsers, blockNames,
                               endLeafBlock, skipContextMarkup,
-                              inlineParsers, inlineNames, wrappers)
+                              inlineParsers, delimiterResolvers, inlineNames, wrappers)
   }
 
   /// @internal
@@ -1282,6 +1288,7 @@ function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
     defineNodes: conc(conf.defineNodes, rest.defineNodes),
     parseBlock: conc(conf.parseBlock, rest.parseBlock),
     parseInline: conc(conf.parseInline, rest.parseInline),
+    delimiterResolvers: conc(conf.delimiterResolvers, rest.delimiterResolvers),
     remove: conc(conf.remove, rest.remove),
     wrap: !wrapA ? wrapB : !wrapB ? wrapA :
       (inner, input, fragments, ranges) => wrapA!(wrapB!(inner, input, fragments, ranges), input, fragments, ranges)
@@ -1692,6 +1699,7 @@ export class InlineContext {
   /// Resolve markers between this.parts.length and from, wrapping matched markers in the
   /// appropriate node and updating the content of this.parts. @internal
   resolveMarkers(from: number) {
+    for (let resolver of this.parser.delimiterResolvers) resolver(this)
     // Scan forward, looking for closing tokens
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
@@ -1956,6 +1964,7 @@ export const parser = new MarkdownParser(
   DefaultEndLeaf,
   DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
+  [],
   Object.keys(DefaultInline),
   []
 )
