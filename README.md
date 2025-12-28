@@ -85,6 +85,10 @@ the inline content.</p>
   <code><strong><a href="#user-content-markdownconfig.parseinline">parseInline</a></strong>&#8288;?: readonly <a href="#user-content-inlineparser">InlineParser</a>[]</code></dt>
 
 <dd><p>Define new <a href="#user-content-inlineparser">inline parsing</a> logic.</p>
+</dd><dt id="user-content-markdownconfig.delimiterresolvers">
+  <code><strong><a href="#user-content-markdownconfig.delimiterresolvers">delimiterResolvers</a></strong>&#8288;?: readonly (fn(<a id="user-content-markdownconfig.delimiterresolvers^cx" href="#user-content-markdownconfig.delimiterresolvers^cx">cx</a>: <a href="#user-content-inlinecontext">InlineContext</a>))[]</code></dt>
+
+<dd><p>Define custom delimiter resolution logic.</p>
 </dd><dt id="user-content-markdownconfig.remove">
   <code><strong><a href="#user-content-markdownconfig.remove">remove</a></strong>&#8288;?: readonly <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>[]</code></dt>
 
@@ -544,7 +548,17 @@ block parsing</a>.</p>
 
 <dd><p>Inline parsing functions get access to this context, and use it to
 read the content and emit syntax nodes.</p>
-<dl><dt id="user-content-inlinecontext.parser">
+<dl><dt id="user-content-inlinecontext.parts">
+  <code><strong><a href="#user-content-inlinecontext.parts">parts</a></strong>: (<a href="#user-content-element">Element</a> | {type: <a href="#user-content-delimitertype">DelimiterType</a>, from: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, to: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, side: 0 | 1 | 2} | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>)[]</code></dt>
+
+<dd><p>The elements and delimiters collected so far during inline
+parsing. <a href="#user-content-markdownconfig.delimiterresolvers">Delimiter resolvers</a>
+can inspect and modify this array to implement custom resolution
+logic. Delimiters are objects with <code>type</code>, <code>from</code>, <code>to</code>, and
+<code>side</code> properties (where side is 1 for opening, 2 for closing,
+or 3 for both). After resolution, only <a href="#user-content-element"><code>Element</code></a>
+objects remain.</p>
+</dd><dt id="user-content-inlinecontext.parser">
   <code><strong><a href="#user-content-inlinecontext.parser">parser</a></strong>: <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
 <dd><p>The parser that is being used.</p>
