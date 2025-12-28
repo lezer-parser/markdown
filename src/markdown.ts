@@ -1643,7 +1643,13 @@ function parseLinkLabel(text: string, start: number, offset: number, requireNonW
 /// Inline parsing functions get access to this context, and use it to
 /// read the content and emit syntax nodes.
 export class InlineContext {
-  /// @internal
+  /// The elements and delimiters collected so far during inline
+  /// parsing. [Delimiter resolvers](#MarkdownConfig.delimiterResolvers)
+  /// can inspect and modify this array to implement custom resolution
+  /// logic. Delimiters are objects with `type`, `from`, `to`, and
+  /// `side` properties (where side is 1 for opening, 2 for closing,
+  /// or 3 for both). After resolution, only [`Element`](#Element)
+  /// objects remain.
   parts: (Element | InlineDelimiter | null)[] = []
 
   /// @internal
