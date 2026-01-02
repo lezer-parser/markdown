@@ -1,4 +1,4 @@
-import {parser as cmParser, InlineContext} from "../dist/index.js"
+import {parser as cmParser, PreResolveContext} from "../dist/index.js"
 import {compareTree} from "./compare-tree.js"
 import {SpecParser} from "./spec.js"
 import {it, describe} from "mocha"
@@ -6,22 +6,22 @@ import {it, describe} from "mocha"
 // A resolver that clears all asterisk emphasis delimiters (identified by checking
 // the character at their position). This demonstrates access to delimiters added
 // by the built-in Emphasis parser.
-function clearAsteriskEmphasis(cx: InlineContext) {
-  for (let i = 0; i < (cx as any).parts.length; i++) {
-    let part = (cx as any).parts[i]
-    // InlineDelimiter has type.resolve, Elements don't
-    if (part && part.type && part.type.resolve === "Emphasis") {
+function clearAsteriskEmphasis(ctx: PreResolveContext) {
+  for (let i = 0; i < ctx.delimiters.length; i++) {
+    const delim = ctx.delimiters[i]
+    // Check if this is an emphasis delimiter
+    if (delim.type && (delim.type as any).resolve === "Emphasis") {
       // Check if this is an asterisk delimiter by looking at the character
-      let char = cx.slice(part.from, part.from + 1)
+      let char = ctx.slice(delim.from, delim.from + 1)
       if (char === "*") {
-        (cx as any).parts[i] = null
+        ctx.markResolved(i)
       }
     }
   }
 }
 
 const NoAsteriskEmphasis = {
-  delimiterResolvers: [clearAsteriskEmphasis]
+  preResolveDelimiters: [clearAsteriskEmphasis]
 } as any
 
 const parser = cmParser.configure([NoAsteriskEmphasis])
@@ -34,7 +34,7 @@ function test(name: string, spec: string, p = parser) {
   })
 }
 
-describe("delimiterResolvers", () => {
+describe("preResolveDelimiters", () => {
   test("clears asterisk emphasis", `
 {P:*hello*}`)
 
