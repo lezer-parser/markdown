@@ -85,10 +85,12 @@ the inline content.</p>
   <code><strong><a href="#user-content-markdownconfig.parseinline">parseInline</a></strong>&#8288;?: readonly <a href="#user-content-inlineparser">InlineParser</a>[]</code></dt>
 
 <dd><p>Define new <a href="#user-content-inlineparser">inline parsing</a> logic.</p>
-</dd><dt id="user-content-markdownconfig.delimiterresolvers">
-  <code><strong><a href="#user-content-markdownconfig.delimiterresolvers">delimiterResolvers</a></strong>&#8288;?: readonly (fn(<a id="user-content-markdownconfig.delimiterresolvers^cx" href="#user-content-markdownconfig.delimiterresolvers^cx">cx</a>: <a href="#user-content-inlinecontext">InlineContext</a>))[]</code></dt>
+</dd><dt id="user-content-markdownconfig.preresolvedelimiters">
+  <code><strong><a href="#user-content-markdownconfig.preresolvedelimiters">preResolveDelimiters</a></strong>&#8288;?: readonly (fn(<a id="user-content-markdownconfig.preresolvedelimiters^ctx" href="#user-content-markdownconfig.preresolvedelimiters^ctx">ctx</a>: <a href="#user-content-preresolvecontext">PreResolveContext</a>))[]</code></dt>
 
-<dd><p>Define custom delimiter resolution logic.</p>
+<dd><p>Hooks called before standard delimiter resolution. Each hook
+receives a <a href="#user-content-preresolvecontext">PreResolveContext</a> and can
+inspect delimiters and add elements or mark delimiters as resolved.</p>
 </dd><dt id="user-content-markdownconfig.remove">
   <code><strong><a href="#user-content-markdownconfig.remove">remove</a></strong>&#8288;?: readonly <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>[]</code></dt>
 
@@ -98,6 +100,50 @@ the inline content.</p>
 
 <dd><p>Add a parse wrapper (such as a <a href="#user-content-common.parsemixed">mixed-language
 parser</a>) to this parser.</p>
+</dd></dl>
+
+</dd>
+</dl>
+<dl>
+<dt id="user-content-preresolvecontext">
+  <h4>
+    <code>interface</code>
+    <a href="#user-content-preresolvecontext">PreResolveContext</a></h4>
+</dt>
+
+<dd><p>Context object passed to pre-resolve delimiter hooks. Provides
+an immutable view of pending delimiters and methods to mark them
+as resolved or add elements.</p>
+<dl><dt id="user-content-preresolvecontext.delimiters">
+  <code><strong><a href="#user-content-preresolvecontext.delimiters">delimiters</a></strong>: readonly {type: <a href="#user-content-delimitertype">DelimiterType</a>, from: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, to: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, side: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>}[]</code></dt>
+
+<dd><p>Immutable list of pending delimiters. Each delimiter has a type,
+position range (from/to), and side flags (1=open, 2=close, 3=both).</p>
+</dd><dt id="user-content-preresolvecontext.blockend">
+  <code><strong><a href="#user-content-preresolvecontext.blockend">blockEnd</a></strong>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a></code></dt>
+
+<dd><p>End position of the current inline section.</p>
+</dd><dt id="user-content-preresolvecontext.parser">
+  <code><strong><a href="#user-content-preresolvecontext.parser">parser</a></strong>: <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
+
+<dd><p>The parser being used.</p>
+</dd><dt id="user-content-preresolvecontext.markresolved">
+  <code><strong><a href="#user-content-preresolvecontext.markresolved">markResolved</a></strong>(<a id="user-content-preresolvecontext.markresolved^index" href="#user-content-preresolvecontext.markresolved^index">index</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)</code></dt>
+
+<dd><p>Mark the delimiter at the given index as resolved (it will be
+skipped by standard resolution).</p>
+</dd><dt id="user-content-preresolvecontext.addelement">
+  <code><strong><a href="#user-content-preresolvecontext.addelement">addElement</a></strong>(<a id="user-content-preresolvecontext.addelement^element" href="#user-content-preresolvecontext.addelement^element">element</a>: <a href="#user-content-element">Element</a>)</code></dt>
+
+<dd><p>Add an element to the output.</p>
+</dd><dt id="user-content-preresolvecontext.elt">
+  <code><strong><a href="#user-content-preresolvecontext.elt">elt</a></strong>(<a id="user-content-preresolvecontext.elt^type" href="#user-content-preresolvecontext.elt^type">type</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a id="user-content-preresolvecontext.elt^from" href="#user-content-preresolvecontext.elt^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-preresolvecontext.elt^to" href="#user-content-preresolvecontext.elt^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-preresolvecontext.elt^children" href="#user-content-preresolvecontext.elt^children">children</a>&#8288;?: readonly <a href="#user-content-element">Element</a>[]) → <a href="#user-content-element">Element</a></code></dt>
+
+<dd><p>Create an element.</p>
+</dd><dt id="user-content-preresolvecontext.slice">
+  <code><strong><a href="#user-content-preresolvecontext.slice">slice</a></strong>(<a id="user-content-preresolvecontext.slice^from" href="#user-content-preresolvecontext.slice^from">from</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a id="user-content-preresolvecontext.slice^to" href="#user-content-preresolvecontext.slice^to">to</a>: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) → <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a></code></dt>
+
+<dd><p>Get a substring of the inline section using document-relative positions.</p>
 </dd></dl>
 
 </dd>
@@ -548,17 +594,7 @@ block parsing</a>.</p>
 
 <dd><p>Inline parsing functions get access to this context, and use it to
 read the content and emit syntax nodes.</p>
-<dl><dt id="user-content-inlinecontext.parts">
-  <code><strong><a href="#user-content-inlinecontext.parts">parts</a></strong>: (<a href="#user-content-element">Element</a> | {type: <a href="#user-content-delimitertype">DelimiterType</a>, from: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, to: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, side: 0 | 1 | 2} | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>)[]</code></dt>
-
-<dd><p>The elements and delimiters collected so far during inline
-parsing. <a href="#user-content-markdownconfig.delimiterresolvers">Delimiter resolvers</a>
-can inspect and modify this array to implement custom resolution
-logic. Delimiters are objects with <code>type</code>, <code>from</code>, <code>to</code>, and
-<code>side</code> properties (where side is 1 for opening, 2 for closing,
-or 3 for both). After resolution, only <a href="#user-content-element"><code>Element</code></a>
-objects remain.</p>
-</dd><dt id="user-content-inlinecontext.parser">
+<dl><dt id="user-content-inlinecontext.parser">
   <code><strong><a href="#user-content-inlinecontext.parser">parser</a></strong>: <a href="#user-content-markdownparser">MarkdownParser</a></code></dt>
 
 <dd><p>The parser that is being used.</p>
