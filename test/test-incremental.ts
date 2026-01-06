@@ -197,6 +197,12 @@ Another paragraph that is long enough to create a fragment
     ist(overlap(start.tree, state.tree), 80, ">")
   })
 
+  it("can reuse regular blocks before a continuable block", () => {
+    let start = State.start("A reusable paragraph\n\n".repeat(50) + "- etc\n\n")
+    let state = start.update([{from: start.doc.length, insert: "x"}])
+    ist(overlap(start.tree, state.tree), 85, ">")
+  })
+
   it("returns a tree starting at the first range", () => {
     let result = parser.parse("foo\n\nbar", [], [{from: 5, to: 8}])
     ist(result.toString(), "Document(Paragraph)")

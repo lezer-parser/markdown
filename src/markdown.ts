@@ -1896,9 +1896,9 @@ class FragmentCursor {
         } else {
           end = prevEnd
           blockI = prevI
-          prevEnd = cur.to - off
-          prevI = cx.block.children.length
         }
+        prevEnd = cur.to - off
+        prevI = cx.block.children.length
       }
       if (!cur.nextSibling()) break
     }
