@@ -1,3 +1,9 @@
+## 1.6.3 (2026-01-06)
+
+### Bug fixes
+
+Fix an issue that caused the parser to re-parse much more than it needed to when reusable content ends in a single list element after many non-list elements.
+
 ## 1.6.2 (2025-12-22)
 
 ### Bug fixes
