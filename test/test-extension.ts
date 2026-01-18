@@ -87,6 +87,14 @@ describe("Extension", () => {
 {tb:| :-: | :-: |}
 {TR:{tb:|} {TC:One} {tb:|} {TC:Two} {tb:|}}}`)
 
+  test("Tables (nested list)", `
+{BL:{LI:{l:-} {TB:{TH:{tb:|} {TC:Table} {tb:|}}
+  {tb:|:--|}}
+  {BL:{LI:{l:-} {TB:{TH:{tb:|} {TC:Table} {tb:|}}
+    {tb:|:--|}}
+    {BL:{LI:{l:-} {TB:{TH:{tb:|} {TC:Table} {tb:|}}
+      {tb:|:--|}}}}}}}}`)
+
   test("Tables (end paragraph)", `
 {P:Hello}
 {TB:{TH:{tb:|} {TC:foo} {tb:|} {TC:bar} {tb:|}}
