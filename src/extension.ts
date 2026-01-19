@@ -86,8 +86,7 @@ class TableParser implements LeafBlockParser {
       if ((line.next == 45 || line.next == 58 || line.next == 124 /* '-:|' */) &&
           delimiterLine.test(lineText = line.text.slice(line.pos))) {
         let firstRow: Element[] = [], firstCount = parseRow(cx, leaf.content, 0, firstRow, leaf.start)
-        let secondCount = parseRow(cx, lineText, 0)
-        if (firstCount == secondCount)
+        if (firstCount == parseRow(cx, lineText, 0))
           this.rows = [cx.elt("TableHeader", leaf.start, leaf.start + leaf.content.length, firstRow),
                        cx.elt("TableDelimiter", cx.lineStart + line.pos, cx.lineStart + line.text.length)]
       }
