@@ -1093,6 +1093,33 @@ export interface LeafBlockParser {
   finish(cx: BlockContext, leaf: LeafBlock): boolean
 }
 
+/// Context object passed to pre-resolve delimiter hooks. Provides
+/// an immutable view of pending delimiters and methods to mark them
+/// as resolved or add elements.
+export interface PreResolveContext {
+  /// Immutable list of pending delimiters. Each delimiter has a type,
+  /// position range (from/to), and side flags (1=open, 2=close, 3=both).
+  readonly delimiters: ReadonlyArray<{
+    readonly type: DelimiterType
+    readonly from: number
+    readonly to: number
+    readonly side: number
+  }>
+  /// End position of the current inline section.
+  readonly blockEnd: number
+  /// The parser being used.
+  readonly parser: MarkdownParser
+  /// Mark the delimiter at the given index as resolved (it will be
+  /// skipped by standard resolution).
+  markResolved(index: number): void
+  /// Add an element to the output.
+  addElement(element: Element): void
+  /// Create an element.
+  elt(type: string, from: number, to: number, children?: readonly Element[]): Element
+  /// Get a substring of the inline section using document-relative positions.
+  slice(from: number, to: number): string
+}
+
 /// Objects of this type are used to
 /// [configure](#MarkdownParser.configure) the Markdown parser.
 export interface MarkdownConfig {
@@ -1104,6 +1131,10 @@ export interface MarkdownConfig {
   parseBlock?: readonly BlockParser[]
   /// Define new [inline parsing](#InlineParser) logic.
   parseInline?: readonly InlineParser[]
+  /// Hooks called before standard delimiter resolution. Each hook
+  /// receives a [PreResolveContext](#PreResolveContext) and can
+  /// inspect delimiters and add elements or mark delimiters as resolved.
+  preResolveDelimiters?: readonly ((ctx: PreResolveContext) => void)[]
   /// Remove the named parsers from the configuration.
   remove?: readonly string[]
   /// Add a parse wrapper (such as a [mixed-language
@@ -1140,6 +1171,8 @@ export class MarkdownParser extends Parser {
     /// @internal
     readonly inlineParsers: readonly (((cx: InlineContext, next: number, pos: number) => number) | undefined)[],
     /// @internal
+    readonly preResolveDelimiters: readonly ((ctx: PreResolveContext) => void)[],
+    /// @internal
     readonly inlineNames: readonly string[],
     /// @internal
     readonly wrappers: readonly ParseWrapper[]
@@ -1160,9 +1193,10 @@ export class MarkdownParser extends Parser {
     if (!config) return this
     let {nodeSet, skipContextMarkup} = this
     let blockParsers = this.blockParsers.slice(), leafBlockParsers = this.leafBlockParsers.slice(),
-        blockNames = this.blockNames.slice(), inlineParsers = this.inlineParsers.slice(),
-        inlineNames = this.inlineNames.slice(), endLeafBlock = this.endLeafBlock.slice(),
-        wrappers = this.wrappers
+        blockNames = this.blockNames.slice(), endLeafBlock = this.endLeafBlock.slice()
+    let inlineParsers = this.inlineParsers.slice(), inlineNames = this.inlineNames.slice()
+    let preResolveDelimiters = this.preResolveDelimiters.slice()
+    let wrappers = this.wrappers
 
     if (nonEmpty(config.defineNodes)) {
       skipContextMarkup = Object.assign({}, skipContextMarkup)
@@ -1232,11 +1266,12 @@ export class MarkdownParser extends Parser {
     }
 
     if (config.wrap) wrappers = wrappers.concat(config.wrap)
+    if (config.preResolveDelimiters) preResolveDelimiters = preResolveDelimiters.concat(config.preResolveDelimiters)
 
     return new MarkdownParser(nodeSet,
                               blockParsers, leafBlockParsers, blockNames,
                               endLeafBlock, skipContextMarkup,
-                              inlineParsers, inlineNames, wrappers)
+                              inlineParsers, preResolveDelimiters, inlineNames, wrappers)
   }
 
   /// @internal
@@ -1282,6 +1317,7 @@ function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
     defineNodes: conc(conf.defineNodes, rest.defineNodes),
     parseBlock: conc(conf.parseBlock, rest.parseBlock),
     parseInline: conc(conf.parseInline, rest.parseInline),
+    preResolveDelimiters: conc(conf.preResolveDelimiters, rest.preResolveDelimiters),
     remove: conc(conf.remove, rest.remove),
     wrap: !wrapA ? wrapB : !wrapB ? wrapA :
       (inner, input, fragments, ranges) => wrapA!(wrapB!(inner, input, fragments, ranges), input, fragments, ranges)
@@ -1633,6 +1669,82 @@ function parseLinkLabel(text: string, start: number, offset: number, requireNonW
   return null
 }
 
+// Internal implementation of PreResolveContext that wraps InlineContext
+class PreResolveContextImpl implements PreResolveContext {
+  readonly delimiters: ReadonlyArray<{
+    readonly type: DelimiterType
+    readonly from: number
+    readonly to: number
+    readonly side: number
+  }>
+  readonly blockEnd: number
+  readonly parser: MarkdownParser
+  private resolvedIndices: Set<number> = new Set()
+  private addedElements: Element[] = []
+  private cx: InlineContext
+  private delimToPartIndex: number[] = []
+
+  constructor(cx: InlineContext, from: number) {
+    this.cx = cx
+    this.parser = cx.parser
+    this.blockEnd = cx.end
+    // Build immutable list of delimiters with mapping to parts indices
+    const delims: Array<{
+      readonly type: DelimiterType
+      readonly from: number
+      readonly to: number
+      readonly side: number
+    }> = []
+    for (let i = from; i < cx.parts.length; i++) {
+      const part = cx.parts[i]
+      if (part && !(part instanceof Element)) {
+        const delim = part as InlineDelimiter
+        this.delimToPartIndex.push(i)
+        delims.push({
+          type: delim.type,
+          from: delim.from,
+          to: delim.to,
+          side: delim.side
+        })
+      }
+    }
+    this.delimiters = delims
+  }
+
+  markResolved(index: number): void {
+    if (index >= 0 && index < this.delimiters.length) {
+      this.resolvedIndices.add(index)
+    }
+  }
+
+  addElement(element: Element): void {
+    this.addedElements.push(element)
+  }
+
+  elt(type: string, from: number, to: number, children?: readonly Element[]): Element {
+    return this.cx.elt(type, from, to, children as Element[])
+  }
+
+  slice(from: number, to: number): string {
+    return this.cx.slice(from, to)
+  }
+
+  // Apply the changes back to the InlineContext
+  apply(): void {
+    // Null out resolved delimiters using the mapping
+    for (const delimIndex of this.resolvedIndices) {
+      const partIndex = this.delimToPartIndex[delimIndex]
+      if (partIndex !== undefined) {
+        this.cx.parts[partIndex] = null
+      }
+    }
+    // Add new elements to parts
+    for (const elt of this.addedElements) {
+      this.cx.parts.push(elt)
+    }
+  }
+}
+
 /// Inline parsing functions get access to this context, and use it to
 /// read the content and emit syntax nodes.
 export class InlineContext {
@@ -1692,6 +1804,12 @@ export class InlineContext {
   /// Resolve markers between this.parts.length and from, wrapping matched markers in the
   /// appropriate node and updating the content of this.parts. @internal
   resolveMarkers(from: number) {
+    // Run pre-resolve hooks with a safe context wrapper
+    if (this.parser.preResolveDelimiters.length) {
+      const ctx = new PreResolveContextImpl(this, from)
+      for (const hook of this.parser.preResolveDelimiters) hook(ctx)
+      ctx.apply()
+    }
     // Scan forward, looking for closing tokens
     for (let i = from; i < this.parts.length; i++) {
       let close = this.parts[i]
@@ -1956,6 +2074,7 @@ export const parser = new MarkdownParser(
   DefaultEndLeaf,
   DefaultSkipMarkup,
   Object.keys(DefaultInline).map(n => DefaultInline[n]),
+  [],
   Object.keys(DefaultInline),
   []
 )
