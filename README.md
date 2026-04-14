@@ -19,7 +19,7 @@ do—specifically, it doesn't validate link references, so it'll parse
 declared.
 
 The
-[@codemirror/lang-markdown](https://github.com/codemirror/lang-markdown)
+[@codemirror/lang-markdown](https://code.haverbeke.berlin/codemirror/lang-markdown)
 package integrates this parser with CodeMirror to provide Markdown
 editor support.
 

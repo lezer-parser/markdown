@@ -25,8 +25,8 @@
     "@lezer/highlight": "^1.0.0"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/lezer-parser/markdown.git"
+    "type": "git",
+    "url": "git+https://code.haverbeke.berlin/lezer/markdown.git"
   },
   "scripts": {
     "watch": "node build.js --watch",
