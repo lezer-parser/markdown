@@ -1,3 +1,5 @@
+**This repository has moved to https://code.haverbeke.berlin/lezer/markdown**
+
 <!-- /README.md is generated from /src/README.md -->
 
 # @lezer/markdown
