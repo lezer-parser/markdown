@@ -1,4 +1,4 @@
-export {parser, MarkdownParser, MarkdownConfig, MarkdownExtension,
+export {parser, MarkdownParser, MarkdownConfig, MarkdownExtension, PreResolveContext,
         NodeSpec, InlineParser, BlockParser, LeafBlockParser,
         Line, Element, LeafBlock, DelimiterType, BlockContext, InlineContext} from "./markdown"
 export {parseCode} from "./nest"
